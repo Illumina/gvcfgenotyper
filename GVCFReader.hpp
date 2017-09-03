@@ -1,15 +1,10 @@
-#include "kseq.h"
-#include "kstring.h"
 #include <deque>
 #include <set>
 #include <string>         // std::string
 #include <locale>         // std::locale, std::toupper
 #include <algorithm>
 #include <iostream>
-#include "needle.h"
 #include "hts_utils.h"
-
-KSTREAM_INIT(gzFile, gzread, 16384)
 
 
 extern "C" {
@@ -23,7 +18,7 @@ extern "C" {
 #define ERR_REF_MISMATCH    -1
 #define CHECK_REF_WARN 1
 
-GVCFReader {
+
 
 bool operator== (const bcf1_t *a,const bcf1_t *b)
 {
@@ -90,6 +85,7 @@ bool operator> (const bcf1_t *a,const bcf1_t *b)
 }
 
 
+
 //small class to buffer bcf1_t records and sort them as they are inserted.
 class VariantBuffer 
 {
@@ -107,13 +103,17 @@ private:
     set <string> _seen; //list of seen variants at this position.
 };
 
+GVCFReader {
 public:
     GVCFReader(const string & fname);
     int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos
-    bcf1_t *getCurrentRecord();
-    
+    bcf1_t *get_current_record(); //return pointer to current vcf record
+    int read_lines(int num_lines); //read at most num_lines
+
 private:
-    bcf_srs_t *_bcf_reader;
-    bcf1_t *_current_bcf_record;
+    bcf_srs_t *_bcf_reader;//htslib synced reader.
+    bcf1_t *_bcf_record;
     int _num_duplicated_records;
-}
+    bcf_hdr_t *_bcf_header;
+    VariantBuffer _variant_buffer;
+};
