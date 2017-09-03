@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include "hts_utils.h"
+#include "vcfnorm.h"
 
 
 extern "C" {
@@ -20,25 +21,25 @@ extern "C" {
 
 
 
-bool operator== (const bcf1_t *a,const bcf1_t *b)
+bool operator== (const bcf1_t & a,const bcf1_t & b)
 {
-    if(a->rid!=b->rid)
+    if(a.rid!=b.rid)
     {
 	return(false);
     }
-    else if(a->pos!=b->pos)
+    else if(a.pos!=b.pos)
     {
 	return(false);
     }
-    else if(a->n_allele!=b->n_allele)
+    else if(a.n_allele!=b.n_allele)
     {
 	return(false);
     }
     else
     {
-	for(int i=0;i<a->n_allele;i++)
+	for(int i=0;i<a.n_allele;i++)
 	{
-	    if(strcmp(a->d.allele[i],b->d.allele[i]))
+	    if(strcmp(a.d.allele[i],b.d.allele[i]))
 	    {
 		return(false);
 	    }
@@ -47,30 +48,30 @@ bool operator== (const bcf1_t *a,const bcf1_t *b)
     return(true);
 }
 
-bool operator!= (const bcf1_t *a,const bcf1_t *b)
+bool operator!= (const bcf1_t & a,const bcf1_t & b)
 {
-    return(!a==b);
+    return(!(a==b));
 }
 
-bool operator< (const bcf1_t *a,const bcf1_t *b)
+bool operator< (const bcf1_t & a,const bcf1_t & b)
 {
-    if(a->rid>b->rid)
+    if(a.rid>b.rid)
     {
 	return(false);
     }
-    else if(a->pos>b->pos)
+    else if(a.pos>b.pos)
     {
 	return(false);
     }
-    else if(a->n_allele!=b->n_allele)
+    else if(a.n_allele!=b.n_allele)
     {
 	return(false);
     }
     else
     {
-	for(int i=0;i<a->n_allele;i++)
+	for(int i=0;i<a.n_allele;i++)
 	{
-	    if(strcmp(a->d.allele[i],b->d.allele[i])>0)
+	    if(strcmp(a.d.allele[i],b.d.allele[i])>0)
 	    {
 		return(false);
 	    }
@@ -79,7 +80,7 @@ bool operator< (const bcf1_t *a,const bcf1_t *b)
     return(true);
 }
 
-bool operator> (const bcf1_t *a,const bcf1_t *b)
+bool operator> (const bcf1_t & a,const bcf1_t & b)
 {
     return(!(a==b && a<b));
 }
@@ -90,8 +91,8 @@ bool operator> (const bcf1_t *a,const bcf1_t *b)
 class VariantBuffer 
 {
 public:
-    VarBuffer();
-    ~VarBuffer();
+    VariantBuffer();
+    ~VariantBuffer();
     int push_back(bcf1_t *v);    //add a new variant (and sort if necessary)
     int flush_variant(int rid,int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
@@ -103,7 +104,7 @@ private:
     set <string> _seen; //list of seen variants at this position.
 };
 
-GVCFReader {
+class GVCFReader {
 public:
     GVCFReader(const string & fname);
     int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos
@@ -116,4 +117,17 @@ private:
     int _num_duplicated_records;
     bcf_hdr_t *_bcf_header;
     VariantBuffer _variant_buffer;
+};
+
+#define MROWS_SPLIT 1
+#define MROWS_MERGE  2
+//this basically wraps bcftools norm in a class.
+//TODO: investigate replacing this with invariant components
+class Normaliser {
+public:
+    Normaliser(const string & ref_fname);
+    ~Normaliser();
+    vector<bcf1_t *> atomise(bcf1_t *rec,bcf_hdr_t *hdr);
+private:
+    args_t *norm_args;
 };

@@ -51,13 +51,30 @@ void remove_info(bcf1_t *line)
 }
 
 
+Normaliser::Normaliser(const string & ref_fname)
+{
+  args_t *args  = (args_t*) calloc(1,sizeof(args_t));
+  args->files   = NULL;
+  args->output_fname = NULL;
+  args->output_type = FT_VCF;
+  args->aln_win = 100;
+  args->buf_win = 1000;
+  args->mrows_collapse = COLLAPSE_BOTH;
+  args->mrows_op = MROWS_SPLIT;
+  args->hdr = NULL;//hdr;
+  args->do_indels = 1;
+  args->ref_fname = (char *)ref_fname.c_str();
+  init_data(args);
+}
+
+
 //1. decompose MNPs/complex substitutions 
 //2. normalises the output using bcftools norm algorithm
-vector<bcf1_t *> atomise(bcf1_t *rec,bcf_hdr_t *hdr)
+vector<bcf1_t *>  Normaliser::atomise(bcf1_t *rec,bcf_hdr_t *hdr)
 {
     assert(rec->n_allele>1);
     vector<bcf1_t *> atomised_variants;
-    bcf1_t **split_records=&_bcf_record;
+    bcf1_t **split_records=&rec;
     int num_split_records=1;
     if(_bcf_record->n_allele>2)
     {//split multi-allelics (using vcfnorm.c from bcftools1.3
