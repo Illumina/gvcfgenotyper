@@ -4,8 +4,9 @@
 #include <locale>         // std::locale, std::toupper
 #include <algorithm>
 #include <iostream>
-#include "hts_utils.h"
-#include "vcfnorm.h"
+#include "utils.h"
+#include "BCFHelpers.hpp"
+//#include "hts_utils.h"
 
 
 extern "C" {
@@ -18,7 +19,6 @@ extern "C" {
 
 #define ERR_REF_MISMATCH    -1
 #define CHECK_REF_WARN 1
-
 
 
 bool operator== (const bcf1_t & a,const bcf1_t & b)
@@ -94,29 +94,14 @@ public:
     VariantBuffer();
     ~VariantBuffer();
     int push_back(bcf1_t *v);    //add a new variant (and sort if necessary)
-    int flush_variant(int rid,int pos);//flush variants up to and including rid/pos
+    int flush_buffer(int rid,int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
     bool has_variant(bcf1_t *v);//does the buffer already have v?
   
 private:
-    int _last_pos,_ndup;
+    int _last_pos, _num_duplicated_records;    
     deque<bcf1_t *> _buffer;  
-    set <string> _seen; //list of seen variants at this position.
-};
-
-class GVCFReader {
-public:
-    GVCFReader(const string & fname);
-    int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos
-    bcf1_t *get_current_record(); //return pointer to current vcf record
-    int read_lines(int num_lines); //read at most num_lines
-
-private:
-    bcf_srs_t *_bcf_reader;//htslib synced reader.
-    bcf1_t *_bcf_record;
-    int _num_duplicated_records;
-    bcf_hdr_t *_bcf_header;
-    VariantBuffer _variant_buffer;
+    set <std::string> _seen; //list of seen variants at this position.
 };
 
 #define MROWS_SPLIT 1
@@ -125,9 +110,26 @@ private:
 //TODO: investigate replacing this with invariant components
 class Normaliser {
 public:
-    Normaliser(const string & ref_fname);
+    Normaliser(const std::string & ref_fname);
     ~Normaliser();
-    vector<bcf1_t *> atomise(bcf1_t *rec,bcf_hdr_t *hdr);
+    std::vector<bcf1_t *> atomise(bcf1_t *rec,bcf_hdr_t *hdr);
 private:
-    args_t *norm_args;
+    args_t *_norm_args;
+};
+
+
+class GVCFReader {
+public:
+    GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta);
+    ~GVCFReader();
+    int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos
+    bcf1_t *get_current_record(); //return pointer to current vcf record
+    int read_lines(int num_lines); //read at most num_lines
+
+private:
+    bcf_srs_t *_bcf_reader;//htslib synced reader.
+    bcf1_t *_bcf_record;
+    bcf_hdr_t *_bcf_header;
+    VariantBuffer _variant_buffer;
+    Normaliser *_normaliser;        
 };

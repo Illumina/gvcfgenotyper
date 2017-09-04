@@ -4,6 +4,7 @@ using namespace std;
 
 int main(int argc, char **argv) 
 {
-    GVCFMerger g(argv[1]);
+    assert(argc>=2);
+    GVCFReader g(argv[1],argv[2]);
     return(0);
 }

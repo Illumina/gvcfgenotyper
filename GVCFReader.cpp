@@ -1,6 +1,8 @@
 #include "GVCFReader.hpp"
 //#define DEBUG
 
+using namespace std;
+
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -53,18 +55,18 @@ void remove_info(bcf1_t *line)
 
 Normaliser::Normaliser(const string & ref_fname)
 {
-  args_t *args  = (args_t*) calloc(1,sizeof(args_t));
-  args->files   = NULL;
-  args->output_fname = NULL;
-  args->output_type = FT_VCF;
-  args->aln_win = 100;
-  args->buf_win = 1000;
-  args->mrows_collapse = COLLAPSE_BOTH;
-  args->mrows_op = MROWS_SPLIT;
-  args->hdr = NULL;//hdr;
-  args->do_indels = 1;
-  args->ref_fname = (char *)ref_fname.c_str();
-  init_data(args);
+    _norm_args  = (args_t*) calloc(1,sizeof(args_t));
+  _norm_args->files   = NULL;
+  _norm_args->output_fname = NULL;
+  _norm_args->output_type = FT_VCF;
+  _norm_args->aln_win = 100;
+  _norm_args->buf_win = 1000;
+  _norm_args->mrows_collapse = COLLAPSE_BOTH;
+  _norm_args->mrows_op = MROWS_SPLIT;
+  _norm_args->hdr = NULL;//hdr;
+  _norm_args->do_indels = 1;
+  _norm_args->ref_fname = (char *)ref_fname.c_str();
+  init_data(_norm_args);
 }
 
 
@@ -76,11 +78,11 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *rec,bcf_hdr_t *hdr)
     vector<bcf1_t *> atomised_variants;
     bcf1_t **split_records=&rec;
     int num_split_records=1;
-    if(_bcf_record->n_allele>2)
+    if(rec->n_allele>2)
     {//split multi-allelics (using vcfnorm.c from bcftools1.3
-	split_multiallelic_to_biallelics(norm_args,_bcf_record);
-	split_records=norm_args->tmp_lines;
-	num_split_records=norm_args->ntmp_lines;
+	split_multiallelic_to_biallelics(_norm_args,rec);
+	split_records=_norm_args->tmp_lines;
+	num_split_records=_norm_args->ntmp_lines;
     }
 	    
     for(int i=0;i<num_split_records;i++)
@@ -90,7 +92,7 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *rec,bcf_hdr_t *hdr)
 	char *alt=rec->d.allele[1];
 	int ref_len = strlen(ref);
 	int alt_len = strlen(alt);
-	if(realign(norm_args,rec) == ERR_REF_MISMATCH)
+	if(realign(_norm_args,rec) == ERR_REF_MISMATCH)
 	{
 	    die("vcf record did not match the reference");
 	}
@@ -134,7 +136,7 @@ VariantBuffer::VariantBuffer()
 VariantBuffer::~VariantBuffer() 
 {
     cerr << "Dropped "<<_num_duplicated_records <<" duplicated variants after normalization."<<endl;
-    flush();
+    flush_buffer();
 }
 
 bool VariantBuffer::has_variant(bcf1_t *v) 
@@ -174,19 +176,21 @@ int VariantBuffer::push_back(bcf1_t *v)
 
 int VariantBuffer::flush_buffer(int chrom,int pos)
 {
-    while(_buffer.size()>0 &&  _buffer.front()->pos <= pos && _buffer.front()->rid <= rid)
+    int num_flushed=0;
+    while(_buffer.size()>0 &&  _buffer.front()->pos <= pos && _buffer.front()->rid <= chrom)
     {
 	bcf1_t *rec = _buffer.front();	    
 	_buffer.pop_front();
+	num_flushed++;
     }    
-    return(n);
+    return(num_flushed);
 }  
 
 int VariantBuffer::flush_buffer()
 {
     if(_buffer.size()>0) 
     {
-	int ret = flush(_buffer.back()->pos);
+	int ret = flush_buffer(_buffer.back()->rid,_buffer.back()->pos);
 	return(ret);
     }
     else
@@ -194,29 +198,29 @@ int VariantBuffer::flush_buffer()
 	return(0);
     }
 }
-  
-GVCFReader::GVCFReader(const string & fname);
+
+GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta)  
 {
     _bcf_reader =  bcf_sr_init() ; 
     _bcf_header= _bcf_reader->readers[0].header;
-    if(!(bcf_sr_add_reader (sr, fname.c_str())))
+    if(!(bcf_sr_add_reader (_bcf_reader, input_gvcf.c_str())))
     {
 	die("problem opening input");
     }
-
+    
     //this is a hack to fix gvcfs where AD is set to Number=. (VCF4.1 does not technically allow Number=R)
-    bcf_hdr_remove(hdr_in,BCF_HL_FMT,"AD");
-    assert(  bcf_hdr_append(hdr_in,"##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed. For indels this value only includes reads which confidently support each allele (posterior prob 0.999 or higher that read contains indicated allele vs all other intersecting indel alleles)\">") == 0);
+    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"AD");
+    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed. For indels this value only includes reads which confidently support each allele (posterior prob 0.999 or higher that read contains indicated allele vs all other intersecting indel alleles)\">") == 0);
 
     //this is a hack to fix gvcfs where GQ is labelled as float (VCF spec says it should be integer)
-    bcf_hdr_remove(hdr_in,BCF_HL_FMT,"GQ");
-    assert(  bcf_hdr_append(hdr_in,"##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">") == 0);
-
+    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"GQ");
+    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">") == 0);
+    _normaliser = new Normaliser(reference_genome_fasta);
 }
 
 GVCFReader::~GVCFReader()
 {
-    bcf_destroy1(_current_bcf_record);
+    bcf_destroy1(_bcf_record);
 }
 
 int GVCFReader::read_lines(int num_lines)
@@ -228,26 +232,26 @@ int GVCFReader::read_lines(int num_lines)
 	_bcf_record =  bcf_sr_get_line(_bcf_reader, 0);
    	if(_bcf_record->n_allele>1)//is this line a variant?
 	{
-	    int32_t pass = bcf_has_filter(hdr_in, _bcf_record, ".");
-	    bcf_update_format_int32(hdr_out,_bcf_record,"FT",&pass,1);
-	    bcf_update_filter(hdr_out,_bcf_record,NULL,0);
-	    bcf_update_id(hdr_out,_bcf_record,NULL);
+	    int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, ".");
+	    bcf_update_format_int32(_bcf_header,_bcf_record,"FT",&pass,1);
+	    bcf_update_filter(_bcf_header,_bcf_record,NULL,0);
+	    bcf_update_id(_bcf_header,_bcf_record,NULL);
 	    remove_info(_bcf_record);
-
-	    if(is_atomic(_bcf_record))
+	    
+	    if(!bcfhelpers::isComplex(_bcf_header,_bcf_record))
 	    {
 		_variant_buffer.push_back(_bcf_record);
 	    }
 	    else
 	    {
-		vector<bcf1_t *> atomised_variants = atomise(_bcf_record,_bcf_header);
+		vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record,_bcf_header);
 		for(size_t i=0;i<atomised_variants.size();i++)
 		{
 		    _variant_buffer.push_back(atomised_variants[i]);
 		    bcf_destroy1(atomised_variants[i]);
 		}
 	    }
-	    num_read++
+	    num_read++;
 	}
     }
     return(num_read);

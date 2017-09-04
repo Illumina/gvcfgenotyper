@@ -43,10 +43,10 @@ RANLIB = ranlib
 CPPFLAGS = 
 CFLAGS   = -g -O2
 LDFLAGS  = 
-LIBS     = -lz -lm 
+LIBS     = -lz 
 
-PLATFORM   = default
-PLUGIN_EXT = .so
+PLATFORM   = Darwin
+PLUGIN_EXT = .bundle
 
 # Lowercase here indicates these are "local" to config.mk
 plugin_OBJS =
@@ -56,7 +56,7 @@ noplugin_LIBS =
 # ifeq/.../endif, +=, and target-specific variables are GNU Make-specific.
 # If you don't have GNU Make, comment out this conditional and note that
 # to enable libcurl you will need to implement the following elsewhere.
-ifeq "libcurl-disabled" "libcurl-enabled"
+ifeq "libcurl-enabled" "libcurl-enabled"
 
 LIBCURL_LIBS = -lcurl
 
@@ -68,11 +68,11 @@ noplugin_LIBS += $(LIBCURL_LIBS)
 
 endif
 
-ifeq "gcs-disabled" "gcs-enabled"
+ifeq "gcs-enabled" "gcs-enabled"
 plugin_OBJS += hfile_gcs.o
 endif
 
-ifeq "s3-disabled" "s3-enabled"
+ifeq "s3-enabled" "s3-enabled"
 plugin_OBJS += hfile_s3.o
 
 CRYPTO_LIBS = 

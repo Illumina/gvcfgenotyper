@@ -12,19 +12,19 @@
    accurate PACKAGE_VERSION as computed by the Makefile.  */
 
 /* Define if HTSlib should enable GCS support. */
-/* #undef ENABLE_GCS */
+#define ENABLE_GCS 1
 
 /* Define if HTSlib should enable plugins. */
 /* #undef ENABLE_PLUGINS */
 
 /* Define if HTSlib should enable S3 support. */
-/* #undef ENABLE_S3 */
+#define ENABLE_S3 1
 
 /* Define if you have the Common Crypto library. */
-/* #undef HAVE_COMMONCRYPTO */
+#define HAVE_COMMONCRYPTO 1
 
 /* Define to 1 if you have the `fdatasync' function. */
-#define HAVE_FDATASYNC 1
+/* #undef HAVE_FDATASYNC */
 
 /* Define to 1 if you have the `getpagesize' function. */
 #define HAVE_GETPAGESIZE 1
@@ -42,7 +42,7 @@
 /* #undef HAVE_LIBBZ2 */
 
 /* Define if libcurl file access is enabled. */
-/* #undef HAVE_LIBCURL */
+#define HAVE_LIBCURL 1
 
 /* Define to 1 if you have the `lzma' library (-llzma). */
 /* #undef HAVE_LIBLZMA */
