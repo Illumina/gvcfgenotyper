@@ -1780,20 +1780,4 @@ int main_vcfnorm(int argc, char *argv[])
   free(args);
   return 0;
 }
-
-args_t *init_vcfnorm(bcf_hdr_t *hdr,char *ref){
-  args_t *args  = (args_t*) calloc(1,sizeof(args_t));
-  args->files   = NULL;
-  args->output_fname = "-";
-  args->output_type = FT_VCF;
-  args->aln_win = 100;
-  args->buf_win = 1000;
-  args->mrows_collapse = COLLAPSE_BOTH;
-  args->mrows_op = MROWS_SPLIT;
-  args->hdr = hdr;
-  args->do_indels = 1;
-  args->ref_fname = ref;
-  init_data(args);
-  return(args);
-}
  

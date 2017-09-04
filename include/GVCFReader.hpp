@@ -7,7 +7,6 @@
 #include "utils.h"
 //#include "hts_utils.h"
 
-
 extern "C" {
 #include "htslib/hts.h"
 #include <htslib/vcf.h>

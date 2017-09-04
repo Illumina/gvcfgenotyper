@@ -16,10 +16,14 @@ add_custom_target(
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories ("${PROJECT_SOURCE_DIR}/htslib-1.5/")
 
-file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/*")
+file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/src/*.c")
 add_executable(gvcfmerge ${SRC})
 
 target_link_libraries(gvcfmerge ${PROJECT_SOURCE_DIR}/htslib-1.5/libhts.a)
 add_dependencies(gvcfmerge libhts.a)
 
-
+find_package( ZLIB REQUIRED )
+if ( ZLIB_FOUND )
+    include_directories( ${ZLIB_INCLUDE_DIRS} )
+    target_link_libraries( gvcfmerge ${ZLIB_LIBRARIES} )
+endif( ZLIB_FOUND )

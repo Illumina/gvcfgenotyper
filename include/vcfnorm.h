@@ -46,3 +46,7 @@ void write_vcf_line(args_t *args,bcf1_t *line,htsFile *out);
 //void flush_buffer(args_t *args, htsFile *file, int n);
 void destroy_data(args_t *args);
 int realign(args_t *args, bcf1_t *line);
+
+static void init_data(args_t *args);
+
+    
