@@ -3,6 +3,7 @@
 
 using namespace std;
 
+
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -92,38 +93,44 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *rec,bcf_hdr_t *hdr)
 	char *alt=rec->d.allele[1];
 	int ref_len = strlen(ref);
 	int alt_len = strlen(alt);
-	if(realign(_norm_args,rec) == ERR_REF_MISMATCH)
+	if(ref_len==1 && alt_len==1)//it is a SNP. no more work required.
 	{
-	    die("vcf record did not match the reference");
+	    atomised_variants.push_back(bcf_dup(rec));
 	}
-
-	if(ref_len>1 && ref_len==alt_len) //is MNP
+	else
 	{
-	    char alleles[4] = "X,X";
-	    for(int i=0;i<ref_len;i++) 
+	    if(realign(_norm_args,rec) == ERR_REF_MISMATCH)
 	    {
-		if(ref[i]!=alt[i]) 
-		{//new SNP
-		    bcf1_t *new_var = bcf_dup(rec);
-		    bcf_unpack(new_var, BCF_UN_ALL);
-		    alleles[0]=ref[i];
-		    alleles[2]=alt[i];
-		    new_var->pos+=i;
-		    bcf_update_alleles_str(hdr, new_var, alleles);	
-		    atomised_variants.push_back(new_var);
+		die("vcf record did not match the reference");
+	    }
+	    if(ref_len>1 && ref_len==alt_len) //is MNP
+	    {
+		char alleles[4] = "X,X";
+		for(int i=0;i<ref_len;i++) 
+		{
+		    if(ref[i]!=alt[i]) 
+		    {//new SNP
+			bcf1_t *new_var = bcf_dup(rec);
+			bcf_unpack(new_var, BCF_UN_ALL);
+			alleles[0]=ref[i];
+			alleles[2]=alt[i];
+			new_var->pos+=i;
+			bcf_update_alleles_str(hdr, new_var, alleles);	
+			atomised_variants.push_back(new_var);
+		    }
 		}
 	    }
+	    // else if((ref_len!=alt_len) && (ref_len!=1) && (alt_len>1)) //complex substitution
+	    // {
+	    //     vt_aggressive_decompose(rec,hdr,atomised_variants);
+	    // }
+	    else //variant already is atomic
+	    {
+		bcf1_t *new_var = bcf_dup(rec);
+		bcf_unpack(new_var, BCF_UN_ALL);
+		atomised_variants.push_back(new_var);
+	    }  
 	}
-	// else if((ref_len!=alt_len) && (ref_len!=1) && (alt_len>1)) //complex substitution
-	// {
-	//     vt_aggressive_decompose(rec,hdr,atomised_variants);
-	// }
-	else //variant already is atomic
-	{
-	    bcf1_t *new_var = bcf_dup(rec);
-	    bcf_unpack(new_var, BCF_UN_ALL);
-	    atomised_variants.push_back(new_var);
-	}  
     }
     return(atomised_variants);
 }
@@ -237,23 +244,16 @@ int GVCFReader::read_lines(int num_lines)
 	    bcf_update_filter(_bcf_header,_bcf_record,NULL,0);
 	    bcf_update_id(_bcf_header,_bcf_record,NULL);
 	    remove_info(_bcf_record);
-	    
-	    if(!bcfhelpers::isComplex(_bcf_header,_bcf_record))
+	    vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record,_bcf_header);
+	    for(size_t i=0;i<atomised_variants.size();i++)
 	    {
-		_variant_buffer.push_back(_bcf_record);
-	    }
-	    else
-	    {
-		vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record,_bcf_header);
-		for(size_t i=0;i<atomised_variants.size();i++)
-		{
-		    _variant_buffer.push_back(atomised_variants[i]);
-		    bcf_destroy1(atomised_variants[i]);
-		}
+		_variant_buffer.push_back(atomised_variants[i]);
+		bcf_destroy1(atomised_variants[i]);
 	    }
 	    num_read++;
 	}
     }
+
     return(num_read);
 }
 

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iostream>
 #include "utils.h"
-#include "BCFHelpers.hpp"
 //#include "hts_utils.h"
 
 
