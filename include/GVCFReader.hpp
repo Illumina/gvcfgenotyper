@@ -1,23 +1,24 @@
+#ifndef GVCFREADER_H
+#define GVCFREADER_H
+
 #include <deque>
 #include <set>
 #include <string>         // std::string
 #include <locale>         // std::locale, std::toupper
 #include <algorithm>
 #include <iostream>
-#include "utils.h"
+#include "utils.hpp"
 //#include "hts_utils.h"
 
 extern "C" {
-#include "htslib/hts.h"
+#include <htslib/hts.h>
 #include <htslib/vcf.h>
 #include <htslib/tbx.h>
 #include "vcfnorm.h"
 }
 
-
 #define ERR_REF_MISMATCH    -1
 #define CHECK_REF_WARN 1
-
 
 bool operator== (const bcf1_t & a,const bcf1_t & b)
 {
@@ -131,3 +132,5 @@ private:
     VariantBuffer _variant_buffer;
     Normaliser *_normaliser;        
 };
+
+#endif

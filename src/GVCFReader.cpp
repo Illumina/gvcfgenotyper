@@ -3,7 +3,6 @@
 
 using namespace std;
 
-
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -56,18 +55,7 @@ void remove_info(bcf1_t *line)
 
 Normaliser::Normaliser(const string & ref_fname)
 {
-    _norm_args  = (args_t*) calloc(1,sizeof(args_t));
-  _norm_args->files   = NULL;
-  _norm_args->output_fname = NULL;
-  _norm_args->output_type = FT_VCF;
-  _norm_args->aln_win = 100;
-  _norm_args->buf_win = 1000;
-  _norm_args->mrows_collapse = COLLAPSE_BOTH;
-  _norm_args->mrows_op = MROWS_SPLIT;
-  _norm_args->hdr = NULL;//hdr;
-  _norm_args->do_indels = 1;
-  _norm_args->ref_fname = (char *)ref_fname.c_str();
-  init_data(_norm_args);
+    init_vcfnorm((bcf_hdr_t *)NULL,ref_fname.c_str());
 }
 
 

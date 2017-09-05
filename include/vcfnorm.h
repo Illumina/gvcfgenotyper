@@ -1,7 +1,9 @@
+#ifndef VCFNORM_H
+#define VCFNORM_H
+
 #include "bcftools.h"
 #include "rbuf.h"
 #include <htslib/faidx.h>
-
 
 // for -m+, mapping from allele indexes of a single input record
 // to allele indexes of output record
@@ -38,8 +40,7 @@ typedef struct
 }
 args_t;
 
-args_t *init_vcfnorm(  bcf_hdr_t *hdr,char *ref);
-
+args_t *init_vcfnorm(bcf_hdr_t *hdr,const char *ref);
 
 void split_multiallelic_to_biallelics(args_t *args, bcf1_t *line);
 void write_vcf_line(args_t *args,bcf1_t *line,htsFile *out);
@@ -47,6 +48,4 @@ void write_vcf_line(args_t *args,bcf1_t *line,htsFile *out);
 void destroy_data(args_t *args);
 int realign(args_t *args, bcf1_t *line);
 
-static void init_data(args_t *args);
-
-    
+#endif
