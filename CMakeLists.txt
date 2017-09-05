@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 
-project (gvcfmerge)
+project (gvcfmerge C CXX)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
 add_custom_command(
 	OUTPUT ${PROJECT_SOURCE_DIR}/htslib-1.5/libhts.a
@@ -27,3 +28,5 @@ if ( ZLIB_FOUND )
     include_directories( ${ZLIB_INCLUDE_DIRS} )
     target_link_libraries( gvcfmerge ${ZLIB_LIBRARIES} )
 endif( ZLIB_FOUND )
+
+

@@ -111,3 +111,68 @@ int copyContigs(bcf_hdr_t *src,bcf_hdr_t *dst);
 
 //simple dumps text from fname into output
 int readTextFile(char *fname,vector<string> & output);
+
+
+static bool operator== (const bcf1_t & a,const bcf1_t & b)
+{
+    if(a.rid!=b.rid)
+    {
+	return(false);
+    }
+    else if(a.pos!=b.pos)
+    {
+	return(false);
+    }
+    else if(a.n_allele!=b.n_allele)
+    {
+	return(false);
+    }
+    else
+    {
+	for(int i=0;i<a.n_allele;i++)
+	{
+	    if(strcmp(a.d.allele[i],b.d.allele[i]))
+	    {
+		return(false);
+	    }
+	}
+    }
+    return(true);
+}
+
+static bool operator!= (const bcf1_t & a,const bcf1_t & b)
+{
+    return(!(a==b));
+}
+
+static bool operator< (const bcf1_t & a,const bcf1_t & b)
+{
+    if(a.rid>b.rid)
+    {
+	return(false);
+    }
+    else if(a.pos>b.pos)
+    {
+	return(false);
+    }
+    else if(a.n_allele!=b.n_allele)
+    {
+	return(false);
+    }
+    else
+    {
+	for(int i=0;i<a.n_allele;i++)
+	{
+	    if(strcmp(a.d.allele[i],b.d.allele[i])>0)
+	    {
+		return(false);
+	    }
+	}
+    }
+    return(true);
+}
+
+static bool operator> (const bcf1_t & a,const bcf1_t & b)
+{
+    return(!(a==b && a<b));
+}
