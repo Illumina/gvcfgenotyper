@@ -55,6 +55,29 @@ private:
     set <std::string> _seen; //list of seen variants at this position.
 };
 
+
+//simple struct that stores the pertinent values from a GVCF homref block
+class DepthBlock
+{
+public:
+    DepthBlock(int rid,int start,int end,int dp,int dpf,int gq);
+    bool isIntersecting(int rid,int a,int b);
+    int _rid,_start,_end,_dp,_gq,_dpf;
+};
+
+class DepthBuffer
+{
+public:
+    DepthBuffer() {};
+    ~DepthBuffer() {};
+    int push_back(DepthBlock *db);
+    DepthBlock *pop();
+    DepthBlock *front();
+    DepthBlock interpolate(int rid,int start,int end);//interpolates depth for an interval a<=x<b
+private:
+    deque<DepthBlock> _buffer;
+};
+
 class GVCFReader {
 public:
     GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,int buffer_size);
@@ -65,6 +88,7 @@ public:
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
     int fill_buffer(int num_lines);
+    int getDepth(int rid,int start,int stop,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     const bcf_hdr_t *getHeader();
 private:
@@ -73,6 +97,7 @@ private:
     bcf1_t *_bcf_record;
     bcf_hdr_t *_bcf_header;
     VariantBuffer _variant_buffer;
+    DepthBuffer _depth_buffer;
     Normaliser *_normaliser;        
 };
 
