@@ -1,8 +1,6 @@
 #include "GVCFReader.hpp"
 //#define DEBUG
 
-using namespace std;
-
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -85,7 +83,7 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
     for(int rec_index=0;rec_index<num_split_records;rec_index++)
     {
 	bcf1_t *rec=split_records[rec_index];
-//	cerr << "atomise: "<<rec->pos+1<<":"<<rec->d.allele[0]<<":"<<rec->d.allele[1]<<endl;
+//	std::cerr << "atomise: "<<rec->pos+1<<":"<<rec->d.allele[0]<<":"<<rec->d.allele[1]<<std::endl;
 	if(strlen(rec->d.allele[0])==1 && strlen(rec->d.allele[1])==1)//is a snp. do nothing
 	{
 	    atomised_variants.push_back(bcf_dup(rec));
@@ -115,7 +113,7 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
 			new_var->pos+=i;
 			bcf_update_alleles_str(_hdr, new_var, alleles);	
 			atomised_variants.push_back(new_var);
-//			cerr << "new_var: "<<new_var->pos+1<<":"<<new_var->d.allele[0]<<":"<<new_var->d.allele[1]<<endl;
+//			std::cerr << "new_var: "<<new_var->pos+1<<":"<<new_var->d.allele[0]<<":"<<new_var->d.allele[1]<<std::endl;
 		    }
 		}
 	    }
@@ -140,7 +138,7 @@ VariantBuffer::VariantBuffer()
 
 VariantBuffer::~VariantBuffer() 
 {
-    cerr << "Dropped "<<_num_duplicated_records <<" duplicated variants after normalization."<<endl;
+    std::cerr << "Dropped "<<_num_duplicated_records <<" duplicated variants after normalization."<<std::endl;
     flush_buffer();
 }
 

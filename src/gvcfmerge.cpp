@@ -1,9 +1,7 @@
 #include "GVCFReader.hpp"
 
-using namespace std;
-
-int main(int argc, char **argv) 
-{ 
+int main(int argc,char **argv)
+{
     cerr << "GVCF: "<<argv[1]<<endl;
     cerr << "Reference: "<<argv[2]<<endl;
     assert(argc>=2);
