@@ -364,3 +364,94 @@ const bcf_hdr_t *GVCFReader::getHeader()
 {
     return(_bcf_header);
 }
+
+
+DepthBlock::DepthBlock()
+{
+    set_missing();
+}
+
+DepthBlock::DepthBlock(int rid,int start,int end,int dp,int dpf,int gq)
+{
+    _rid=rid;
+    _start=start;
+    _end=end;
+    _dp=dp;
+    _dpf=_dpf;
+    _gq=gq;
+}
+
+int DepthBlock::set_missing()
+{
+    _dp = _gq = _dpf = bcf_int32_missing;
+}
+
+int DepthBlock::zero()
+{
+    _dp = _gq = _dpf = 0;
+}
+
+int DepthBlock::add(const DepthBlock & db)
+{
+    _dp += db._dp;
+    _dpf += db._dpf;
+    _gq += db._gq;
+}
+
+int DepthBlock::divide(int n)
+{
+    _dp = (int)round((float)_dp/(float)n);
+    _gq =  (int)round((float)_gq/(float)n);
+    _dpf =  (int)round((float)_dpf/(float)n);
+}
+
+int integer_thing(int x)
+{
+    return(x);
+}
+
+//gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
+int GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
+{
+    _depth_buffer.interpolate(rid,start,stop,db);
+}
+
+//interpolates depth for a given interval a<=x<b
+int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
+{
+    db.zero();
+    auto dp_ptr = _buffer.begin();
+    while(dp_ptr != _buffer.end() && !dp_ptr->is_intersecting(rid,start,stop))
+    {
+	dp_ptr++;
+    }
+    if(dp_ptr == _buffer.end())
+    {
+	die("dp buffer over run");
+    }
+    int num_intervals = 0;
+    while(dp_ptr != _buffer.end() && dp_ptr->is_intersecting(rid,start,stop))
+    {
+	db.add(*dp_ptr);
+	dp_ptr++;
+	num_intervals++;
+    }
+    if(num_intervals>1)
+    {
+	db.divide(num_intervals);
+    }
+    return(0);
+}
+
+int DepthBlock::intersect_size(rid,start,stop)
+{
+    if(_rid!=rid)
+    {
+	return(0);
+    }
+    if(_stop < start || _start>stop)
+    {
+	return(0);
+    }
+    return(min(stop,_stop) - max(_start,start));    
+}

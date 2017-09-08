@@ -10,7 +10,8 @@ int main(int argc,char **argv)
     GVCFReader g(gvcf,ref,200);
     int num_lines_to_read = 100;
 
-//    g.fill_buffer(num_lines_to_read);
+//    DepthBlock db(0,0,0,0,0,0);
+    cerr << integer_thing(333)<<endl;
     const    bcf_hdr_t *hdr = g.getHeader();    
     bcf1_t *line = g.pop();
     while(line!=NULL)

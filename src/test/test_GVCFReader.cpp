@@ -22,10 +22,11 @@ TEST(GVCFReader,tiny_gvcf_example)
     GVCFReader g(gvcf_file_name,ref_file_name,buffer_size);    
     const bcf_hdr_t *hdr = g.getHeader();    
     bcf1_t *line = g.pop();
+    DepthBlock db;
+    std::cerr <<    db._dp<<endl;
     while(line!=NULL)
     {
 	ofs << bcf_hdr_id2name(hdr,line->rid)<<":"<<line->pos+1<<":"<<line->d.allele[0]<<":"<<line->d.allele[1]<<std::endl;
-	DepthBlock db;
 	g.get_depth(line->rid,line->pos,line->pos+1,db);
 	std::cerr << "depth at " << line->pos+1<< " = " << db._dp  << std::endl;	
 	assert(line->n_allele==2);

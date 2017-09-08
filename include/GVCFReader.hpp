@@ -55,7 +55,7 @@ private:
 };
 
 
-//simple struct that stores the pertinent values from a GVCF homref block
+//simple class that stores the pertinent values from a GVCF homref block
 class DepthBlock
 {
 public:
@@ -65,6 +65,7 @@ public:
     int set_missing();//set all values to bcftools missing
     int zero();//zero all values
     int add(const DepthBlock & db);
+    int divide(int n);
     int _rid,_start,_end,_dp,_gq,_dpf;
 };
 
@@ -106,4 +107,7 @@ private:
     Normaliser *_normaliser;        
 };
 
+int integer_thing(int x);
+
 #endif
+
