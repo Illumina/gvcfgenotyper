@@ -61,7 +61,7 @@ class DepthBlock
 public:
     DepthBlock();
     DepthBlock(int rid,int start,int end,int dp,int dpf,int gq);
-    bool is_intersecting(int rid,int a,int b);
+    bool intersect_size(int rid,int a,int b);
     int set_missing();//set all values to bcftools missing
     int zero();//zero all values
     int add(const DepthBlock & db);

@@ -421,7 +421,7 @@ int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 {
     db.zero();
     auto dp_ptr = _buffer.begin();
-    while(dp_ptr != _buffer.end() && !dp_ptr->is_intersecting(rid,start,stop))
+    while(dp_ptr != _buffer.end() && !dp_ptr->intersect_size(rid,start,stop))
     {
 	dp_ptr++;
     }
@@ -430,7 +430,7 @@ int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 	die("dp buffer over run");
     }
     int num_intervals = 0;
-    while(dp_ptr != _buffer.end() && dp_ptr->is_intersecting(rid,start,stop))
+    while(dp_ptr != _buffer.end() && dp_ptr->intersect_size(rid,start,stop)>0)
     {
 	db.add(*dp_ptr);
 	dp_ptr++;
