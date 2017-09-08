@@ -20,7 +20,6 @@ extern "C" {
 #define ERR_REF_MISMATCH    -1
 #define CHECK_REF_WARN 1
 
-
 #define MROWS_SPLIT 1
 #define MROWS_MERGE  2
 //this basically wraps bcftools norm in a class.
@@ -60,8 +59,12 @@ private:
 class DepthBlock
 {
 public:
+    DepthBlock();
     DepthBlock(int rid,int start,int end,int dp,int dpf,int gq);
-    bool isIntersecting(int rid,int a,int b);
+    bool is_intersecting(int rid,int a,int b);
+    int set_missing();//set all values to bcftools missing
+    int zero();//zero all values
+    int add(const DepthBlock & db);
     int _rid,_start,_end,_dp,_gq,_dpf;
 };
 
@@ -73,12 +76,13 @@ public:
     int push_back(DepthBlock *db);
     DepthBlock *pop();
     DepthBlock *front();
-    DepthBlock interpolate(int rid,int start,int end);//interpolates depth for an interval a<=x<b
+    int interpolate(int rid,int start,int end,DepthBlock & db);//interpolates depth for an interval a<=x<b
 private:
     deque<DepthBlock> _buffer;
 };
 
-class GVCFReader {
+class GVCFReader
+{
 public:
     GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,int buffer_size);
     ~GVCFReader();
@@ -88,9 +92,10 @@ public:
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
     int fill_buffer(int num_lines);
-    int getDepth(int rid,int start,int stop,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
+    int get_depth(int rid,int start,int stop,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     const bcf_hdr_t *getHeader();
+
 private:
     int  _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
     bcf_srs_t *_bcf_reader;//htslib synced reader.
