@@ -24,6 +24,22 @@ TEST(DepthBlock,depth_block_unit_tests)
     ASSERT_EQ(db6.intersect_size(db7),1);
 }
 
+TEST(DepthBuffer,depth_buffer_unit_tests)
+{
+    DepthBuffer buf;
+    buf.push_back(DepthBlock(0,0,99,20,1,30));
+    buf.push_back(DepthBlock(0,100,109,30,1,30));
+    buf.push_back(DepthBlock(0,110,200,40,1,30));
+    DepthBlock db;
+    buf.interpolate(0,90,95,db);
+    buf.interpolate(0,99,99,db);
+    ASSERT_EQ(db._dp,20);
+    buf.interpolate(0,100,100,db);
+    ASSERT_EQ(db._dp,30);
+    buf.interpolate(0,95,104,db);
+    ASSERT_EQ(db._dp,25);
+}
+
 //GVCFReader should match this VID output
 //bcftools norm -m -any data/NA12877.tiny.vcf.gz | bcftools norm -f data/tiny.ref.fa | bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected 
 TEST(GVCFReader,tiny_gvcf_example)
@@ -61,6 +77,7 @@ TEST(GVCFReader,tiny_gvcf_example)
 	bcf_destroy(line);
 	line = g.pop();
     }
+    free(dp);
     ofs.close();
     ASSERT_TRUE(g.empty());
     const std::string diffcmd = std::string("diff -I '^#' ") + tn + " " + expected_output_file;

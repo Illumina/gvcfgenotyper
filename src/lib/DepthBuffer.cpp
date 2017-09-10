@@ -4,24 +4,25 @@
 //interpolates depth for a given interval a<=x<b
 int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 {
-    db.zero();
+    db.set_missing();
     auto dp_ptr = _buffer.begin();
+
     while(dp_ptr != _buffer.end() && dp_ptr->_end < start)
     {
 	dp_ptr++;
     }
+
     if(dp_ptr == _buffer.end())
     {
 	die("dp buffer over run");
     }
-    int num_intervals = 0;
+
+    db = dp_ptr->intersect(rid,start,stop);
     while(dp_ptr != _buffer.end() && dp_ptr->intersect_size(rid,start,stop)>0)
     {
-	db.add(*dp_ptr);
+	db.add(dp_ptr->intersect(rid,start,stop));
 	dp_ptr++;
-	num_intervals++;
     }
-    db.divide(num_intervals);
     return(0);
 }
 

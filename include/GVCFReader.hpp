@@ -21,6 +21,7 @@ extern "C" {
 
 #define MROWS_SPLIT 1
 #define MROWS_MERGE  2
+
 //this basically wraps bcftools norm in a class.
 //TODO: investigate replacing this with invariant components
 class Normaliser {
@@ -60,8 +61,11 @@ class DepthBlock
 public:
     DepthBlock();
     DepthBlock(int rid,int start,int end,int dp,int dpf,int gq);
-    int intersect_size(int rid,int a,int b);
-    int intersect_size(const DepthBlock &db);
+    DepthBlock intersect(const DepthBlock & db);
+    DepthBlock intersect(int rid,int start,int end);
+    int intersect_size(int rid,int a,int b) const;
+    int intersect_size(const DepthBlock &db) const;
+    int size() const;
     void set_missing();//set all values to bcftools missing
     void zero();//zero all values
     void add(const DepthBlock & db);
@@ -77,6 +81,7 @@ public:
     int push_back(DepthBlock db);
     DepthBlock *pop();
     DepthBlock *front();
+    DepthBlock intersect(const DepthBlock & db);
     int flush_buffer();
     int flush_buffer(int rid,int pos);
     int interpolate(int rid,int start,int end,DepthBlock & db);//interpolates depth for an interval a<=x<b
@@ -95,7 +100,7 @@ public:
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
     int fill_buffer(int num_lines);
-    int get_depth(int rid,int start,int stop,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
+    int get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     const bcf_hdr_t *getHeader();
 
@@ -109,6 +114,6 @@ private:
     Normaliser *_normaliser;        
 };
 
-int integer_thing(int x);
+
 
 #endif

@@ -29,9 +29,28 @@ void DepthBlock::zero()
 
 void DepthBlock::add(const DepthBlock & db)
 {
-    _dp += db._dp;
-    _dpf += db._dpf;
-    _gq += db._gq;
+    if(_dp==bcf_int32_missing||_dpf==bcf_int32_missing||_gq==bcf_int32_missing)
+    {
+	_dp = db._dp;
+	_dpf = db._dpf;
+	_gq = db._gq;
+	_rid = db._rid;
+	_start = db._start;
+	_end = db._end;
+    }
+    else
+    {
+	assert(db._rid==_rid && db._start==(_end+1));
+	float length1 = size();
+	float length2 = db.size();
+	float p1 = length1/(length1+length2);
+	float p2 = length2/(length1+length2);
+	std::cerr << p1 << " " << p2 << std::endl;
+	_end=db._end;
+	_dp  = round(p1*_dp  + p2*db._dp);
+	_dpf = round(p1*_dpf + p2*db._dpf);
+	_gq  = round(p1*_gq  + p2*db._gq);
+    }
 }
 
 void DepthBlock::divide(int n)
@@ -44,21 +63,42 @@ void DepthBlock::divide(int n)
     }
 }
 
-int DepthBlock::intersect_size(int rid,int start,int stop)
+int DepthBlock::size() const
+{
+    return(    _end-_start+1 );
+}
+
+int DepthBlock::intersect_size(int rid,int start,int end) const
 {
     if(_rid!=rid)
     {
 	return(0);
     }
-    if(_end < start || _start>stop)
+    if(_end < start || _start>end)
     {
 	return(0);
     }
-    return(min(stop,_end) - max(_start,start) + 1);    
+    return(min(end,_end) - max(_start,start) + 1);    
 }
 
-int DepthBlock::intersect_size(const DepthBlock &db)
+int DepthBlock::intersect_size(const DepthBlock &db) const
 {
     return(intersect_size(db._rid,db._start,db._end) );
 }
 
+DepthBlock DepthBlock::intersect(const DepthBlock & db)
+{
+    return(intersect(db._rid,db._start,db._end));
+}
+
+DepthBlock DepthBlock::intersect(int rid,int start,int end)
+{
+    if(!intersect_size(rid,start,end))
+    {
+	die("non-intersecting");
+    }
+
+    return(DepthBlock(_rid,max(_start,start),min(end,_end),_dp,_dpf,_gq));
+}
+
+	   

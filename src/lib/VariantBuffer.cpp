@@ -7,7 +7,6 @@ VariantBuffer::VariantBuffer()
 
 VariantBuffer::~VariantBuffer() 
 {
-    std::cerr << "Dropped "<<_num_duplicated_records <<" duplicated variants after normalization."<<std::endl;
     flush_buffer();
 }
 
