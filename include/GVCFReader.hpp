@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <iostream>
 #include "utils.hpp"
-//#include "hts_utils.h"
 
 extern "C" {
 #include <htslib/hts.h>
@@ -61,11 +60,12 @@ class DepthBlock
 public:
     DepthBlock();
     DepthBlock(int rid,int start,int end,int dp,int dpf,int gq);
-    bool intersect_size(int rid,int a,int b);
-    int set_missing();//set all values to bcftools missing
-    int zero();//zero all values
-    int add(const DepthBlock & db);
-    int divide(int n);
+    int intersect_size(int rid,int a,int b);
+    int intersect_size(const DepthBlock &db);
+    void set_missing();//set all values to bcftools missing
+    void zero();//zero all values
+    void add(const DepthBlock & db);
+    void divide(int n);
     int _rid,_start,_end,_dp,_gq,_dpf;
 };
 
@@ -74,9 +74,11 @@ class DepthBuffer
 public:
     DepthBuffer() {};
     ~DepthBuffer() {};
-    int push_back(DepthBlock *db);
+    int push_back(DepthBlock db);
     DepthBlock *pop();
     DepthBlock *front();
+    int flush_buffer();
+    int flush_buffer(int rid,int pos);
     int interpolate(int rid,int start,int end,DepthBlock & db);//interpolates depth for an interval a<=x<b
 private:
     deque<DepthBlock> _buffer;
@@ -110,4 +112,3 @@ private:
 int integer_thing(int x);
 
 #endif
-

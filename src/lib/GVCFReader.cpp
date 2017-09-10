@@ -50,133 +50,6 @@ void remove_info(bcf1_t *line)
     line->n_info=0;
 }
 
-
-Normaliser::Normaliser(const string & ref_fname,bcf_hdr_t *hdr)
-{
-    _hdr=bcf_hdr_dup(hdr);
-    _norm_args=init_vcfnorm(_hdr,ref_fname.c_str());
-}
-
-Normaliser::~Normaliser()
-{
-    bcf_hdr_destroy(_hdr);
-    destroy_data(_norm_args);
-    free(_norm_args);
-}
-
-//1. split multi-allelics
-//2. normalise (left-align + trim)
-//3. decompose MNPs into SNPs
-vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
-{
-    assert(bcf_record_to_canonicalise->n_allele>1);
-    vector<bcf1_t *> atomised_variants;
-    bcf1_t **split_records=&bcf_record_to_canonicalise;
-    int num_split_records=1;
-    if(bcf_record_to_canonicalise->n_allele>2)
-    {//split multi-allelics (using vcfnorm.c from bcftools1.3
-	split_multiallelic_to_biallelics(_norm_args,bcf_record_to_canonicalise);
-	split_records=_norm_args->tmp_lines;
-	num_split_records=_norm_args->ntmp_lines;
-    }
-	    
-    for(int rec_index=0;rec_index<num_split_records;rec_index++)
-    {
-	bcf1_t *rec=split_records[rec_index];
-//	std::cerr << "atomise: "<<rec->pos+1<<":"<<rec->d.allele[0]<<":"<<rec->d.allele[1]<<std::endl;
-	if(strlen(rec->d.allele[0])==1 && strlen(rec->d.allele[1])==1)//is a snp. do nothing
-	{
-	    atomised_variants.push_back(bcf_dup(rec));
-	}
-	else
-	{
-	    if(realign(_norm_args,rec) == ERR_REF_MISMATCH)
-	    {
-		die("vcf record did not match the reference");
-	    }
-	    char *ref=rec->d.allele[0];
-	    char *alt=rec->d.allele[1];
-	    int ref_len = strlen(ref);
-	    int alt_len = strlen(alt);
-
-	    if(ref_len>1 && ref_len==alt_len) //is MNP
-	    {
-		char alleles[4] = "X,X";
-		for(int i=0;i<ref_len;i++) 
-		{
-		    if(ref[i]!=alt[i]) 
-		    {//new SNP
-			bcf1_t *new_var = bcf_dup(rec);
-			bcf_unpack(new_var, BCF_UN_ALL);
-			alleles[0]=ref[i];
-			alleles[2]=alt[i];
-			new_var->pos+=i;
-			bcf_update_alleles_str(_hdr, new_var, alleles);	
-			atomised_variants.push_back(new_var);
-//			std::cerr << "new_var: "<<new_var->pos+1<<":"<<new_var->d.allele[0]<<":"<<new_var->d.allele[1]<<std::endl;
-		    }
-		}
-	    }
-	    // else if((ref_len!=alt_len) && (ref_len!=1) && (alt_len>1)) //complex substitution
-	    // {
-	    //     vt_aggressive_decompose(rec,_hdr,atomised_variants);
-	    // }
-	    else //variant already is atomic
-	    {
-		bcf1_t *new_var = bcf_dup(rec);
-		atomised_variants.push_back(new_var);
-	    }  
-	}
-    }
-    return(atomised_variants);
-}
-
-VariantBuffer::VariantBuffer() 
-{
-    _num_duplicated_records=0;
-}
-
-VariantBuffer::~VariantBuffer() 
-{
-    std::cerr << "Dropped "<<_num_duplicated_records <<" duplicated variants after normalization."<<std::endl;
-    flush_buffer();
-}
-
-bool VariantBuffer::has_variant(bcf1_t *v) 
-{
-    int i = _buffer.size()-1;
-    while(i>=0 && _buffer[i]->pos >= v->pos)
-    {
-	if(v==_buffer[i])
-	{
-	    return(true);
-	}
-	i--;
-    }
-    return(false);
-}
-
-int VariantBuffer::push_back(bcf1_t *v) 
-{
-    bcf_unpack(v, BCF_UN_ALL);
-    if(has_variant(v))
-    {
-	_num_duplicated_records++;
-	return(0);
-    }
-
-    _buffer.push_back(bcf_dup(v));
-    int i = _buffer.size()-1;
-    while(i>0 && _buffer[i]->pos < _buffer[i-1]->pos) 
-    {
-	bcf1_t *tmp=_buffer[i-1];
-	_buffer[i-1]=_buffer[i];
-	_buffer[i]=tmp;
-	i--;
-    }
-    return(1);
-}
-
 int GVCFReader::flush_buffer(int chrom,int pos)
 {
     return(_variant_buffer.flush_buffer(chrom,pos));
@@ -187,32 +60,6 @@ int GVCFReader::flush_buffer()
 {
     return(_variant_buffer.flush_buffer());
 }  
-
-
-int VariantBuffer::flush_buffer(int chrom,int pos)
-{
-    int num_flushed=0;
-    while(_buffer.size()>0 &&  _buffer.front()->pos <= pos && _buffer.front()->rid <= chrom)
-    {
-	bcf1_t *rec = _buffer.front();	    
-	_buffer.pop_front();
-	num_flushed++;
-    }    
-    return(num_flushed);
-}  
-
-int VariantBuffer::flush_buffer()
-{
-    if(_buffer.size()>0) 
-    {
-	int ret = flush_buffer(_buffer.back()->rid,_buffer.back()->pos);
-	return(ret);
-    }
-    else
-    {
-	return(0);
-    }
-}
 
 GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,int buffer_size)  
 {
@@ -268,7 +115,7 @@ int GVCFReader::read_lines(int num_lines)
 	_bcf_record =  bcf_sr_get_line(_bcf_reader, 0);
    	if(_bcf_record->n_allele>1)//is this line a variant?
 	{
-	    int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, ".");
+	    int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *)".");
 	    bcf_update_format_int32(_bcf_header,_bcf_record,"FT",&pass,1);
 	    bcf_update_filter(_bcf_header,_bcf_record,NULL,0);
 	    bcf_update_id(_bcf_header,_bcf_record,NULL);
@@ -281,6 +128,33 @@ int GVCFReader::read_lines(int num_lines)
 	    }
 	    num_read++;
 	}
+
+	//buffer a depth block
+	int num_format_values=0;
+	int32_t *value_pointer=NULL;
+//if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
+	if(bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer,&num_format_values)==1)
+	{
+	    int start=_bcf_record->pos;
+	    int32_t dp,dpf,gq,end;
+	    dp = *value_pointer;
+	    end = get_end_of_gvcf_block(_bcf_header,_bcf_record);
+	    //if it is a SNP use GQ else use GQX (this is a illumina GVCF quirk)
+	    if(_bcf_record->n_allele>1)
+	    {
+		bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer , &num_format_values);
+	    }	    
+	    else
+	    {
+		bcf_get_format_int32(_bcf_header, _bcf_record, "GQX", &value_pointer , &num_format_values);
+	    }
+	    gq = *value_pointer;
+	    bcf_get_format_int32(_bcf_header, _bcf_record, "DPF", &value_pointer , &num_format_values);
+	    dpf = *value_pointer;
+	    _depth_buffer.push_back(DepthBlock(_bcf_record->rid,start,end,dp,dpf,gq));
+	    free(value_pointer);
+	}
+
     }
 
     return(num_read);
@@ -320,138 +194,13 @@ bool GVCFReader::empty()
     }
 }
 
-size_t VariantBuffer::size()
-{
-    return(_buffer.size());
-}
-
-bool VariantBuffer::empty()
-{
-    return(_buffer.empty());
-}
-
-bcf1_t *VariantBuffer::front()
-{
-    if(_buffer.empty())
-    {
-	return(NULL);
-    }
-    else
-    {	
-	bcf1_t *ret = _buffer.front();
-	bcf_unpack(ret, BCF_UN_ALL);
-	return(ret);
-    }
-}
-
-
-bcf1_t *VariantBuffer::pop()
-{
-    if(_buffer.empty())
-    {
-	return(NULL);
-    }
-    else
-    {
-	bcf1_t *ret = _buffer.front();
-	bcf_unpack(ret, BCF_UN_ALL);
-	_buffer.pop_front();
-	return(ret);
-    }
-}
-
 const bcf_hdr_t *GVCFReader::getHeader()
 {
     return(_bcf_header);
-}
-
-
-DepthBlock::DepthBlock()
-{
-    set_missing();
-}
-
-DepthBlock::DepthBlock(int rid,int start,int end,int dp,int dpf,int gq)
-{
-    _rid=rid;
-    _start=start;
-    _end=end;
-    _dp=dp;
-    _dpf=_dpf;
-    _gq=gq;
-}
-
-int DepthBlock::set_missing()
-{
-    _dp = _gq = _dpf = bcf_int32_missing;
-}
-
-int DepthBlock::zero()
-{
-    _dp = _gq = _dpf = 0;
-}
-
-int DepthBlock::add(const DepthBlock & db)
-{
-    _dp += db._dp;
-    _dpf += db._dpf;
-    _gq += db._gq;
-}
-
-int DepthBlock::divide(int n)
-{
-    _dp = (int)round((float)_dp/(float)n);
-    _gq =  (int)round((float)_gq/(float)n);
-    _dpf =  (int)round((float)_dpf/(float)n);
-}
-
-int integer_thing(int x)
-{
-    return(x);
 }
 
 //gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
 int GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
 {
     _depth_buffer.interpolate(rid,start,stop,db);
-}
-
-//interpolates depth for a given interval a<=x<b
-int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
-{
-    db.zero();
-    auto dp_ptr = _buffer.begin();
-    while(dp_ptr != _buffer.end() && !dp_ptr->intersect_size(rid,start,stop))
-    {
-	dp_ptr++;
-    }
-    if(dp_ptr == _buffer.end())
-    {
-	die("dp buffer over run");
-    }
-    int num_intervals = 0;
-    while(dp_ptr != _buffer.end() && dp_ptr->intersect_size(rid,start,stop)>0)
-    {
-	db.add(*dp_ptr);
-	dp_ptr++;
-	num_intervals++;
-    }
-    if(num_intervals>1)
-    {
-	db.divide(num_intervals);
-    }
-    return(0);
-}
-
-int DepthBlock::intersect_size(rid,start,stop)
-{
-    if(_rid!=rid)
-    {
-	return(0);
-    }
-    if(_stop < start || _start>stop)
-    {
-	return(0);
-    }
-    return(min(stop,_stop) - max(_start,start));    
 }

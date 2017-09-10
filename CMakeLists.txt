@@ -17,7 +17,7 @@ add_custom_target(
 include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.5/")
 
-file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/lib/*.c")
+file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/lib/*.c" "${PROJECT_SOURCE_DIR}/src/lib/tools/*.cpp")
 add_executable(gvcfmerge src/gvcfmerge.cpp ${SRC})
 
 target_link_libraries(gvcfmerge  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a)

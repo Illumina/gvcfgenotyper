@@ -9,9 +9,7 @@ int main(int argc,char **argv)
     string ref = argv[2];
     GVCFReader g(gvcf,ref,200);
     int num_lines_to_read = 100;
-
 //    DepthBlock db(0,0,0,0,0,0);
-    cerr << integer_thing(333)<<endl;
     const    bcf_hdr_t *hdr = g.getHeader();    
     bcf1_t *line = g.pop();
     while(line!=NULL)

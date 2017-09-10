@@ -176,3 +176,25 @@ static bool operator> (const bcf1_t & a,const bcf1_t & b)
 {
     return(!(a==b && a<b));
 }
+
+static bool is_snp(bcf1_t *record)
+{
+    return(record->n_allele==2 && strlen(record->d.allele[0])==1 && strlen(record->d.allele[1])==1);
+}
+
+static int get_end_of_gvcf_block(bcf_hdr_t *header,bcf1_t *record)
+{
+    int ret;
+    int *ptr=NULL,nval=0;
+    if(bcf_get_info_int32(header, record, "END", &ptr , &nval)==1)
+    {
+	ret = *ptr - 1;
+	free(ptr);
+    }
+    else
+    {
+	ret = record->pos + strlen(record->d.allele[0]) - 1;
+    }
+
+    return(ret);
+}
