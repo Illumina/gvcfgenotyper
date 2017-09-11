@@ -1,5 +1,5 @@
-# gvcfmerge
-merging tool for illumina gvcfs
+# insert catchy name here
+merging and genotyping tool for illumina gvcfs
 
 ## building
 
