@@ -172,34 +172,40 @@ static bool bcf1_less_than(const bcf1_t * a,const bcf1_t * b)
 	die("bcf1_less_than: tried to compare NULL bcf1_t");
     }
     
-    if(a->rid>b->rid)
+    if(a->rid < b->rid)
     {
-	return(false);
+	return(true);
     }
-    else if(a->pos>b->pos)
+    
+    if(a->pos < b->pos)
     {
-	return(false);
+	return(true);
     }
-    else if(a->n_allele!=b->n_allele)
+
+    if(a->pos==b->pos)
     {
-	return(false);
-    }
-    else
-    {
-	for(int i=0;i<a->n_allele;i++)
+	if(a->n_allele!=b->n_allele)
 	{
-	    if(strcmp(a->d.allele[i],b->d.allele[i])>0)
+	    return(false);
+	}
+	else
+	{
+	    for(int i=0;i<a->n_allele;i++)
 	    {
-		return(false);
+		if(strcmp(a->d.allele[i],b->d.allele[i])>0)
+		{
+		    return(false);
+		}
 	    }
 	}
+	return(true);	
     }
-    return(true);
+    return(false);
 }
 
 static bool bcf1_greater_than(const bcf1_t * a,const bcf1_t * b)
 {
-    return(!(bcf1_equal(a,b) && bcf1_less_than(a,b)));
+    return(!bcf1_equal(a,b) && !bcf1_less_than(a,b));
 }
 
 static bool bcf1_leq(const bcf1_t * a,const bcf1_t * b)

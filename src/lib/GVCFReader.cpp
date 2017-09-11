@@ -98,8 +98,12 @@ GVCFReader::~GVCFReader()
     {
 	bcf_destroy1(_bcf_record);
     }
-    delete _normaliser;
-//    bcf_sr_destroy(_bcf_reader);
+    if ( _bcf_reader->errnum )
+    {
+	error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
+    }
+//    bcf_sr_destroy(_bcf_reader); //this is causing an invalid free. i am not sure why!
+    delete _normaliser;    
 }
 
 int GVCFReader::fill_buffer(int num_lines)
@@ -131,7 +135,7 @@ int GVCFReader::read_lines(int num_lines)
 	    {
 //		print_variant(_bcf_header,atomised_variants[i]);//debug
 		_variant_buffer.push_back(atomised_variants[i]);
-		bcf_destroy1(atomised_variants[i]);
+//		bcf_destroy1(atomised_variants[i]);// VariantBuffer handles memory.
 	    }
 	    num_read++;
 	}

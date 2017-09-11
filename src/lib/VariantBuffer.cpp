@@ -28,13 +28,13 @@ bool VariantBuffer::has_variant(bcf1_t *v)
     return(false);
 }
 
-int VariantBuffer::push_back(bcf1_t *v) 
+int VariantBuffer::push_back(bcf1_t *rec) 
 {
-    bcf1_t *rec =bcf_dup(v);    
     bcf_unpack(rec, BCF_UN_ALL);
     if(has_variant(rec))
     {
 	_num_duplicated_records++;
+	bcf_destroy(rec);
 	return(0);
     }
 
