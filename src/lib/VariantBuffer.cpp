@@ -12,10 +12,14 @@ VariantBuffer::~VariantBuffer()
 
 bool VariantBuffer::has_variant(bcf1_t *v) 
 {
+    if(_buffer.empty())
+    {
+	return(false);
+    }
     int i = _buffer.size()-1;
     while(i>=0 && _buffer[i]->pos >= v->pos)
     {
-	if(v==_buffer[i])
+	if(bcf1_equal(v,_buffer[i]))
 	{
 	    return(true);
 	}
@@ -26,16 +30,18 @@ bool VariantBuffer::has_variant(bcf1_t *v)
 
 int VariantBuffer::push_back(bcf1_t *v) 
 {
-    bcf_unpack(v, BCF_UN_ALL);
-    if(has_variant(v))
+    bcf1_t *rec =bcf_dup(v);    
+    bcf_unpack(rec, BCF_UN_ALL);
+    if(has_variant(rec))
     {
 	_num_duplicated_records++;
 	return(0);
     }
 
-    _buffer.push_back(bcf_dup(v));
+    _buffer.push_back(rec);
+    //moves the new record back through the buffer until buffer is sorted ie. one iteration of insert-sort
     int i = _buffer.size()-1;
-    while(i>0 && _buffer[i]->pos < _buffer[i-1]->pos) 
+    while(i>0 && bcf1_less_than(_buffer[i],_buffer[i-1]))
     {
 	bcf1_t *tmp=_buffer[i-1];
 	_buffer[i-1]=_buffer[i];
@@ -45,12 +51,24 @@ int VariantBuffer::push_back(bcf1_t *v)
     return(1);
 }
 
+int VariantBuffer::flush_buffer(const bcf1_t *record)
+{
+    int num_flushed=0;
+    while(_buffer.size()>0 && bcf1_leq(_buffer.front(),record))
+    {
+	bcf_destroy(_buffer.front());	
+	_buffer.pop_front();
+	num_flushed++;
+    }    
+    return(num_flushed);
+}
+
 int VariantBuffer::flush_buffer(int chrom,int pos)
 {
     int num_flushed=0;
     while(_buffer.size()>0 &&  _buffer.front()->pos <= pos && _buffer.front()->rid <= chrom)
     {
-	bcf1_t *rec = _buffer.front();	    
+	bcf_destroy(_buffer.front());
 	_buffer.pop_front();
 	num_flushed++;
     }    
@@ -89,6 +107,7 @@ bcf1_t *VariantBuffer::front()
     else
     {	
 	bcf1_t *ret = _buffer.front();
+	assert(ret!=NULL);
 	bcf_unpack(ret, BCF_UN_ALL);
 	return(ret);
     }
@@ -104,7 +123,6 @@ bcf1_t *VariantBuffer::pop()
     else
     {
 	bcf1_t *ret = _buffer.front();
-	bcf_unpack(ret, BCF_UN_ALL);
 	_buffer.pop_front();
 	return(ret);
     }

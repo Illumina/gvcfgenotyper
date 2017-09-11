@@ -13,7 +13,7 @@ DepthBlock::DepthBlock(int rid,int start,int end,int dp,int dpf,int gq)
     _start=start;
     _end=end;
     _dp=dp;
-    _dpf=_dpf;
+    _dpf=dpf;
     _gq=gq;
 }
 
@@ -45,7 +45,6 @@ void DepthBlock::add(const DepthBlock & db)
 	float length2 = db.size();
 	float p1 = length1/(length1+length2);
 	float p2 = length2/(length1+length2);
-	std::cerr << p1 << " " << p2 << std::endl;
 	_end=db._end;
 	_dp  = round(p1*_dp  + p2*db._dp);
 	_dpf = round(p1*_dpf + p2*db._dpf);

@@ -24,7 +24,8 @@ extern "C" {
 
 //this basically wraps bcftools norm in a class.
 //TODO: investigate replacing this with invariant components
-class Normaliser {
+class Normaliser
+{
 public:
     Normaliser(const std::string & ref_fname,bcf_hdr_t *hdr);
     ~Normaliser();
@@ -43,6 +44,7 @@ public:
     int push_back(bcf1_t *v);    //add a new variant (and sort if necessary)
     int flush_buffer(int rid,int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
+    int flush_buffer(const bcf1_t *record);    
     bool has_variant(bcf1_t *v);//does the buffer already have v?
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
@@ -78,7 +80,7 @@ class DepthBuffer
 public:
     DepthBuffer() {};
     ~DepthBuffer() {};
-    int push_back(DepthBlock db);
+    void push_back(DepthBlock db);
     DepthBlock *pop();
     DepthBlock *front();
     DepthBlock intersect(const DepthBlock & db);
@@ -96,13 +98,14 @@ public:
     ~GVCFReader();
     int flush_buffer();
     int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos
+    int flush_buffer(const bcf1_t *record);
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
     int fill_buffer(int num_lines);
-    int get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
+    void get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
-    const bcf_hdr_t *getHeader();
+    const bcf_hdr_t *get_header();
 
 private:
     int  _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
@@ -113,7 +116,5 @@ private:
     DepthBuffer _depth_buffer;
     Normaliser *_normaliser;        
 };
-
-
 
 #endif

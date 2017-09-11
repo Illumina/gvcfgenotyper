@@ -32,12 +32,17 @@ TEST(DepthBuffer,depth_buffer_unit_tests)
     buf.push_back(DepthBlock(0,110,200,40,1,30));
     DepthBlock db;
     buf.interpolate(0,90,95,db);
+    ASSERT_EQ(db._dp,20);    
     buf.interpolate(0,99,99,db);
     ASSERT_EQ(db._dp,20);
     buf.interpolate(0,100,100,db);
     ASSERT_EQ(db._dp,30);
     buf.interpolate(0,95,104,db);
     ASSERT_EQ(db._dp,25);
+    buf.interpolate(0,95,114,db);
+    ASSERT_EQ(db._dp,30);
+    buf.interpolate(0,95,154,db);
+    ASSERT_EQ(db._dp,37);
 }
 
 //GVCFReader should match this VID output
@@ -58,7 +63,7 @@ TEST(GVCFReader,tiny_gvcf_example)
     std::ofstream ofs(tn, std::ofstream::out);
     int buffer_size=200;
     GVCFReader g(gvcf_file_name,ref_file_name,buffer_size);    
-    const bcf_hdr_t *hdr = g.getHeader();    
+    const bcf_hdr_t *hdr = g.get_header();    
     bcf1_t *line = g.pop();
     int32_t *dp=NULL,nval=0;
     DepthBlock db;
@@ -91,5 +96,3 @@ TEST(GVCFReader,tiny_gvcf_example)
 	remove(tn);
     }
 }
-
-

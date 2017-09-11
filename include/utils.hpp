@@ -18,8 +18,9 @@ using namespace std;
 extern "C" {
 #include <htslib/bgzf.h>
 #include <htslib/tbx.h>
+#include <htslib/vcf.h>    
 #include <htslib/vcfutils.h>
-#include "htslib/synced_bcf_reader.h"
+#include <htslib/synced_bcf_reader.h>
 }
 
 int *zeros(int n);
@@ -87,7 +88,8 @@ inline float argmax(float *P, int K, uint & maxi, uint & maxj) {
 
 string percent(int num, int den);
 
-inline void die(const string& s) {
+inline void die(const string& s)
+{
     cerr << "ERROR: " << s << "\nExiting..." << endl;
     exit(1);
 }
@@ -98,84 +100,15 @@ string join(const vector<string>& input, const string& delim);
 
 vector<int> match(const vector<string>& x, const vector<string>& y);
 
-inline void warn(const string& s) {
+inline void warn(const string& s)
+{
     cerr << "WARNING: "<<s<<endl;
 }
 
-
-htsFile *vcf_wopen(const string& out_filename, string output_type);
-
-
-int copyContigs(bcf_hdr_t *src,bcf_hdr_t *dst);
-
-
+int copy_contigs(const bcf_hdr_t *src,bcf_hdr_t *dst);
 //simple dumps text from fname into output
 int readTextFile(char *fname,vector<string> & output);
 
-
-static bool operator== (const bcf1_t & a,const bcf1_t & b)
-{
-    if(a.rid!=b.rid)
-    {
-	return(false);
-    }
-    else if(a.pos!=b.pos)
-    {
-	return(false);
-    }
-    else if(a.n_allele!=b.n_allele)
-    {
-	return(false);
-    }
-    else
-    {
-	for(int i=0;i<a.n_allele;i++)
-	{
-	    if(strcmp(a.d.allele[i],b.d.allele[i]))
-	    {
-		return(false);
-	    }
-	}
-    }
-    return(true);
-}
-
-static bool operator!= (const bcf1_t & a,const bcf1_t & b)
-{
-    return(!(a==b));
-}
-
-static bool operator< (const bcf1_t & a,const bcf1_t & b)
-{
-    if(a.rid>b.rid)
-    {
-	return(false);
-    }
-    else if(a.pos>b.pos)
-    {
-	return(false);
-    }
-    else if(a.n_allele!=b.n_allele)
-    {
-	return(false);
-    }
-    else
-    {
-	for(int i=0;i<a.n_allele;i++)
-	{
-	    if(strcmp(a.d.allele[i],b.d.allele[i])>0)
-	    {
-		return(false);
-	    }
-	}
-    }
-    return(true);
-}
-
-static bool operator> (const bcf1_t & a,const bcf1_t & b)
-{
-    return(!(a==b && a<b));
-}
 
 static bool is_snp(bcf1_t *record)
 {
@@ -198,3 +131,95 @@ static int get_end_of_gvcf_block(bcf_hdr_t *header,bcf1_t *record)
 
     return(ret);
 }
+
+static bool bcf1_equal(const bcf1_t * a,const bcf1_t * b)
+{
+    if(a==NULL||b==NULL)
+    {
+	die("bcf1_equal: tried to compare NULL bcf1_t");
+    }
+    if(a->rid!=b->rid)
+    {
+	return(false);
+    }
+    else if(a->pos!=b->pos)
+    {
+	return(false);
+    }
+    else if(a->n_allele!=b->n_allele)
+    {
+	return(false);
+    }
+    else
+    {
+	for(int i=0;i<a->n_allele;i++)
+	{
+	    if(strcmp(a->d.allele[i],b->d.allele[i]))
+	    {
+		return(false);
+	    }
+	}
+    }
+    return(true);
+}
+
+
+
+static bool bcf1_less_than(const bcf1_t * a,const bcf1_t * b)
+{
+    if(a==NULL||b==NULL)
+    {
+	die("bcf1_less_than: tried to compare NULL bcf1_t");
+    }
+    
+    if(a->rid>b->rid)
+    {
+	return(false);
+    }
+    else if(a->pos>b->pos)
+    {
+	return(false);
+    }
+    else if(a->n_allele!=b->n_allele)
+    {
+	return(false);
+    }
+    else
+    {
+	for(int i=0;i<a->n_allele;i++)
+	{
+	    if(strcmp(a->d.allele[i],b->d.allele[i])>0)
+	    {
+		return(false);
+	    }
+	}
+    }
+    return(true);
+}
+
+static bool bcf1_greater_than(const bcf1_t * a,const bcf1_t * b)
+{
+    return(!(bcf1_equal(a,b) && bcf1_less_than(a,b)));
+}
+
+static bool bcf1_leq(const bcf1_t * a,const bcf1_t * b)
+{
+    return(!(bcf1_greater_than(a,b)));
+}
+
+static bool bcf1_geq(const bcf1_t * a,const bcf1_t * b)
+{
+    return(!(bcf1_less_than(a,b)));
+}
+
+static bool bcf1_not_equal(const bcf1_t * a,const bcf1_t * b)
+{
+    return(!(bcf1_equal(a,b)));
+}
+
+static void print_variant(bcf_hdr_t *header,bcf1_t *record)
+{
+    bcf_unpack(record, BCF_UN_ALL);
+    std::cerr<<bcf_hdr_id2name(header,record->rid)<<":"<<record->pos+1<<":"<<record->d.allele[0]<<":"<<record->d.allele[1]<<std::endl;
+}
+
