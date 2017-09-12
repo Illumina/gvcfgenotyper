@@ -114,6 +114,7 @@ bcf1_t *GVCFMerger::next()
     }
     bcf_clear(_output_record);
     int n_allele=2;
+    DepthBlock homref_block;//working structure to store homref info.
     //copy allele information from new variant.
     bcf1_t *next_variant = get_next_variant();
     assert(next_variant!=NULL);
@@ -141,17 +142,32 @@ bcf1_t *GVCFMerger::next()
 	    assert(bcf_get_format_int32(sample_header,sample_record,"AD",&ptr,&nval)==2);
 	    nval=1;
 	    ptr=_format_dp+i;
-	    bcf_get_format_int32(sample_header,sample_record,"DP",&ptr,&nval);//no depth record for indels. we might want to change this to sum(SD) - should check what GATK does.
+	    bcf_get_format_int32(sample_header,sample_record,"DP",&ptr,&nval);
 	    ptr=_format_dpf+i;
-	    bcf_get_format_int32(sample_header,sample_record,"DPF",&ptr,&nval);//no depth record for indels. we might want to change this to sum(SD) - should check what GATK does.
+	    bcf_get_format_int32(sample_header,sample_record,"DPF",&ptr,&nval);
 	    ptr=_format_gq+i;
+
 	    if(bcf_get_format_int32(sample_header,sample_record,"GQ",&ptr,&nval)<0)
 	    {
-		std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] << std::endl;
+		std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
+			  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
+			  << std::endl;
 	    }
 	}
-	//else
-	//this sample does not have the variant, reconstruct the format fields from homref blocks
+	else	//this sample does not have the variant, reconstruct the format fields from homref blocks
+	{
+	    _readers[i].get_depth(_output_record->rid,_output_record->pos,get_end_of_variant(_output_record),homref_block);
+	    _format_dp[i] = homref_block._dp;
+	    _format_dpf[i] = homref_block._dpf;
+	    _format_gq[i] = homref_block._gq;
+	    _format_ad[i*2] = homref_block._dp;
+	    _format_ad[i*2+1] = 0;
+	    if(homref_block._dp>0)
+	    {
+		_format_gt[2*i] =_format_gt[2*i+1] = bcf_gt_unphased(0);
+	    }
+	}
+
 	_readers[i].flush_buffer(_output_record);
     }
     

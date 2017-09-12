@@ -132,6 +132,11 @@ static int get_end_of_gvcf_block(bcf_hdr_t *header,bcf1_t *record)
     return(ret);
 }
 
+static int get_end_of_variant(bcf1_t *record)
+{
+    return(record->pos + strlen(record->d.allele[0]) - 1);
+}
+
 static bool bcf1_equal(const bcf1_t * a,const bcf1_t * b)
 {
     if(a==NULL||b==NULL)
