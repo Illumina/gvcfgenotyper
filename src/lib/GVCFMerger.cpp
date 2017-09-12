@@ -142,7 +142,10 @@ bcf1_t *GVCFMerger::next()
 	    assert(bcf_get_format_int32(sample_header,sample_record,"AD",&ptr,&nval)==2);
 	    nval=1;
 	    ptr=_format_dp+i;
-	    bcf_get_format_int32(sample_header,sample_record,"DP",&ptr,&nval);
+	    if(bcf_get_format_int32(sample_header,sample_record,"DP",&ptr,&nval)<0)
+	    {//FORMAT/DP not present (indels)P. we take DP = SUM(AD)
+		_format_dp[i] = _format_ad[2*i] + _format_ad[2*i+1];
+	    }
 	    ptr=_format_dpf+i;
 	    bcf_get_format_int32(sample_header,sample_record,"DPF",&ptr,&nval);
 	    ptr=_format_gq+i;
