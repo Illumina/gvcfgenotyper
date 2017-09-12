@@ -3,6 +3,8 @@
 #include "vt_utils.hpp"
 #include "hts_utils.hpp"
 
+//#define AGGRESSIVE_DECOMPOSE  //turns on aggressive deomcpose from vt
+
 //vt triple structure
 struct Triple
 {
@@ -190,10 +192,12 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
 		    }
 		}
 	    }
+#ifdef AGGRESSIVE_DECOMPOSE
 	    else if((ref_len!=alt_len) && (ref_len!=1) && (alt_len>1)) //complex substitution
 	    {
 	        vt_aggressive_decompose(rec,_hdr,atomised_variants);
 	    }
+#endif
 	    else //variant already is atomic
 	    {
 		bcf1_t *new_var = bcf_dup(rec);

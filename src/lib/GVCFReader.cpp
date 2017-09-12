@@ -1,6 +1,7 @@
 #include "GVCFReader.hpp"
 //#define DEBUG
 
+
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
