@@ -113,8 +113,8 @@ chr3:2492:T:C
 chr3:2566:C:G
 chr3:2584:A:T
 chr3:2590:G:C
-chr3:2617:GAAT:G
 chr3:2617:G:C
+chr3:2617:GAAT:G
 chr3:2650:G:A
 chr3:2686:T:C
 chr3:2689:C:T
@@ -343,10 +343,10 @@ chr3:8683:T:C
 chr3:8699:G:A
 chr3:8754:C:T
 chr3:8765:A:C
-chr3:8767:CAAAAA:C
-chr3:8767:CAAA:C
-chr3:8767:CAA:C
 chr3:8767:CA:C
+chr3:8767:CAA:C
+chr3:8767:CAAA:C
+chr3:8767:CAAAAA:C
 chr3:8801:C:G
 chr3:8814:T:C
 chr3:8854:C:T

@@ -3,7 +3,7 @@
 #include "common.hpp"
 
 
-TEST(DepthBlock,depth_block_unit_tests)
+TEST(DepthBlock,intersects)
 {
     DepthBlock db1(0,100,199,20,1,30);
     DepthBlock db2(0,100,100,20,1,30);
@@ -24,7 +24,7 @@ TEST(DepthBlock,depth_block_unit_tests)
     ASSERT_EQ(db6.intersect_size(db7),1);
 }
 
-TEST(DepthBuffer,depth_buffer_unit_tests)
+TEST(DepthBuffer,interpolate)
 {
     DepthBuffer buf;
     buf.push_back(DepthBlock(0,0,99,20,1,30));
@@ -45,9 +45,9 @@ TEST(DepthBuffer,depth_buffer_unit_tests)
     ASSERT_EQ(db._dp,37);
 }
 
-//GVCFReader should match this VID output
-//bcftools norm -m -any data/NA12877.tiny.vcf.gz | bcftools norm -f data/tiny.ref.fa | bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected 
-TEST(GVCFReader,tiny_gvcf_example)
+// //GVCFReader should match this VID output
+// //bcftools norm -m -any data/NA12877.tiny.vcf.gz | bcftools norm -f data/tiny.ref.fa | bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected 
+TEST(GVCFReader,readAGVCF)
 {
     std::string expected_output_file = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz.expected";
     std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";

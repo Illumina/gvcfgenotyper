@@ -2,7 +2,7 @@
 #include "GVCFMerger.hpp"
 #include "common.hpp"
 
-TEST(GVCFMerger,tiny_gvcf_merge_example)
+TEST(GVCFMerger,readThreeGVCFs)
 {
     int buffer_size=200;
     std::vector<std::string> files;

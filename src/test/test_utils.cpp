@@ -3,7 +3,7 @@
 #include "common.hpp"
 
 
-TEST(Utils,util_tests)
+TEST(UtilTest,comparators)
 {
     std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";    
     
@@ -18,8 +18,15 @@ TEST(Utils,util_tests)
     record2->pos = 2022;
     bcf_update_alleles_str(hdr, record2, "G,C");
 
-    ASSERT_TRUE(bcf1_less_than(record1,record1));
+    ASSERT_FALSE(bcf1_less_than(record1,record1));
+    ASSERT_TRUE(bcf1_less_than(record1,record2));
     ASSERT_FALSE(bcf1_equal(record1,record2));
     ASSERT_TRUE(bcf1_less_than(record1,record2));
     ASSERT_FALSE(bcf1_greater_than(record1,record2));        
+
+    record2->pos=record1->pos=2399;
+    bcf_update_alleles_str(hdr, record1, "C,CTTTTTT");	
+    bcf_update_alleles_str(hdr, record2, "CTTTTT,C");
+    ASSERT_TRUE(bcf1_less_than(record1,record2));
+    ASSERT_FALSE(bcf1_less_than(record2,record1));
 }
