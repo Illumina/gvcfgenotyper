@@ -107,7 +107,7 @@ inline void warn(const string& s)
 
 int copy_contigs(const bcf_hdr_t *src,bcf_hdr_t *dst);
 //simple dumps text from fname into output
-int readTextFile(char *fname,vector<string> & output);
+int read_text_file(const string & fname,vector<string> & output);
 
 
 static bool is_snp(bcf1_t *record)

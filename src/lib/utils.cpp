@@ -94,19 +94,19 @@ int copy_contigs(const bcf_hdr_t *src,bcf_hdr_t *dst)
   return(0);
 }
 
-int readTextFile(char *fname,vector<string> & output)
+int read_text_file(const string & fname,vector<string> & output)
 {
-  ifstream ifile(fname);
-  if(!ifile)
-  {
-    die("problem opening" +( (string)fname) );
-  }
-  string tmp;
-  output.clear();
-  while(ifile>>tmp)
-  {
-    output.push_back(tmp);
-  }
-
-  return(output.size());
+    ifstream ifile(fname.c_str());
+    if(!ifile)
+    {
+	die("problem opening" +( (string)fname) );
+    }
+    string tmp;
+    output.clear();
+    while(ifile>>tmp)
+    {
+	output.push_back(tmp);
+    }
+    
+    return(output.size());
 }
