@@ -27,3 +27,10 @@ make
 ./gvcfmerge data/tiny.ref.fa data/NA*.vcf.gz | bcftools view -Ob -o test.bcf
 bcftools index test.bcf
 ```
+
+## run tests:
+
+```
+./test_gvcfmerge 
+./test_gvcfmerge --gtest_filter=UtilTest.comparators
+```
