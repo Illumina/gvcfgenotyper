@@ -12,7 +12,7 @@ cmake ../  -DCMAKE_BUILD_TYPE=Debug
 make
 ```
 
-###release:
+### release:
 
 ```
 mkdir debug
