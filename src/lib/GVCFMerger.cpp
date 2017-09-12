@@ -219,7 +219,7 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed.\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=FT,Number=A,Type=Integer,Description=\"variant was PASS filter in original sample gvcf\">");
-    bcf_hdr_append(_output_header,"##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification.\">");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification.\">");
 
     copy_contigs(_readers[0].get_header(),_output_header);
     bcf_hdr_write(_output_file, _output_header);    
