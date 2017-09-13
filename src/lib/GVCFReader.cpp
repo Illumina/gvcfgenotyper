@@ -99,7 +99,7 @@ GVCFReader::~GVCFReader()
     {
 	error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
     }
-    bcf_sr_destroy(_bcf_reader); //this is causing an invalid free. i am not sure why!
+    bcf_sr_destroy(_bcf_reader);
     delete _normaliser;    
 }
 
