@@ -12,6 +12,7 @@ GVCFMerger::~GVCFMerger()
     free(_format_dp);
     free(_format_gq);	
     free(_format_dpf);
+    free(_format_ps);
     bcf_destroy(_output_record);
 }
 
@@ -49,6 +50,7 @@ GVCFMerger::GVCFMerger(const vector<string> & input_files,
     _format_ad  =  (int32_t *)malloc(2*_num_gvcfs*sizeof(int32_t));	
     _format_dp  =  (int32_t *)malloc(_num_gvcfs*sizeof(int32_t));
     _format_gq  =  (int32_t *)malloc(_num_gvcfs*sizeof(int32_t));	
+    _format_ps  =  (int32_t *)malloc(_num_gvcfs*sizeof(int32_t));
     _format_dpf =  (int32_t *)malloc(_num_gvcfs*sizeof(int32_t));
 
     build_header();
@@ -103,6 +105,7 @@ void GVCFMerger::set_output_buffers_to_missing()
 	_format_dp[i] = bcf_int32_missing;	
 	_format_gq[i] =	bcf_int32_missing;
 	_format_dpf[i] = bcf_int32_missing;	
+	_format_ps[i] = bcf_int32_missing;	
     }
 }
 
@@ -156,6 +159,8 @@ bcf1_t *GVCFMerger::next()
 			  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
 			  << std::endl;
 	    }
+	    ptr=_format_ps+i;
+	    bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
 	}
 	else	//this sample does not have the variant, reconstruct the format fields from homref blocks
 	{
@@ -176,6 +181,7 @@ bcf1_t *GVCFMerger::next()
     
     bcf_update_genotypes(_output_header,_output_record,_format_gt,_num_gvcfs*2); 
     bcf_update_format_int32(_output_header,_output_record,"GQ",_format_gq,_num_gvcfs);
+    bcf_update_format_int32(_output_header,_output_record,"PS",_format_ps,_num_gvcfs);
     bcf_update_format_int32(_output_header,_output_record,"DP",_format_dp,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"DPF",_format_dpf,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"AD",_format_ad,_num_gvcfs*n_allele );
@@ -239,6 +245,7 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=FT,Number=A,Type=Integer,Description=\"variant was PASS filter in original sample gvcf\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification.\">");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
 
     copy_contigs(_readers[0].get_header(),_output_header);
     bcf_hdr_write(_output_file, _output_header);    
