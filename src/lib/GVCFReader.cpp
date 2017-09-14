@@ -80,15 +80,11 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 	die("GVCFReader needs buffer size of at least 2");
     }
     _buffer_size=buffer_size;
-    _bcf_header= _bcf_reader->readers[0].header;    
     _bcf_record=NULL;
-    //this is a hack to fix gvcfs where AD is set to Number=. (VCF4.1 does not technically allow Number=R)
-    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"AD");
-    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed. For indels this value only includes reads which confidently support each allele (posterior prob 0.999 or higher that read contains indicated allele vs all other intersecting indel alleles)\">") == 0);
 
-    //this is a hack to fix gvcfs where GQ is labelled as float (VCF spec says it should be integer)
-    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"GQ");
-    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">") == 0);
+    //header setup
+    _bcf_header= _bcf_reader->readers[0].header;    
+
     _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
     fill_buffer(buffer_size);
 }
@@ -215,3 +211,4 @@ void GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
 {
     _depth_buffer.interpolate(rid,start,stop,db);
 }
+

@@ -7,7 +7,7 @@ int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
     db.set_missing();
     auto dp_ptr = _buffer.begin();
 
-    while(dp_ptr != _buffer.end() && dp_ptr->_end < start)
+    while(dp_ptr != _buffer.end() && (dp_ptr->_end < start || dp_ptr->_rid <rid))
     {
 	dp_ptr++;
     }

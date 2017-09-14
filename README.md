@@ -8,7 +8,7 @@ merging and genotyping tool for illumina gvcfs
 ```
 mkdir debug
 cd debug/
-cmake ../  -DCMAKE_BUILD_TYPE=Debug
+cmake ../  -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc`
 make
 ```
 
@@ -17,7 +17,7 @@ make
 ```
 mkdir release
 cd release/
-cmake ../
+cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc`
 make
 ```
 

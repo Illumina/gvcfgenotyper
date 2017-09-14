@@ -235,6 +235,11 @@ static bool bcf1_not_equal(const bcf1_t * a,const bcf1_t * b)
 static void print_variant(bcf_hdr_t *header,bcf1_t *record)
 {
     bcf_unpack(record, BCF_UN_ALL);
-    std::cerr<<bcf_hdr_id2name(header,record->rid)<<":"<<record->pos+1<<":"<<record->d.allele[0]<<":"<<record->d.allele[1]<<std::endl;
+    std::cerr<<bcf_hdr_id2name(header,record->rid)<<":"<<record->pos+1<<":"<<record->d.allele[0];
+    for(int i=0;i<record->n_allele;i++)
+    {
+	std::cerr<<":"<<record->d.allele[i];
+    }
+    std::cerr<<std::endl;
 }
 

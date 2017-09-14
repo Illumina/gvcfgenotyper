@@ -2,13 +2,12 @@
 
 Normaliser::Normaliser(const string & ref_fname,bcf_hdr_t *hdr)
 {
-    _hdr=bcf_hdr_dup(hdr);
+    _hdr=hdr;
     _norm_args=init_vcfnorm(_hdr,ref_fname.c_str());
 }
 
 Normaliser::~Normaliser()
 {
-    bcf_hdr_destroy(_hdr);
     destroy_data(_norm_args);
     free(_norm_args);
 }
@@ -18,6 +17,7 @@ Normaliser::~Normaliser()
 //3. decompose MNPs into SNPs
 vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
 {
+    bcf_unpack(bcf_record_to_canonicalise, BCF_UN_ALL);
     assert(bcf_record_to_canonicalise->n_allele>1);
     vector<bcf1_t *> atomised_variants;
     bcf1_t **split_records=&bcf_record_to_canonicalise;
@@ -32,6 +32,7 @@ vector<bcf1_t *>  Normaliser::atomise(bcf1_t *bcf_record_to_canonicalise)
     for(int rec_index=0;rec_index<num_split_records;rec_index++)
     {
 	bcf1_t *rec=split_records[rec_index];
+
 //	std::cerr << "atomise: "<<rec->pos+1<<":"<<rec->d.allele[0]<<":"<<rec->d.allele[1]<<std::endl;
 	if(strlen(rec->d.allele[0])==1 && strlen(rec->d.allele[1])==1)//is a snp. do nothing
 	{
