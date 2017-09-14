@@ -98,6 +98,22 @@ bool VariantBuffer::empty()
     return(_buffer.empty());
 }
 
+
+bcf1_t *VariantBuffer::back()
+{
+    if(_buffer.empty())
+    {
+	return(NULL);
+    }
+    else
+    {	
+	bcf1_t *ret = _buffer.back();
+	assert(ret!=NULL);
+	bcf_unpack(ret, BCF_UN_ALL);
+	return(ret);
+    }
+}
+
 bcf1_t *VariantBuffer::front()
 {
     if(_buffer.empty())

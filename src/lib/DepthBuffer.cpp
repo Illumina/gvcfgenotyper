@@ -2,6 +2,7 @@
 #include "GVCFReader.hpp"
 
 //interpolates depth for a given interval a<=x<b
+//returns 0 on success and -1 if the buffer didnt contain the interval
 int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 {
     db.set_missing();
@@ -14,7 +15,7 @@ int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 
     if(dp_ptr == _buffer.end())
     {
-	die("dp buffer over run");
+	return(-1);
     }
 
     db = dp_ptr->intersect(rid,start,stop);

@@ -104,6 +104,23 @@ int GVCFReader::fill_buffer(int num_lines)
     return(read_lines(num_lines - _variant_buffer.size()));
 }
 
+int GVCFReader::read_until(int rid,int start,int stop)
+{
+    int num_read=0;
+    bcf1_t *rec=_variant_buffer.back();
+    if(rec==NULL)
+    {
+	read_lines(_buffer_size);
+	rec=_variant_buffer.back();
+    }
+    while(rec!=NULL && bcf_sr_has_line(_bcf_reader,0) && (rec->rid < rid || (rec->rid == rid && rec->pos < stop)))
+    {
+	num_read+=read_lines(_buffer_size);
+	rec=_variant_buffer.back();	
+    }
+    return(num_read);
+}
+
 int GVCFReader::read_lines(int num_lines)
 {
     if(num_lines<=0)
@@ -209,6 +226,11 @@ const bcf_hdr_t *GVCFReader::get_header()
 //gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
 void GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
 {
-    _depth_buffer.interpolate(rid,start,stop,db);
+    read_until(rid,start,stop);
+    if( _depth_buffer.interpolate(rid,start,stop,db)<0)
+    {
+	die("GVCFReader::get_depth problem with depth buffer");
+    }
 }
+
 
