@@ -6,9 +6,18 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 project (gvcfmerge C CXX)
-
+# We should switch this on later, right now this still leads to compile errors due to some undefined functions in the header
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wall -Werror")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -std=c++11 -pthread")
 set(CMAKE_C_FLAGS_RELEASE "-O2  -pthread")
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
+        message(FATAL_ERROR "GCC version must be at least 4.7")
+    endif()
+else()
+    message(WARNING "You are using an unsupported compiler.")
+endif()
 
 add_custom_command(
 	OUTPUT  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a

@@ -1,5 +1,7 @@
 #include "GVCFReader.hpp"
 
+#include<iostream>
+
 DepthBlock::DepthBlock()
 {
     set_missing();
@@ -94,6 +96,7 @@ DepthBlock DepthBlock::intersect(const DepthBlock & db)
 
 DepthBlock DepthBlock::intersect(int rid,int start,int end)
 {
+    std::cout << "rid="<< rid << " start=" << start << " end=" << end << "\n";
     if(!intersect_size(rid,start,end))
     {
 	std::cerr << "DepthBlock "<<_rid<<":"<<_start+1<<"-"<<_end+1<< " does not contain region: "<< rid<<":"<<start+1<<"-"<<end+1<<std::endl;
