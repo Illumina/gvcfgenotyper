@@ -88,7 +88,8 @@ public:
     DepthBlock intersect(const DepthBlock & db);
     int flush_buffer();
     int flush_buffer(int rid,int pos);
-    int interpolate(int rid,int start,int end,DepthBlock & db);//interpolates depth for an interval a<=x<b
+    int interpolate(int rid,int start,int end,DepthBlock & db);//interpolates depth for an interval a<=x<
+    size_t size();
 private:
     deque<DepthBlock> _buffer;
 };
@@ -107,6 +108,8 @@ public:
     int fill_buffer(int num_lines);
     void get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
+    size_t get_num_variants();
+    size_t get_num_depth();
     const bcf_hdr_t *get_header();
     int read_until(int rid,int pos);
 private:

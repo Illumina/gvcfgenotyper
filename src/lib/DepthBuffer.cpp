@@ -59,3 +59,8 @@ DepthBlock *DepthBuffer::back()
     }
     return( &_buffer.back() );
 }
+
+size_t DepthBuffer::size()
+{
+    return(_buffer.size());
+}

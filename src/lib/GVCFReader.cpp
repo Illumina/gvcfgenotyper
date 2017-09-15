@@ -52,17 +52,19 @@ void remove_info(bcf1_t *line)
 
 int GVCFReader::flush_buffer(const bcf1_t *record)
 {
+    _depth_buffer.flush_buffer(record->rid,record->pos-1);
     return(_variant_buffer.flush_buffer(record));
 }
 
 int GVCFReader::flush_buffer(int chrom,int pos)
 {
+    _depth_buffer.flush_buffer(chrom,pos-1);	
     return(_variant_buffer.flush_buffer(chrom,pos));
 }  
 
-
 int GVCFReader::flush_buffer()
 {
+    _depth_buffer.flush_buffer();
     return(_variant_buffer.flush_buffer());
 }  
 
@@ -234,4 +236,14 @@ void GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
     {
 	die("GVCFReader::get_depth problem with depth buffer");
     }
+}
+
+size_t GVCFReader::get_num_variants()
+{
+    return(_variant_buffer.size());
+}
+
+size_t GVCFReader::get_num_depth()
+{
+    return(_depth_buffer.size());
 }

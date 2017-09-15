@@ -2,6 +2,7 @@
 #include "utils.hpp"
 //#define DEBUG
 
+
 GVCFMerger::~GVCFMerger()
 {
 //    bcf_destroy(_output_record);
@@ -30,13 +31,6 @@ GVCFMerger::GVCFMerger(const vector<string> & input_files,
 	_readers.emplace_back(input_files[i],reference_genome,buffer_size);
     }
     assert(_readers.size() == _num_gvcfs);
-#ifdef DEBUG
-    std::cerr << "CONSTRUCTOR "<<std::endl;
-    bcf1_t *tmp=get_next_variant();
-    assert(tmp!=NULL);
-    std::cerr<< tmp->pos+1 << std::endl;
-    std::cerr << "/CONSTRUCTOR "<<std::endl;
-#endif
 
     _output_file = hts_open(output_filename!="" ? output_filename.c_str() : "-", ("w"+output_mode).c_str());
 						
@@ -73,9 +67,6 @@ bcf1_t *GVCFMerger::get_next_variant()
 	}
     }
 
-#ifdef DEBUG
-    std::cerr << "min_index="<<min_index<<std::endl;
-#endif
     assert(min_rec!=NULL);
     return(min_rec);
 }
@@ -166,9 +157,9 @@ bcf1_t *GVCFMerger::next()
 	    nval=0;
 	    if(bcf_get_format_float(sample_header,sample_record,"GQ",&gq_ptr,&nval)!=1)
 	    {
-		std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
-			  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
-			  << std::endl;
+		// std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
+		// 	  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
+		// 	  << std::endl;
 	    }
 	    else
 	    {
@@ -192,7 +183,14 @@ bcf1_t *GVCFMerger::next()
 
 	_readers[i].flush_buffer(_output_record);
     }
-    
+#ifdef DEBUG
+    std::cerr << "BUFFER SIZES:";
+    for(int i=0;i<_num_gvcfs;i++)
+    {
+	std::cerr << " ("<<_readers[i].get_num_variants()<<","<<_readers[i].get_num_depth()<<")";
+    }
+    std::cerr<<std::endl;
+#endif
     bcf_update_genotypes(_output_header,_output_record,_format_gt,_num_gvcfs*2); 
     bcf_update_format_int32(_output_header,_output_record,"GQ",_format_gq,_num_gvcfs);
     bcf_update_format_int32(_output_header,_output_record,"DP",_format_dp,_num_gvcfs );
