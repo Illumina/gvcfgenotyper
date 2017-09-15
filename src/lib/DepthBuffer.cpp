@@ -50,3 +50,12 @@ int DepthBuffer::flush_buffer()
 {
     return(flush_buffer(_buffer.back()._rid,_buffer.back()._end));
 }
+
+DepthBlock *DepthBuffer::back()
+{
+    if(_buffer.empty())
+    {
+	return(NULL);
+    }
+    return( &_buffer.back() );
+}

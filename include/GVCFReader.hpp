@@ -83,6 +83,7 @@ public:
     ~DepthBuffer() {};
     void push_back(DepthBlock db);
     DepthBlock *pop();
+    DepthBlock *back();
     DepthBlock *front();
     DepthBlock intersect(const DepthBlock & db);
     int flush_buffer();
@@ -107,7 +108,7 @@ public:
     void get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     const bcf_hdr_t *get_header();
-    int read_until(int rid,int start,int stop);
+    int read_until(int rid,int pos);
 private:
     int  _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
     bcf_srs_t *_bcf_reader;//htslib synced reader.
