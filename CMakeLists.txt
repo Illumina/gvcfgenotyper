@@ -1,7 +1,14 @@
 cmake_minimum_required (VERSION 2.8)
 
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 project (gvcfmerge C CXX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -std=c++11 -pthread")
+set(CMAKE_C_FLAGS_RELEASE "-O2  -pthread")
 
 add_custom_command(
 	OUTPUT  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a
