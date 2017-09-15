@@ -207,12 +207,14 @@ bcf1_t *GVCFMerger::next()
 
 void GVCFMerger::write_vcf()
 {
+    int last_rid = -1;
     int last_pos = 0;
     int num_written=0;
     while(next()!=NULL)
     {
-	assert(_output_record->pos>=last_pos);
+	assert(_output_record->pos>=last_pos || _output_record->rid>last_rid);
 	last_pos=_output_record->pos;
+	last_rid=_output_record->rid;
 	bcf_write1(_output_file, _output_header, _output_record) ;
 	num_written++;
     }
