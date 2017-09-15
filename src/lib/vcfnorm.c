@@ -498,10 +498,15 @@ static void split_format_numeric(args_t *args, bcf1_t *src, bcf_fmt_t *fmt, int 
     const char *tag = bcf_hdr_int2id(args->hdr,BCF_DT_ID,fmt->id);	\
     int ntmp = args->ntmp_arr1 / sizeof(type_t);			\
     int nvals = bcf_get_format_##type(args->hdr,src,tag,&args->tmp_arr1,&ntmp); \
-      args->ntmp_arr1 = ntmp * sizeof(type_t);				\
+	args->ntmp_arr1 = ntmp * sizeof(type_t);			\
       assert( nvals>0 );						\
       type_t *vals = (type_t *) args->tmp_arr1;				\
       int len = bcf_hdr_id2length(args->hdr,BCF_HL_FMT,fmt->id);	\
+      if(bcf_hdr_id2int(args->hdr,BCF_DT_ID,"AD")==fmt->id)             \
+    {                                                                   \
+	len = BCF_VL_R;                                                 \
+    }                                                                   \
+                                                                        \
       int i, nsmpl = bcf_hdr_nsamples(args->hdr);			\
       if ( nvals==nsmpl ) /* all values are missing */			\
         {								\

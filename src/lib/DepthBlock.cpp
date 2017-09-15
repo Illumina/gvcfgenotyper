@@ -75,10 +75,12 @@ int DepthBlock::intersect_size(int rid,int start,int end) const
     {
 	return(0);
     }
+
     if(_end < start || _start>end)
     {
 	return(0);
     }
+
     return(min(end,_end) - max(_start,start) + 1);    
 }
 
@@ -97,7 +99,8 @@ DepthBlock DepthBlock::intersect(int rid,int start,int end)
     std::cout << "rid="<< rid << " start=" << start << " end=" << end << "\n";
     if(!intersect_size(rid,start,end))
     {
-	die("non-intersecting");
+	std::cerr << "DepthBlock "<<_rid<<":"<<_start+1<<"-"<<_end+1<< " does not contain region: "<< rid<<":"<<start+1<<"-"<<end+1<<std::endl;
+	throw std::runtime_error("DepthBlock: bad coordinates.");	
     }
 
     return(DepthBlock(_rid,max(_start,start),min(end,_end),_dp,_dpf,_gq));

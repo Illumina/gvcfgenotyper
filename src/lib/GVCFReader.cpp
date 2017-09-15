@@ -1,7 +1,6 @@
 #include "GVCFReader.hpp"
 //#define DEBUG
 
-
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -80,15 +79,11 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 	die("GVCFReader needs buffer size of at least 2");
     }
     _buffer_size=buffer_size;
-    _bcf_header= _bcf_reader->readers[0].header;    
     _bcf_record=NULL;
-    //this is a hack to fix gvcfs where AD is set to Number=. (VCF4.1 does not technically allow Number=R)
-    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"AD");
-    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed. For indels this value only includes reads which confidently support each allele (posterior prob 0.999 or higher that read contains indicated allele vs all other intersecting indel alleles)\">") == 0);
 
-    //this is a hack to fix gvcfs where GQ is labelled as float (VCF spec says it should be integer)
-    bcf_hdr_remove(_bcf_header,BCF_HL_FMT,"GQ");
-    assert(  bcf_hdr_append(_bcf_header,"##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">") == 0);
+    //header setup
+    _bcf_header= _bcf_reader->readers[0].header;    
+
     _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
     fill_buffer(buffer_size);
 }
@@ -106,6 +101,27 @@ GVCFReader::~GVCFReader()
 int GVCFReader::fill_buffer(int num_lines)
 {
     return(read_lines(num_lines - _variant_buffer.size()));
+}
+
+int GVCFReader::read_until(int rid,int pos)
+{
+    int num_read=0;
+//    bcf1_t *rec=_variant_buffer.back();
+    DepthBlock *db=_depth_buffer.back();
+    if(db==NULL)
+    {
+	read_lines(_buffer_size);
+//	rec=_variant_buffer.back();
+	db=_depth_buffer.back();
+    }
+//    while(rec!=NULL && bcf_sr_has_line(_bcf_reader,0) && (rec->rid < rid || (rec->rid == rid && rec->pos < pos))
+    while(db!=NULL && bcf_sr_has_line(_bcf_reader,0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos) ) )
+    {
+	num_read+=read_lines(_buffer_size);
+//	rec=_variant_buffer.back();	
+	db=_depth_buffer.back();
+    }
+    return(num_read);
 }
 
 int GVCFReader::read_lines(int num_lines)
@@ -213,5 +229,9 @@ const bcf_hdr_t *GVCFReader::get_header()
 //gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
 void GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
 {
-    _depth_buffer.interpolate(rid,start,stop,db);
+    read_until(rid,stop);
+    if( _depth_buffer.interpolate(rid,start,stop,db)<0)
+    {
+	die("GVCFReader::get_depth problem with depth buffer");
+    }
 }

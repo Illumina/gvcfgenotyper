@@ -140,8 +140,18 @@ bcf1_t *GVCFMerger::next()
 	    _output_record->qual += sample_record->qual;
 	    int nval=2;
 	    int32_t *ptr=_format_gt+2*i;
-	    assert(bcf_get_genotypes(sample_header,sample_record,&ptr,&nval)==2);
+	    int num_gt_in_sample = bcf_get_genotypes(sample_header,sample_record,&ptr,&nval);
+	    if(num_gt_in_sample!=2 && num_gt_in_sample!=1)
+	    {
+		std::cerr << _output_record->rid<<":"<<_output_record->pos+1<<":"<<_output_record->d.allele[0]<<":"<<_output_record->d.allele[1]<<std::endl;
+		throw std::runtime_error("GVCFMerger: invalid genotypes");			
+	    }
+	    if(num_gt_in_sample==1)//pad the GT with vector_end
+	    {
+		ptr[1] = bcf_int32_vector_end;
+	    }
 	    ptr=_format_ad+2*i;
+
 	    assert(bcf_get_format_int32(sample_header,sample_record,"AD",&ptr,&nval)==2);
 	    nval=1;
 	    ptr=_format_dp+i;
@@ -151,13 +161,22 @@ bcf1_t *GVCFMerger::next()
 	    }
 	    ptr=_format_dpf+i;
 	    bcf_get_format_int32(sample_header,sample_record,"DPF",&ptr,&nval);
-	    ptr=_format_gq+i;
 
-	    if(bcf_get_format_int32(sample_header,sample_record,"GQ",&ptr,&nval)<0)
+	    //this is a bit dangerous: we specify GQ as Float when it should be Integer according to vcf spec
+	    //so we have to do some fiddly casting
+	    //solution is to make this general such that it handles integer or float
+	    float *gq_ptr = NULL;
+	    nval=0;
+	    if(bcf_get_format_float(sample_header,sample_record,"GQ",&gq_ptr,&nval)!=1)
 	    {
 		std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
 			  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
 			  << std::endl;
+	    }
+	    else
+	    {
+		_format_gq[i] = (int32_t)(*gq_ptr);
+		free(gq_ptr);
 	    }
 	    ptr=_format_ps+i;
 	    bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);

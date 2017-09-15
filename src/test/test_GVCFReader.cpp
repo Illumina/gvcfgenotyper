@@ -22,6 +22,11 @@ TEST(DepthBlock,intersects)
     DepthBlock db6(0,100,100,20,1,30);
     DepthBlock db7(0,100,100,20,1,30);
     ASSERT_EQ(db6.intersect_size(db7),1);
+
+    DepthBlock db8(1,10000,10000,20,1,30);
+    DepthBlock db9(1,10000,10000,20,1,30);
+    ASSERT_EQ(db8.intersect_size(db9),1);
+    
 }
 
 TEST(DepthBuffer,interpolate)

@@ -47,6 +47,7 @@ public:
     int flush_buffer(const bcf1_t *record);    
     bool has_variant(bcf1_t *v);//does the buffer already have v?
     bcf1_t *front(); //return pointer to current vcf record
+    bcf1_t *back(); //return pointer to last vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     bool empty();  
     size_t size();
@@ -82,6 +83,7 @@ public:
     ~DepthBuffer() {};
     void push_back(DepthBlock db);
     DepthBlock *pop();
+    DepthBlock *back();
     DepthBlock *front();
     DepthBlock intersect(const DepthBlock & db);
     int flush_buffer();
@@ -106,7 +108,7 @@ public:
     void get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     const bcf_hdr_t *get_header();
-
+    int read_until(int rid,int pos);
 private:
     int  _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
     bcf_srs_t *_bcf_reader;//htslib synced reader.
