@@ -1,7 +1,6 @@
 #include "GVCFMerger.hpp"
 #include "utils.hpp"
-//#define DEBUG
-
+// #define DEBUG
 
 GVCFMerger::~GVCFMerger()
 {
