@@ -1,13 +1,17 @@
 cmake_minimum_required (VERSION 2.8)
 
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
 project (gvcfmerge C CXX)
 # We should switch this on later, right now this still leads to compile errors due to some undefined functions in the header
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wall -Werror")
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O2 -std=c++11 -pthread")
+set(CMAKE_C_FLAGS_DEBUG "-O2  -pthread")
+
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -std=c++11 -pthread")
 set(CMAKE_C_FLAGS_RELEASE "-O2  -pthread")
 

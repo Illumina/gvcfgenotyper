@@ -1,7 +1,6 @@
 #include "GVCFMerger.hpp"
 #include "utils.hpp"
-//#define DEBUG
-
+// #define DEBUG
 
 GVCFMerger::~GVCFMerger()
 {
@@ -109,8 +108,9 @@ bcf1_t *GVCFMerger::next()
     bcf_clear(_output_record);
     int n_allele=2;
     DepthBlock homref_block;//working structure to store homref info.
-    //copy allele information from new variant.
+    //copy allele information from new variant
     bcf1_t *next_variant = get_next_variant();
+    assert(bcf1_not_equal(next_variant,_output_record));
     assert(next_variant!=NULL);
     bcf_update_id(_output_header, _output_record, ".");
     _output_record->rid = next_variant->rid;
@@ -160,9 +160,9 @@ bcf1_t *GVCFMerger::next()
 	    nval=0;
 	    if(bcf_get_format_float(sample_header,sample_record,"GQ",&gq_ptr,&nval)!=1)
 	    {
-		// std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
-		// 	  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
-		// 	  << std::endl;
+		std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header,_output_record->rid) \
+			  << ":"<< _output_record->pos+1 << ":" << _output_record->d.allele[0] << ":"<<_output_record->d.allele[1] \
+			  << std::endl;
 	    }
 	    else
 	    {
@@ -185,7 +185,6 @@ bcf1_t *GVCFMerger::next()
 		_format_gt[2*i] =_format_gt[2*i+1] = bcf_gt_unphased(0);
 	    }
 	}
-
 	_readers[i].flush_buffer(_output_record);
     }
 #ifdef DEBUG

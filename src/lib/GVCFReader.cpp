@@ -58,7 +58,7 @@ int GVCFReader::flush_buffer(const bcf1_t *record)
 
 int GVCFReader::flush_buffer(int chrom,int pos)
 {
-    _depth_buffer.flush_buffer(chrom,pos-1);	
+    _depth_buffer.flush_buffer(chrom,pos);
     return(_variant_buffer.flush_buffer(chrom,pos));
 }  
 
@@ -188,9 +188,9 @@ int GVCFReader::read_lines(int num_lines)
 
 bcf1_t *GVCFReader::front()
 {
-    if(_variant_buffer.empty())
+    if(_variant_buffer.size() < _buffer_size)
     {
-	read_lines(_buffer_size);
+	read_lines(_buffer_size-_variant_buffer.size());
     }
     return(_variant_buffer.front());
 }
@@ -198,7 +198,7 @@ bcf1_t *GVCFReader::front()
 bcf1_t *GVCFReader::pop()
 {
     int num_read = 0;
-    if(_variant_buffer.size() < _buffer_size/2)
+    if(_variant_buffer.size() < _buffer_size)
     {
 	read_lines(_buffer_size-_variant_buffer.size());
     }

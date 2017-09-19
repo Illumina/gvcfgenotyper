@@ -66,7 +66,13 @@ int VariantBuffer::flush_buffer(const bcf1_t *record)
 int VariantBuffer::flush_buffer(int chrom,int pos)
 {
     int num_flushed=0;
-    while(_buffer.size()>0 &&  _buffer.front()->pos <= pos && _buffer.front()->rid <= chrom)
+    while(_buffer.size()>0 && _buffer.front()->rid < chrom)
+    {
+	bcf_destroy(_buffer.front());
+	_buffer.pop_front();
+	num_flushed++;
+    }        
+    while(_buffer.size()>0 &&  _buffer.front()->pos<pos && _buffer.front()->rid == chrom)
     {
 	bcf_destroy(_buffer.front());
 	_buffer.pop_front();
