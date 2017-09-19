@@ -28,9 +28,20 @@ int DepthBuffer::interpolate(int rid,int start,int stop,DepthBlock & db)
 
 void DepthBuffer::push_back(DepthBlock db)
 {
-//    std::cerr << db._rid << ":" <<db._start+1<<"-"<<db._end+1<<std::endl;
-    assert(_buffer.empty() || db._rid!=_buffer.back()._rid || db._start==(1+_buffer.back()._end));
-    _buffer.push_back(db);
+    //sanity check on value being pushed
+    if(!(_buffer.empty() || db._rid!=_buffer.back()._rid || db._start==(1+_buffer.back()._end) || db._start==_buffer.back()._end))
+    {
+	if(!_buffer.empty())
+	{
+	    std::cerr << db._rid<<":"<<db._start+1<<"-"<<db._end+1<<"   ->   "<<_buffer.back()._rid <<":"<< _buffer.back()._start+1<<"-"<<_buffer.back()._end+1 << std::endl;
+	}
+	die("DepthBuffer: bad homref block");
+    }
+    
+    if(_buffer.empty() || db._rid>_buffer.back()._rid || db._start>_buffer.back()._end)
+    {
+	_buffer.push_back(db);
+    }
 }
 
 int DepthBuffer::flush_buffer(int rid,int pos)    
