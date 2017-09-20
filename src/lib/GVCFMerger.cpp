@@ -1,5 +1,6 @@
 #include "GVCFMerger.hpp"
 #include "utils.hpp"
+#include <stdexcept>
 // #define DEBUG
 
 GVCFMerger::~GVCFMerger()
@@ -122,6 +123,7 @@ bcf1_t *GVCFMerger::next()
 #endif    
     //fill in the format information for every sample.
     set_output_buffers_to_missing();
+
     for(int i=0;i<_num_gvcfs;i++)
     {
 	bcf1_t *sample_record = _readers[i].front();
@@ -195,9 +197,19 @@ bcf1_t *GVCFMerger::next()
     }
     std::cerr<<std::endl;
 #endif
+
+    // I am not sure how to tell the difference between a sample which is HOM REF at this pos
+    // or has the variant allele but is not not phased. This hack below seems to work:
+    // Check if any of the samples was phased at this pos. If not, do not write PS tag
+    int n = _num_gvcfs;
+    while (--n>0 && _format_ps[n]==bcf_int32_missing);
+    bool all_ps_unset = (n==0);
+
     bcf_update_genotypes(_output_header,_output_record,_format_gt,_num_gvcfs*2); 
     bcf_update_format_int32(_output_header,_output_record,"GQ",_format_gq,_num_gvcfs);
-    bcf_update_format_int32(_output_header,_output_record,"PS",_format_ps,_num_gvcfs);
+    if (!all_ps_unset) {
+        bcf_update_format_int32(_output_header,_output_record,"PS",_format_ps,_num_gvcfs);
+    }
     bcf_update_format_int32(_output_header,_output_record,"DP",_format_dp,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"DPF",_format_dpf,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"AD",_format_ad,_num_gvcfs*n_allele );
