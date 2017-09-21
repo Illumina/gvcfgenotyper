@@ -54,6 +54,12 @@ sys	2m32.395s
 ## run tests:
 
 ```
-./test_gvcfmerge 
-./test_gvcfmerge --gtest_filter=UtilTest.comparators
+##run all tests
+make test
+
+##run google tests
+./test_gvcfmerge
+
+##run smoke tests
+bash -e bash/smoke_tests.sh
 ```

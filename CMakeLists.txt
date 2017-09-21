@@ -63,4 +63,9 @@ if ( ZLIB_FOUND )
 endif( ZLIB_FOUND )
 
 file (COPY ${PROJECT_SOURCE_DIR}/data DESTINATION ${PROJECT_BINARY_DIR})
+file (COPY ${PROJECT_SOURCE_DIR}/src/bash DESTINATION ${PROJECT_BINARY_DIR})
 
+enable_testing()
+
+add_test(UNIT_TESTS test_gvcfmerge)
+add_test(SMOKE_TESTS bash -e bash/run_smoke_tests.sh)
