@@ -1,5 +1,6 @@
 #include "GVCFMerger.hpp"
 #include "utils.hpp"
+#include <stdexcept>
 // #define DEBUG
 
 GVCFMerger::~GVCFMerger()
@@ -122,10 +123,14 @@ bcf1_t *GVCFMerger::next()
 #endif    
     //fill in the format information for every sample.
     set_output_buffers_to_missing();
+
+    // count the number of written PS tags
+    unsigned nps_written(0);
     for(int i=0;i<_num_gvcfs;i++)
     {
 	bcf1_t *sample_record = _readers[i].front();
 	const bcf_hdr_t *sample_header = _readers[i].get_header();
+    
 	if(sample_record!=NULL && bcf1_equal(sample_record,_output_record))
 	{//this sample has an explicit copy of the variant. just copy the format fields into output rrecorc
 	    _output_record->qual += sample_record->qual;
@@ -170,7 +175,8 @@ bcf1_t *GVCFMerger::next()
 		free(gq_ptr);
 	    }
 	    ptr=_format_ps+i;
-	    bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
+        int res = bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
+	    nps_written += (res>0 ? res : 0);
 	}
 	else	//this sample does not have the variant, reconstruct the format fields from homref blocks
 	{
@@ -195,9 +201,12 @@ bcf1_t *GVCFMerger::next()
     }
     std::cerr<<std::endl;
 #endif
+
     bcf_update_genotypes(_output_header,_output_record,_format_gt,_num_gvcfs*2); 
     bcf_update_format_int32(_output_header,_output_record,"GQ",_format_gq,_num_gvcfs);
-    bcf_update_format_int32(_output_header,_output_record,"PS",_format_ps,_num_gvcfs);
+    if (nps_written>0) {
+        bcf_update_format_int32(_output_header,_output_record,"PS",_format_ps,_num_gvcfs);
+    }
     bcf_update_format_int32(_output_header,_output_record,"DP",_format_dp,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"DPF",_format_dpf,_num_gvcfs );
     bcf_update_format_int32(_output_header,_output_record,"AD",_format_ad,_num_gvcfs*n_allele );
