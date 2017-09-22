@@ -1,4 +1,5 @@
 #include "GVCFReader.hpp"
+#include "StringUtil.hpp"
 //#define DEBUG
 
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
@@ -93,6 +94,14 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 
     _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
     fill_buffer(buffer_size);
+
+    // flush variant buffer to get rid of variants overlapping 
+    // the interval start
+    string chr;
+    int64_t start, end = 0;
+    stringutil::parsePos(region,chr,start,end);
+    int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+    flush_buffer(rid,start);
 }
 
 GVCFReader::~GVCFReader()
