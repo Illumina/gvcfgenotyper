@@ -97,7 +97,7 @@ private:
 class GVCFReader
 {
 public:
-    GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,int buffer_size);
+    GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,const int buffer_size, const string& region="", const int is_file=0);
     ~GVCFReader();
     int flush_buffer();
     int flush_buffer(int chrom,int pos);//empty buffer containing rows before and including chrom/pos

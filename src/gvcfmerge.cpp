@@ -65,10 +65,6 @@ int main(int argc,char **argv)
     {
 	die("invalid output type: " + output_type);
     }
-    if(!region.empty())
-    {
-	die("-r is not implemented");
-    }
     if(n_threads!=0)
     {
 	die("-@ is not implemented");
@@ -77,7 +73,8 @@ int main(int argc,char **argv)
     int buffer_size = 200;
     std::vector<std::string> input_files;
     read_text_file(gvcf_list,input_files);
-    GVCFMerger g(input_files,output_file,output_type,reference_genome,buffer_size);
+    int is_file=0;
+    GVCFMerger g(input_files,output_file,output_type,reference_genome,buffer_size,region,is_file);
 
     g.write_vcf();
     return(0);
