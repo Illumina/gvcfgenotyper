@@ -1,4 +1,5 @@
 #include "GVCFReader.hpp"
+#include "StringUtil.hpp"
 //#define DEBUG
 
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
@@ -68,17 +69,22 @@ int GVCFReader::flush_buffer()
     return(_variant_buffer.flush_buffer());
 }  
 
-GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,int buffer_size)  
+GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,const int buffer_size, const string& region /*=""*/, const int is_file /*=0*/)  
 {
     _bcf_record=NULL;
-    _bcf_reader =  bcf_sr_init() ; 
-    if(!(bcf_sr_add_reader (_bcf_reader, input_gvcf.c_str())))
+    _bcf_reader =  bcf_sr_init(); 
+    if (!region.empty()) {
+        if(bcf_sr_set_regions(_bcf_reader,region.c_str(),is_file)==-1) {
+            die("Cannot navigate to region " + region);
+        }
+    }
+    if(!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-	die("problem opening input");
+	    die("problem opening input");
     }
     if(buffer_size<2)
     {
-	die("GVCFReader needs buffer size of at least 2");
+	    die("GVCFReader needs buffer size of at least 2");
     }
     _buffer_size=buffer_size;
     _bcf_record=NULL;
@@ -88,6 +94,14 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 
     _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
     fill_buffer(buffer_size);
+
+    // flush variant buffer to get rid of variants overlapping 
+    // the interval start
+    string chr;
+    int64_t start, end = 0;
+    stringutil::parsePos(region,chr,start,end);
+    int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+    flush_buffer(rid,start);
 }
 
 GVCFReader::~GVCFReader()

@@ -20,16 +20,18 @@ GVCFMerger::~GVCFMerger()
 GVCFMerger::GVCFMerger(const vector<string> & input_files,
 		       const string & output_filename,
 		       const string & output_mode,
-		       const string & reference_genome,
-		       int buffer_size)
+               const string& reference_genome,
+		       int buffer_size,
+               const string& region /*= ""*/,
+               const int is_file /*= 0*/)
 {
     _num_gvcfs=input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" <<std::endl;
     for(int i=0;i<_num_gvcfs;i++)
     {
-	std::cerr << input_files[i]<<std::endl;
-	_readers.emplace_back(input_files[i],reference_genome,buffer_size);
+        std::cerr << input_files[i]<<std::endl;
+        _readers.emplace_back(input_files[i],reference_genome,buffer_size,region,is_file);
     }
     assert(_readers.size() == _num_gvcfs);
 

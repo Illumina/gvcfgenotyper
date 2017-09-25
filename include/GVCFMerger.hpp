@@ -13,9 +13,8 @@ extern "C" {
 class GVCFMerger
 {
 public:
-    GVCFMerger(const vector<string> & input_files,const string &output_filename,const string & output_mode,const string & reference_genome,int buffer_size);
+    GVCFMerger(const vector<string> & input_files,const string &output_filename,const string & output_mode,const string & reference_genome,int buffer_size, const string& region="", const int is_file=0);
     ~GVCFMerger();
-    int set_region(const string & regions,bool is_file);
     void write_vcf();
     bcf1_t *next();
     

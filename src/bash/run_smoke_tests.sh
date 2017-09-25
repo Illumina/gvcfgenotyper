@@ -12,5 +12,10 @@ echo  ../data/test2/NA12878_S1.vcf.gz >> gvcfs.txt
 diff ${tmpdir}/ps_test1.observed ${DIR}/ps_test1.expected
 echo FORMAT/PS behaviour test passed
 
+echo running set_region test
+./gvcfmerge -l gvcfs.txt -f ../data/test2/test2.ref.fa -r chr1:90000-95000 | bcftools query -f '%CHROM %POS %REF %ALT\n' > ${tmpdir}/region_test1.observed
+diff ${tmpdir}/region_test1.observed ${DIR}/region_test1.expected
+echo set_region test passed
+
 rm -rf $tmpdir
 
