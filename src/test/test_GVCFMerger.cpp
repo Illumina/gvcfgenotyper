@@ -31,6 +31,8 @@ TEST(GVCFMerger,platinumGenomeTinyTest)
     int buffer_size=200;
 
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";    
-    GVCFMerger g(files,"/tmp/test.vcf.gz","z",ref_file_name,buffer_size);
+    std::string output_file_name = std::tmpnam(NULL);
+//    std::cerr << "Outputting to " << output_file_name << std::endl;
+    GVCFMerger g(files,output_file_name,"z",ref_file_name,buffer_size);
     g.write_vcf();    
 }
