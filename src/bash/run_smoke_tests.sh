@@ -17,5 +17,11 @@ echo running set_region test
 diff ${tmpdir}/region_test1.observed ${DIR}/region_test1.expected
 echo set_region test passed
 
+echo running set_region test with edge case
+ls ../data/test3/NA1287?_S1.vcf.gz > gvfs.txt
+./gvcfmerge -l gvcfs.txt -f ../data/test3/test3.ref.fa -r chr1:56680-60000 -f ../data/test3/test3.ref.fa | bcftools query -f '[%CHROM %POS %REF %ALT %SAMPLE %GT\n]' > ${tmpdir}/region_test2.observed
+diff ${tmpdir}/region_test2.observed ${DIR}/region_test2.expected
+echo set_region test passed
+
 rm -rf $tmpdir
 
