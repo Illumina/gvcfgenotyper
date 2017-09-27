@@ -7,9 +7,10 @@ endif()
 project (gvcfmerge C CXX)
 # We should switch this on later, right now this still leads to compile errors due to some undefined functions in the header
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -std=c++11 -pthread")
-set(CMAKE_C_FLAGS_RELEASE "-O2  -pthread")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS_RELEASE "-O2")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
