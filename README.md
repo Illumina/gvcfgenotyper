@@ -1,4 +1,4 @@
-# insert catchy name here
+# gvcfgenotyper
 merging and genotyping tool for illumina gvcfs
 
 ## building
