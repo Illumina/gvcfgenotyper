@@ -53,16 +53,18 @@ void remove_info(bcf1_t *line)
 
 int GVCFReader::flush_buffer(const bcf1_t *record)
 {
-    read_until(record->rid,record->pos+_buffer_size);//FIXME - we need to handle buffering more elegantly
     _depth_buffer.flush_buffer(record->rid,record->pos-1);
-    return(_variant_buffer.flush_buffer(record));
+    int num_flushed=      _variant_buffer.flush_buffer(record);
+    fill_buffer();
+    return(num_flushed);
 }
 
 int GVCFReader::flush_buffer(int chrom,int pos)
 {
-    read_until(chrom,pos+_buffer_size);//FIXME - we need to handle buffering more elegantly
     _depth_buffer.flush_buffer(chrom,pos);
-    return(_variant_buffer.flush_buffer(chrom,pos));
+    int num_flushed=    _variant_buffer.flush_buffer(chrom,pos);
+    fill_buffer();
+    return(num_flushed);
 }  
 
 int GVCFReader::flush_buffer()
