@@ -236,7 +236,7 @@ static void print_variant(bcf_hdr_t *header,bcf1_t *record)
 {
     bcf_unpack(record, BCF_UN_ALL);
     std::cerr<<bcf_hdr_id2name(header,record->rid)<<":"<<record->pos+1<<":"<<record->d.allele[0];
-    for(int i=0;i<record->n_allele;i++)
+    for(int i=1;i<record->n_allele;i++)
     {
 	std::cerr<<":"<<record->d.allele[i];
     }

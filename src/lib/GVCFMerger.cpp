@@ -20,10 +20,10 @@ GVCFMerger::~GVCFMerger()
 GVCFMerger::GVCFMerger(const vector<string> & input_files,
 		       const string & output_filename,
 		       const string & output_mode,
-               const string& reference_genome,
+		       const string& reference_genome,
 		       int buffer_size,
-               const string& region /*= ""*/,
-               const int is_file /*= 0*/)
+		       const string& region /*= ""*/,
+		       const int is_file /*= 0*/)
 {
     _num_gvcfs=input_files.size();
     _readers.reserve(_num_gvcfs);
@@ -56,6 +56,10 @@ GVCFMerger::GVCFMerger(const vector<string> & input_files,
 bcf1_t *GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);    
+    if(all_readers_empty())
+    {
+	return(NULL);
+    }
     bcf1_t *min_rec = NULL;
     int min_index = -1;
     for(int i=0;i<_num_gvcfs;i++)
@@ -177,7 +181,7 @@ bcf1_t *GVCFMerger::next()
 		free(gq_ptr);
 	    }
 	    ptr=_format_ps+i;
-        int res = bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
+	    int res = bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
 	    nps_written += (res>0 ? res : 0);
 	}
 	else	//this sample does not have the variant, reconstruct the format fields from homref blocks
@@ -222,7 +226,14 @@ void GVCFMerger::write_vcf()
     int num_written=0;
     while(next()!=NULL)
     {
-	assert(_output_record->pos>=last_pos || _output_record->rid>last_rid);
+	if(!(_output_record->pos>=last_pos || _output_record->rid>last_rid))
+	{
+	    std::cerr << bcf_hdr_int2id(_output_header,BCF_DT_CTG,_output_record->rid) << ":" << _output_record->pos+1 << std::endl;
+	    std::cerr << bcf_hdr_int2id(_output_header,BCF_DT_CTG,last_rid) << ":" << last_pos+1 << std::endl;	    
+	    print_variant(_output_header,_output_record);
+	    throw std::runtime_error("GVCFMerger::write_vcf variants out of order");
+	}
+
 	last_pos=_output_record->pos;
 	last_rid=_output_record->rid;
 	bcf_write1(_output_file, _output_header, _output_record) ;

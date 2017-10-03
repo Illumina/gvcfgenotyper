@@ -53,12 +53,14 @@ void remove_info(bcf1_t *line)
 
 int GVCFReader::flush_buffer(const bcf1_t *record)
 {
+    read_until(record->rid,record->pos+_buffer_size);//FIXME - we need to handle buffering more elegantly
     _depth_buffer.flush_buffer(record->rid,record->pos-1);
     return(_variant_buffer.flush_buffer(record));
 }
 
 int GVCFReader::flush_buffer(int chrom,int pos)
 {
+    read_until(chrom,pos+_buffer_size);//FIXME - we need to handle buffering more elegantly
     _depth_buffer.flush_buffer(chrom,pos);
     return(_variant_buffer.flush_buffer(chrom,pos));
 }  
@@ -73,8 +75,10 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 {
     _bcf_record=NULL;
     _bcf_reader =  bcf_sr_init(); 
-    if (!region.empty()) {
-        if(bcf_sr_set_regions(_bcf_reader,region.c_str(),is_file)==-1) {
+    if (!region.empty()) 
+    {
+        if(bcf_sr_set_regions(_bcf_reader,region.c_str(),is_file)==-1) 
+	{
             die("Cannot navigate to region " + region);
         }
     }
@@ -93,15 +97,18 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
     _bcf_header= _bcf_reader->readers[0].header;    
 
     _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
-    fill_buffer(buffer_size);
+    fill_buffer();
 
     // flush variant buffer to get rid of variants overlapping 
     // the interval start
     string chr;
     int64_t start, end = 0;
     stringutil::parsePos(region,chr,start,end);
-    int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
-    flush_buffer(rid,start);
+    if (!region.empty()) 
+    {
+	int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+	flush_buffer(rid,start);
+    }
 }
 
 GVCFReader::~GVCFReader()
@@ -114,9 +121,23 @@ GVCFReader::~GVCFReader()
     delete _normaliser;    
 }
 
-int GVCFReader::fill_buffer(int num_lines)
+int GVCFReader::fill_buffer()
 {
-    return(read_lines(num_lines - _variant_buffer.size()));
+
+    if(_variant_buffer.size()<2)
+    {
+	read_lines(2);
+    }
+    while(_variant_buffer.size()>1 && _variant_buffer.back()->rid==_variant_buffer.front()->rid && (_variant_buffer.back()->pos-_variant_buffer.front()->pos)<_buffer_size)
+    {
+	int num_read=read_lines(1);
+	if(num_read==0)
+	{
+	    break;
+	}
+    }
+
+    return(_variant_buffer.size());
 }
 
 int GVCFReader::read_until(int rid,int pos)
@@ -124,19 +145,25 @@ int GVCFReader::read_until(int rid,int pos)
     int num_read=0;
 //    bcf1_t *rec=_variant_buffer.back();
     DepthBlock *db=_depth_buffer.back();
-    if(db==NULL)
+    while(db==NULL)
     {
-	read_lines(_buffer_size);
-//	rec=_variant_buffer.back();
+	read_lines(1);
 	db=_depth_buffer.back();
     }
-//    while(rec!=NULL && bcf_sr_has_line(_bcf_reader,0) && (rec->rid < rid || (rec->rid == rid && rec->pos < pos))
+
     while(db!=NULL && bcf_sr_has_line(_bcf_reader,0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos) ) )
     {
-	num_read+=read_lines(_buffer_size);
-//	rec=_variant_buffer.back();	
+	if(read_lines(1)<1)
+	{
+	    break;
+	}
+	else
+	{
+	    num_read++;
+	}
 	db=_depth_buffer.back();
     }
+
     return(num_read);
 }
 
@@ -162,9 +189,7 @@ int GVCFReader::read_lines(int num_lines)
 	    vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
 	    for(size_t i=0;i<atomised_variants.size();i++)
 	    {
-//		print_variant(_bcf_header,atomised_variants[i]);//debug
 		_variant_buffer.push_back(atomised_variants[i]);
-//		bcf_destroy1(atomised_variants[i]);// VariantBuffer handles memory.
 	    }
 	    num_read++;
 	}
@@ -202,20 +227,13 @@ int GVCFReader::read_lines(int num_lines)
 
 bcf1_t *GVCFReader::front()
 {
-    if(_variant_buffer.size() < _buffer_size)
-    {
-	read_lines(_buffer_size-_variant_buffer.size());
-    }
+    fill_buffer();
     return(_variant_buffer.front());
 }
 
 bcf1_t *GVCFReader::pop()
 {
-    int num_read = 0;
-    if(_variant_buffer.size() < _buffer_size)
-    {
-	read_lines(_buffer_size-_variant_buffer.size());
-    }
+    int num_read = fill_buffer();
 
     if(_variant_buffer.empty() && num_read==0)
     {
@@ -229,7 +247,7 @@ bool GVCFReader::empty()
 {
     if(_variant_buffer.empty())
     {
-	return(read_lines(_buffer_size)==0);
+	return(fill_buffer()==0);
     }
     else
     {

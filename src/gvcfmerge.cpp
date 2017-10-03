@@ -70,7 +70,7 @@ int main(int argc,char **argv)
 	die("-@ is not implemented");
     }
     
-    int buffer_size = 200;
+    int buffer_size = 5000;
     std::vector<std::string> input_files;
     read_text_file(gvcf_list,input_files);
     int is_file=0;

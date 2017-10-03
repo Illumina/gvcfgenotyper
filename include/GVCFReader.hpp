@@ -105,7 +105,7 @@ public:
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
-    int fill_buffer(int num_lines);
+    int fill_buffer();
     void get_depth(int rid,int start,int end,DepthBlock & db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
     size_t get_num_variants();
