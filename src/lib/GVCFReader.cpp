@@ -46,7 +46,7 @@ void remove_info(bcf1_t *line)
             inf->vptr_free = 0;
         }
         line->d.shared_dirty |= BCF1_DIRTY_INF;
-        inf->vptr = NULL;
+        inf->vptr = nullptr;
     }
     line->n_info=0;
 }
@@ -75,7 +75,7 @@ int GVCFReader::flush_buffer()
 
 GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,const int buffer_size, const string& region /*=""*/, const int is_file /*=0*/)  
 {
-    _bcf_record=NULL;
+    _bcf_record=nullptr;
     _bcf_reader =  bcf_sr_init(); 
     if (!region.empty()) 
     {
@@ -93,7 +93,7 @@ GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & refere
 	    die("GVCFReader needs buffer size of at least 2");
     }
     _buffer_size=buffer_size;
-    _bcf_record=NULL;
+    _bcf_record=nullptr;
 
     //header setup
     _bcf_header= _bcf_reader->readers[0].header;    
@@ -123,7 +123,7 @@ GVCFReader::~GVCFReader()
     delete _normaliser;    
 }
 
-int GVCFReader::fill_buffer()
+size_t GVCFReader::fill_buffer()
 {
 
     if(_variant_buffer.size()<2)
@@ -147,13 +147,13 @@ int GVCFReader::read_until(int rid,int pos)
     int num_read=0;
 //    bcf1_t *rec=_variant_buffer.back();
     DepthBlock *db=_depth_buffer.back();
-    while(db==NULL)
+    while(db==nullptr)
     {
 	read_lines(1);
 	db=_depth_buffer.back();
     }
 
-    while(db!=NULL && bcf_sr_has_line(_bcf_reader,0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos) ) )
+    while(db!=nullptr && bcf_sr_has_line(_bcf_reader,0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos) ) )
     {
 	if(read_lines(1)<1)
 	{
@@ -185,8 +185,8 @@ int GVCFReader::read_lines(int num_lines)
 	{
 	    int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *)".");
 	    bcf_update_format_int32(_bcf_header,_bcf_record,"FT",&pass,1);
-	    bcf_update_filter(_bcf_header,_bcf_record,NULL,0);
-	    bcf_update_id(_bcf_header,_bcf_record,NULL);
+	    bcf_update_filter(_bcf_header,_bcf_record,nullptr,0);
+	    bcf_update_id(_bcf_header,_bcf_record,nullptr);
 	    remove_info(_bcf_record);
 	    vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
 	    for(size_t i=0;i<atomised_variants.size();i++)
@@ -198,7 +198,7 @@ int GVCFReader::read_lines(int num_lines)
 
 	//buffer a depth block
 	int num_format_values=0;
-	int32_t *value_pointer=NULL;
+	int32_t *value_pointer=nullptr;
 //if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
 	if(bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer,&num_format_values)==1)
 	{
@@ -239,7 +239,7 @@ bcf1_t *GVCFReader::pop()
 
     if(_variant_buffer.empty() && num_read==0)
     {
-	return(NULL);
+	return(nullptr);
     }
 
     return(_variant_buffer.pop());

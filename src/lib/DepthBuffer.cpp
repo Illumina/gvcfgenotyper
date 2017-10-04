@@ -69,7 +69,7 @@ DepthBlock *DepthBuffer::back()
 {
     if(_buffer.empty())
     {
-	return(NULL);
+	return(nullptr);
     }
     return( &_buffer.back() );
 }

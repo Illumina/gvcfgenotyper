@@ -109,12 +109,12 @@ bcf1_t *VariantBuffer::back()
 {
     if(_buffer.empty())
     {
-	return(NULL);
+	return(nullptr);
     }
     else
     {	
 	bcf1_t *ret = _buffer.back();
-	assert(ret!=NULL);
+	assert(ret!=nullptr);
 	bcf_unpack(ret, BCF_UN_ALL);
 	return(ret);
     }
@@ -124,12 +124,12 @@ bcf1_t *VariantBuffer::front()
 {
     if(_buffer.empty())
     {
-	return(NULL);
+	return(nullptr);
     }
     else
     {	
 	bcf1_t *ret = _buffer.front();
-	assert(ret!=NULL);
+	assert(ret!=nullptr);
 	bcf_unpack(ret, BCF_UN_ALL);
 	return(ret);
     }
@@ -140,7 +140,7 @@ bcf1_t *VariantBuffer::pop()
 {
     if(_buffer.empty())
     {
-	return(NULL);
+	return(nullptr);
     }
     else
     {
