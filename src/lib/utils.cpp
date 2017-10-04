@@ -80,7 +80,7 @@ vector<int> match(const vector<string>& x, const vector<string>& y)
 int copy_contigs(const bcf_hdr_t *src,bcf_hdr_t *dst)
 {
   vector<string> parseme;
-  char *splitme=bcf_hdr_fmt_text(src, 1, NULL);
+  char *splitme=bcf_hdr_fmt_text(src, 1, nullptr);
   strsplit(splitme,'\n',parseme);
   string contigs = "";
   for(int i=0;i<parseme.size();i++)

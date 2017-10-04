@@ -20,10 +20,10 @@ GVCFMerger::~GVCFMerger()
 GVCFMerger::GVCFMerger(const vector<string> & input_files,
 		       const string & output_filename,
 		       const string & output_mode,
-               const string& reference_genome,
+		       const string& reference_genome,
 		       int buffer_size,
-               const string& region /*= ""*/,
-               const int is_file /*= 0*/)
+		       const string& region /*= ""*/,
+		       const int is_file /*= 0*/)
 {
     _num_gvcfs=input_files.size();
     _readers.reserve(_num_gvcfs);
@@ -56,14 +56,18 @@ GVCFMerger::GVCFMerger(const vector<string> & input_files,
 bcf1_t *GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);    
-    bcf1_t *min_rec = NULL;
+    if(all_readers_empty())
+    {
+	return(nullptr);
+    }
+    bcf1_t *min_rec = nullptr;
     int min_index = -1;
     for(int i=0;i<_num_gvcfs;i++)
     {
 	bcf1_t *rec= _readers[i].front();
-	if(rec!=NULL)
+	if(rec!=nullptr)
 	{
-	    if(min_rec==NULL || bcf1_less_than(rec,min_rec))
+	    if(min_rec==nullptr || bcf1_less_than(rec,min_rec))
 	    {
 		min_rec = rec;
 		min_index = i;
@@ -71,7 +75,7 @@ bcf1_t *GVCFMerger::get_next_variant()
 	}
     }
 
-    assert(min_rec!=NULL);
+    assert(min_rec!=nullptr);
     return(min_rec);
 }
 
@@ -106,7 +110,7 @@ bcf1_t *GVCFMerger::next()
 {
     if(all_readers_empty())
     {
-	return(NULL);
+	return(nullptr);
     }
     bcf_clear(_output_record);
     int n_allele=2;
@@ -114,7 +118,7 @@ bcf1_t *GVCFMerger::next()
     //copy allele information from new variant
     bcf1_t *next_variant = get_next_variant();
     assert(bcf1_not_equal(next_variant,_output_record));
-    assert(next_variant!=NULL);
+    assert(next_variant!=nullptr);
     bcf_update_id(_output_header, _output_record, ".");
     _output_record->rid = next_variant->rid;
     _output_record->pos = next_variant->pos;    
@@ -133,7 +137,7 @@ bcf1_t *GVCFMerger::next()
 	bcf1_t *sample_record = _readers[i].front();
 	const bcf_hdr_t *sample_header = _readers[i].get_header();
     
-	if(sample_record!=NULL && bcf1_equal(sample_record,_output_record))
+	if(sample_record!=nullptr && bcf1_equal(sample_record,_output_record))
 	{//this sample has an explicit copy of the variant. just copy the format fields into output rrecorc
 	    _output_record->qual += sample_record->qual;
 	    int nval=2;
@@ -163,7 +167,7 @@ bcf1_t *GVCFMerger::next()
 	    //this is a bit dangerous: we specify GQ as Float when it should be Integer according to vcf spec
 	    //so we have to do some fiddly casting
 	    //solution is to make this general such that it handles integer or float
-	    float *gq_ptr = NULL;
+	    float *gq_ptr = nullptr;
 	    nval=0;
 	    if(bcf_get_format_float(sample_header,sample_record,"GQ",&gq_ptr,&nval)!=1)
 	    {
@@ -177,7 +181,7 @@ bcf1_t *GVCFMerger::next()
 		free(gq_ptr);
 	    }
 	    ptr=_format_ps+i;
-        int res = bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
+	    int res = bcf_get_format_int32(sample_header,sample_record,"PS",&ptr,&nval);
 	    nps_written += (res>0 ? res : 0);
 	}
 	else	//this sample does not have the variant, reconstruct the format fields from homref blocks
@@ -220,9 +224,16 @@ void GVCFMerger::write_vcf()
     int last_rid = -1;
     int last_pos = 0;
     int num_written=0;
-    while(next()!=NULL)
+    while(next()!=nullptr)
     {
-	assert(_output_record->pos>=last_pos || _output_record->rid>last_rid);
+	if(!(_output_record->pos>=last_pos || _output_record->rid>last_rid))
+	{
+	    std::cerr << bcf_hdr_int2id(_output_header,BCF_DT_CTG,_output_record->rid) << ":" << _output_record->pos+1 << std::endl;
+	    std::cerr << bcf_hdr_int2id(_output_header,BCF_DT_CTG,last_rid) << ":" << last_pos+1 << std::endl;	    
+	    print_variant(_output_header,_output_record);
+	    throw std::runtime_error("GVCFMerger::write_vcf variants out of order");
+	}
+
 	last_pos=_output_record->pos;
 	last_rid=_output_record->rid;
 	bcf_write1(_output_file, _output_header, _output_record) ;
