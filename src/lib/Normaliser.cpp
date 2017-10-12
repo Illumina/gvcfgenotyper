@@ -48,8 +48,9 @@ int mnp_split(bcf1_t *record_to_split,bcf_hdr_t *header,vector<bcf1_t *> & outpu
 
 vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
 {
-    bcf_unpack(bcf_record_to_canonicalise, BCF_UN_ALL);
-    assert(bcf_record_to_canonicalise->n_allele > 1);
+    int old_num_allele = bcf_record_to_marginalise->n_allele;
+    bcf_unpack(bcf_record_to_marginalise, BCF_UN_ALL);
+    assert(old_num_allele > 1);
     vector<bcf1_t *> atomised_variants;
 
     //this chunk of codes reads the relevant FORMAT fields (PL,GQ,DP,DPF,AD) that will be propagated into the new record.
@@ -57,7 +58,7 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     int num_ad=0,num_gt=0,num_gq=0,num_dpf=0,num_pl=0,num_dp=0;
 
     int ploidy = bcf_get_genotypes(_hdr,bcf_record_to_marginalise,&old_gt,&num_gt);
-    assert(ploidy>0);
+    assert(ploidy>=0 && ploidy<=2);
     assert(bcf_get_format_int32(_hdr,bcf_record_to_marginalise,"AD",&old_ad,&num_ad)>0);
     assert(bcf_get_format_int32(_hdr,bcf_record_to_marginalise,"DPF",&old_dpf,&num_dpf)>0);
     assert(bcf_get_format_int32(_hdr,bcf_record_to_marginalise,"DP",&old_dp,&num_dp)>0);
@@ -71,12 +72,12 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     }
 
     //this block deals with bi-allelic variants. no marginalisation across other alternate alleles is required
-    if(bcf_record_to_marginalise->n_allele == 2)
+    if(old_num_allele == 2)
     {
         bcf1_t *new_record = bcf_init1();
         new_record->rid = bcf_record_to_marginalise->rid;
         new_record->pos = bcf_record_to_marginalise->pos;
-        bcf_update_alleles(_hdr,new_record,bcf_record_to_marginalise->d.allele,bcf_record_to_marginalise->n_allele);
+        bcf_update_alleles(_hdr,new_record,bcf_record_to_marginalise->d.allele,old_num_allele);
         bcf_update_genotypes(_hdr,new_record,old_gt,num_gt);
         bcf_update_format_int32(_hdr,new_record,"GQ",old_gq,num_gq);
         bcf_update_format_int32(_hdr,new_record,"AD",old_ad,num_ad);
@@ -97,17 +98,26 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     {
         //this block deals with multi-allelics. for each allele a pseudo-unary version is created. with depth and likelihoods marginalsation into a symbolic X allele
         const int num_allele = 3;
-        char **new_alleles = new char *[num_allele];
+        auto **new_alleles = new char *[num_allele];
         char *symbolic_allele = "X";
         new_alleles[2] = symbolic_allele;
-        int32_t *new_ad = new int32_t[num_allele];
-        int32_t *new_gt = new int32_t[2];
-        int32_t *new_pl = new int32_t[num_allele * (1 + num_allele) / 2];
-        new_ad[0] = old_ad[0];
-        for (int i = 1; i < bcf_record_to_marginalise->n_allele; i++)
+        auto *new_ad = new int32_t[num_allele];
+        auto *new_gt = new int32_t[2];
+        auto *new_pl = new int32_t[num_allele * (1 + num_allele) / 2];
+        vector<float> old_gl(old_num_allele * (1 + old_num_allele) / 2,0.);
+        vector<float> new_gl(num_allele * (1 + num_allele) / 2,0.);
+        for(int i=0;i<num_pl;i++)
         {
+            old_gl[i] = pow((float)10.,(float)-old_pl[i]/10.);
+        }
+        int reference_allele=0;
+        int symbolic_allele=2;
+        new_ad[reference_allele] = old_ad[reference_allele];
+        for (int i = 1; i<old_num_allele ; i++)
+        {
+
             new_ad[i]=old_ad[i];
-            new_ad[2]=0;
+            new_ad[symbolic_allele]=0;
             bcf1_t *new_record = bcf_init1();
             new_record->rid = bcf_record_to_marginalise->rid;
             new_record->pos = bcf_record_to_marginalise->pos;
@@ -118,15 +128,30 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
             new_alleles[0] = bcf_record_to_marginalise->d.allele[0];
             new_alleles[i] = bcf_record_to_marginalise->d.allele[i];
             bcf_update_alleles(_hdr, new_record, new_alleles);
-            for (int j = 0; j < bcf_record_to_marginalise->n_allele; j++)
+
+            //marginalises FORMAT/AD
+            for (int j = 1; j < old_num_allele; j++)
             {
                 if (i != j)//j is an alternate allele that is not i
                 {
-                    new_ad[2]+=old_ad[j];
+                    new_ad[symbolic_allele]+=old_ad[j];
+                }
+            }
+            bcf_update_format_int32(_hdr,new_record,"AD",new_ad,num_ad);
+
+            //marginalises FORMAT/PL
+            for(int j=0;j<old_num_allele;j++)
+            {
+                if(ploidy==1)
+                {
+                    if(j==reference_allele)
+                    {
+                                                
+                    }
                 }
             }
             bcf_update_format_int32(_hdr,new_record,"PL",new_pl,num_pl);
-            bcf_update_format_int32(_hdr,new_record,"AD",new_ad,num_ad);
+
             bcf_update_genotypes(_hdr, new_record, new_gt, num_gt);
             if (realign(_norm_args, new_record) == ERR_REF_MISMATCH)
             {
