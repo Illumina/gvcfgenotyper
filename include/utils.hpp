@@ -24,77 +24,26 @@ extern "C" {
 #include <htslib/synced_bcf_reader.h>
 }
 
-
 static int *zeros(int n)
 {
-    int *ret = (int *)malloc(sizeof(int)*n);
-    for(int i=0;i<n;i++)
+    int *ret = (int *) malloc(sizeof(int) * n);
+    for (int i = 0; i < n; i++)
     {
-        ret[i]=0;
+        ret[i] = 0;
     }
-    return(ret);
+    return (ret);
 }
 
 template<typename T>
-void assign(int n,T val,T *x)
+void assign(int n, T val, T *x)
 {
-    for(size_t i=0;i<n;i++)
+    for (size_t i = 0; i < n; i++)
     {
-        x[i]=val;
+        x[i] = val;
     }
 };
 
 bool fileexists(const string &fname);
-
-template<typename T>
-void newMatrix(int nrow, int ncol, T **&out)
-{
-    out = new T *[nrow];
-    for (int i = 0; i < nrow; i++)
-        out[i] = new T[ncol];
-    //  cout << out[nrow-1][ncol-1]<<endl;
-};
-
-
-template<typename T>
-void printMatrix(int nrow, int ncol, T *&out)
-{
-    for (int i = 0; i < nrow; i++)
-    {
-        for (int j = 0; j < ncol; j++)
-        {
-            cout << out[i * ncol + j] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
-};
-
-template<typename T>
-void delMatrix(int nrow, int ncol, T **&out)
-{
-    for (int i = 0; i < nrow; i++)
-    {
-        delete[] out[i];
-    }
-    delete[] out;
-};
-
-
-//retruns first location where find_this occurs in_that (-1 if not found);
-template<typename T>
-int find(T find_this, vector<T> in_that)
-{
-    for (int i = 0; i < in_that.size(); i++)
-    {
-        if (in_that[i] == find_this)
-        {
-            return (i);
-        }
-    }
-    return (-1);
-};
-
 
 inline float argmax(float *P, int K, uint &maxi, uint &maxj)
 {
@@ -276,49 +225,49 @@ static void print_variant(bcf_hdr_t *header, bcf1_t *record)
     std::cerr << std::endl;
 }
 
-static size_t get_number_of_likelihoods(int ploidy,int num_allele)
+static size_t get_number_of_likelihoods(int ploidy, int num_allele)
 {
-    assert(ploidy==1 || ploidy==2);
-    return(ploidy==1 ? ploidy : (num_allele) * (1 + num_allele) / 2);
+    assert(ploidy == 1 || ploidy == 2);
+    return (ploidy == 1 ? ploidy : (num_allele) * (1 + num_allele) / 2);
 }
 
 static int inline phred(float l)
 {
-    return((int)(-10*log10(l)));
+    return ((int) (-10 * log10(l)));
 }
 
 static float inline unphred(int pl)
 {
-    return((float)pow(10.,-pl/10.));
+    return ((float) pow(10., -pl / 10.));
 }
 
 static int inline factorial(int x)
 {
     int ret = 1;
-    for(int i=2;i<=x;i++)
+    for (int i = 2; i <= x; i++)
     {
         ret *= i;
     }
-    return(ret);
+    return (ret);
 }
 
-static int inline choose(int n,int k)
+static int inline choose(int n, int k)
 {
-    if(k>=0 && k<=n)
+    if (k >= 0 && k <= n)
     {
         return (factorial(n) / (factorial(n - k) * factorial(k)));
     }
     else
     {
-        return(0);
+        return (0);
     }
 }
 
 //gets the index of a genotype likelihood for ploidy == 2
-static int inline get_gl_index(int g0,int g1)
+static int inline get_gl_index(int g0, int g1)
 {
-    assert(g0>=0 && g1>=0);
-    int a = g0<=g1 ? g0 : g1;
-    int b = g0>g1 ? g0 : g1;
-    return(choose(a,1) + choose(b + 1,2));
+    assert(g0 >= 0 && g1 >= 0);
+    int a = g0 <= g1 ? g0 : g1;
+    int b = g0 > g1 ? g0 : g1;
+    return (choose(a, 1) + choose(b + 1, 2));
 }

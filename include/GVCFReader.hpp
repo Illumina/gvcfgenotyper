@@ -27,19 +27,25 @@ extern "C" {
 #define MROWS_MERGE  2
 //end vcf norm stuff
 
-int mnp_split(bcf1_t *record_to_split,bcf_hdr_t *header,vector<bcf1_t *> & output);
+int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &output);
 
 class Genotype
 {
 public:
-    Genotype(bcf_hdr_t *header,bcf1_t *record);
-    Genotype(int ploidy,int num_allele);
+    Genotype(bcf_hdr_t *header, bcf1_t *record);
+
+    Genotype(int ploidy, int num_allele);
+
     Genotype marginalise(int index);
+
     ~Genotype();
+
     void setDepthFromAD();
-    int update_bcf1_t(bcf_hdr_t *header,bcf1_t *record);
-    int *_gt,*_ad,*_gq,*_dp,*_dpf,*_pl;
-    int _num_allele,_num_pl,_ploidy,_num_gt,_num_ad,_num_gq,_num_dp,_num_dpf,_num_gl;
+
+    int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
+
+    int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl;
+    int _num_allele, _num_pl, _ploidy, _num_gt, _num_ad, _num_gq, _num_dp, _num_dpf, _num_gl;
     std::vector<float> _gl;
 };
 
