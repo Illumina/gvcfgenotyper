@@ -2,6 +2,16 @@
 
 using namespace std;
 
+int *zeros(int n)
+{
+    int *ret = (int *) malloc(sizeof(int) * n);
+    for (int i = 0; i < n; i++)
+    {
+        ret[i] = 0;
+    }
+    return (ret);
+}
+
 bool fileexists(const string &fname)
 {
     ifstream ifile(fname.c_str());

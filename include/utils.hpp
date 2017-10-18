@@ -24,15 +24,7 @@ extern "C" {
 #include <htslib/synced_bcf_reader.h>
 }
 
-static int *zeros(int n)
-{
-    int *ret = (int *) malloc(sizeof(int) * n);
-    for (int i = 0; i < n; i++)
-    {
-        ret[i] = 0;
-    }
-    return (ret);
-}
+int *zeros(int n);
 
 template<typename T>
 void assign(int n, T val, T *x)
@@ -45,30 +37,6 @@ void assign(int n, T val, T *x)
 
 bool fileexists(const string &fname);
 
-inline float argmax(float *P, int K, uint &maxi, uint &maxj)
-{
-    //  assert(!isnan(*ptr));
-    float *ptr = P;
-    float maxval = *ptr;
-    maxi = 0;
-    maxj = 0;
-    for (int i = 0; i < K; i++)
-    {
-        for (int j = 0; j < K; j++)
-        {
-            if (*ptr > maxval)
-            {
-                maxval = *ptr;
-                maxi = i;
-                maxj = j;
-            }
-            ptr++;
-        }
-    }
-    return (maxval);
-}
-
-string percent(int num, int den);
 
 inline void die(const string &s)
 {
