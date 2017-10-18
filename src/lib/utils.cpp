@@ -105,7 +105,7 @@ int read_text_file(const string &fname, vector<string> &output)
     }
     string tmp;
     output.clear();
-    while (ifile >> tmp)
+    while (getline(ifile,tmp))
     {
         output.push_back(tmp);
     }
