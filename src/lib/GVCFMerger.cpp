@@ -172,9 +172,13 @@ bcf1_t *GVCFMerger::next()
             nval = 0;
             if (bcf_get_format_float(sample_header, sample_record, "GQ", &gq_ptr, &nval) != 1)
             {
-                std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header, _output_record->rid) \
- << ":" << _output_record->pos + 1 << ":" << _output_record->d.allele[0] << ":" << _output_record->d.allele[1] \
- << std::endl;
+                if (!var_without_gq_seen) {
+                    std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header, _output_record->rid) \
+                        << ":" << _output_record->pos + 1 << ":" << _output_record->d.allele[0] << ":" << _output_record->d.allele[1] \
+                         << std::endl;
+                    std::cerr << "Suppressing future warnings. " << std::endl;
+                    var_without_gq_seen=true;
+                }
             }
             else
             {

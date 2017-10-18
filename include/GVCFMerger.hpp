@@ -39,6 +39,7 @@ private:
     htsFile *_output_file;
     bcf_hdr_t *_output_header;
     int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps, *format_pl;
+    bool var_without_gq_seen;
 };
 
 #endif
