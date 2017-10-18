@@ -11,7 +11,7 @@ typedef struct
 {
     int nals, mals, *map;
 }
-map_t;
+        map_t;
 
 typedef struct
 {
@@ -33,19 +33,25 @@ typedef struct
     bcf_srs_t *files;       // using the synced reader only for -r option
     bcf_hdr_t *hdr;
     faidx_t *fai;
-    struct { int tot, set, swap; } nref;
+    struct
+    {
+        int tot, set, swap;
+    } nref;
     char **argv, *output_fname, *ref_fname, *vcf_fname, *region, *targets;
     int argc, rmdup, output_type, n_threads, check_ref, strict_filter, do_indels;
     int nchanged, nskipped, nsplit, ntotal, mrows_op, mrows_collapse, parsimonious;
 }
-args_t;
+        args_t;
 
-args_t *init_vcfnorm(bcf_hdr_t *hdr,const char *ref);
+args_t *init_vcfnorm(bcf_hdr_t *hdr, const char *ref);
 
 void split_multiallelic_to_biallelics(args_t *args, bcf1_t *line);
-void write_vcf_line(args_t *args,bcf1_t *line,htsFile *out);
+
+void write_vcf_line(args_t *args, bcf1_t *line, htsFile *out);
+
 //void flush_buffer(args_t *args, htsFile *file, int n);
 void destroy_data(args_t *args);
+
 int realign(args_t *args, bcf1_t *line);
 
 #endif

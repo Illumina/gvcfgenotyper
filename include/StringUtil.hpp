@@ -48,106 +48,107 @@ namespace stringutil
 /**
  * @brief Split a string along separators
  */
-static inline void split(std::string str, std::vector<std::string>& result, const std::string& seps = " ,", bool return_empty = false)
-{
-    bool has_last = false;
-    while (str.size() > 0)
+    static inline void
+    split(std::string str, std::vector<std::string> &result, const std::string &seps = " ,", bool return_empty = false)
     {
-        size_t pos = str.find_first_of(seps);
-        if (pos != std::string::npos)
+        bool has_last = false;
+        while (str.size() > 0)
         {
-            if (return_empty || pos > 0)
+            size_t pos = str.find_first_of(seps);
+            if (pos != std::string::npos)
             {
-                result.push_back(str.substr(0, pos));
+                if (return_empty || pos > 0)
+                {
+                    result.push_back(str.substr(0, pos));
+                }
+                str = str.substr(pos + 1);
+                has_last = true;
             }
-            str = str.substr(pos + 1);
-            has_last = true;
+            else
+            {
+                result.push_back(str);
+                str = "";
+                has_last = false;
+            }
         }
-        else
+        if (has_last && return_empty)
         {
-            result.push_back(str);
-            str = "";
-            has_last = false;
+            result.push_back("");
         }
     }
-    if (has_last && return_empty)
-    {
-        result.push_back("");
-    }
-}
 
 /**
  * @brief Test if string has given suffix
  *
  * @return true if str ends with suffix
  */
-static inline bool endsWith(std::string const& str, std::string const& suffix)
-{
-    if (suffix.size() > str.size())
+    static inline bool endsWith(std::string const &str, std::string const &suffix)
     {
-        return false;
-    }
-    return str.substr(str.size() - suffix.size()) == suffix;
-}
-
-/**
- * @brief Replace all instances of find with replace in str
- */
-static inline std::string replaceAll(std::string str, std::string const& find, std::string const& replace)
-{
-    size_t start_pos = 0;
-    while ((start_pos = str.find(find, start_pos)) != std::string::npos)
-    {
-        str.replace(start_pos, find.length(), replace);
-        start_pos += replace.length();
-    }
-    return str;
-}
-
-/**
- * @brief Replace all instances of find with replace in str
- */
-static inline void replaceAllInplace(std::string& str, std::string const& find, std::string const& replace)
-{
-    size_t start_pos = 0;
-    while ((start_pos = str.find(find, start_pos)) != std::string::npos)
-    {
-        str.replace(start_pos, find.length(), replace);
-        start_pos += replace.length();
-    }
-}
-
-/**
- * Format genomic coordinates
- */
-static inline std::string formatPos(const char* chr, int64_t pos = -1, int64_t end = -1)
-{
-    std::stringstream ss;
-
-    if (chr)
-    {
-        ss << chr;
-    }
-    if (pos >= 0)
-    {
-        ss << ":";
-        ss << (pos + 1);
-        if (end >= 0)
+        if (suffix.size() > str.size())
         {
-            ss << "-" << (end + 1);
+            return false;
+        }
+        return str.substr(str.size() - suffix.size()) == suffix;
+    }
+
+/**
+ * @brief Replace all instances of find with replace in str
+ */
+    static inline std::string replaceAll(std::string str, std::string const &find, std::string const &replace)
+    {
+        size_t start_pos = 0;
+        while ((start_pos = str.find(find, start_pos)) != std::string::npos)
+        {
+            str.replace(start_pos, find.length(), replace);
+            start_pos += replace.length();
+        }
+        return str;
+    }
+
+/**
+ * @brief Replace all instances of find with replace in str
+ */
+    static inline void replaceAllInplace(std::string &str, std::string const &find, std::string const &replace)
+    {
+        size_t start_pos = 0;
+        while ((start_pos = str.find(find, start_pos)) != std::string::npos)
+        {
+            str.replace(start_pos, find.length(), replace);
+            start_pos += replace.length();
         }
     }
 
-    return ss.str();
-}
+/**
+ * Format genomic coordinates
+ */
+    static inline std::string formatPos(const char *chr, int64_t pos = -1, int64_t end = -1)
+    {
+        std::stringstream ss;
+
+        if (chr)
+        {
+            ss << chr;
+        }
+        if (pos >= 0)
+        {
+            ss << ":";
+            ss << (pos + 1);
+            if (end >= 0)
+            {
+                ss << "-" << (end + 1);
+            }
+        }
+
+        return ss.str();
+    }
 
 /**
  * Format genomic coordinates
  */
-static inline std::string formatPos(std::string const& chr, int64_t pos = -1, int64_t end = -1)
-{
-    return formatPos(chr.c_str(), pos, end);
-}
+    static inline std::string formatPos(std::string const &chr, int64_t pos = -1, int64_t end = -1)
+    {
+        return formatPos(chr.c_str(), pos, end);
+    }
 
 /**
  * @brief Parse coordinates
@@ -160,32 +161,32 @@ static inline std::string formatPos(std::string const& chr, int64_t pos = -1, in
  * Returned coordinates are 0-based, input coordinates are 1-based.
  *
  */
-static inline void parsePos(std::string input, std::string& chr, int64_t& start, int64_t& end)
-{
-    std::vector<std::string> spl;
-    split(input, spl, " :-");
+    static inline void parsePos(std::string input, std::string &chr, int64_t &start, int64_t &end)
+    {
+        std::vector<std::string> spl;
+        split(input, spl, " :-");
 
-    if (spl.size() >= 1)
-    {
-        chr = spl[0];
+        if (spl.size() >= 1)
+        {
+            chr = spl[0];
+        }
+        if (spl.size() >= 2)
+        {
+            start = std::stoll(replaceAll(spl[1], ",", "")) - 1;
+        }
+        if (spl.size() >= 3)
+        {
+            end = std::stoll(replaceAll(spl[2], ",", "")) - 1;
+        }
     }
-    if (spl.size() >= 2)
-    {
-        start = std::stoll(replaceAll(spl[1], ",", "")) - 1;
-    }
-    if (spl.size() >= 3)
-    {
-        end = std::stoll(replaceAll(spl[2], ",", "")) - 1;
-    }
-}
 
 /**
  * upper-case a string
  */
-static inline void toUpper(std::string& str)
-{
-    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
-}
+    static inline void toUpper(std::string &str)
+    {
+        std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    }
 
 /**
  * Update delimited sets of strings
@@ -197,28 +198,28 @@ static inline void toUpper(std::string& str)
  * @param sep the separator for delimiting strings
  * @return true if string was added, and index in list
  */
-static inline std::pair<bool, size_t>
-updateStringSet(std::string& stringset, std::string const& new_string, std::string sep = ",")
-{
-    if(stringset==".")
+    static inline std::pair<bool, size_t>
+    updateStringSet(std::string &stringset, std::string const &new_string, std::string sep = ",")
     {
-        stringset="";
-    }
-    std::vector<std::string> st_list;
-    stringutil::split(stringset, st_list, sep, false);
-    auto match = std::find(st_list.begin(), st_list.end(), new_string);
-    if (match == st_list.end())
-    {
-        if (!stringset.empty())
+        if (stringset == ".")
         {
-            stringset += ",";
+            stringset = "";
         }
-        stringset += new_string;
-        return std::make_pair(true, st_list.size());
+        std::vector<std::string> st_list;
+        stringutil::split(stringset, st_list, sep, false);
+        auto match = std::find(st_list.begin(), st_list.end(), new_string);
+        if (match == st_list.end())
+        {
+            if (!stringset.empty())
+            {
+                stringset += ",";
+            }
+            stringset += new_string;
+            return std::make_pair(true, st_list.size());
+        }
+        else
+        {
+            return std::make_pair(false, match - st_list.begin());
+        }
     }
-    else
-    {
-        return std::make_pair(false, match - st_list.begin());
-    }
-}
 }

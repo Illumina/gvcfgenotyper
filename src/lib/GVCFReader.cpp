@@ -5,42 +5,47 @@
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
-    while ( i<hdr->nhrec )
+    while (i < hdr->nhrec)
     {
-        if ( hdr->hrec[i]->type!=type ) 
-	{ 
-	    i++; 
-	    continue; 
-	}
+        if (hdr->hrec[i]->type != type)
+        {
+            i++;
+            continue;
+        }
         bcf_hrec_t *hrec = hdr->hrec[i];
-        if ( type==BCF_HL_FMT )
+        if (type == BCF_HL_FMT)
         {
             // everything except FORMAT/GT
             int id = bcf_hrec_find_key(hrec, "ID");
-            if ( id>=0 && !strcmp(hrec->vals[id],"GT") ) 
-	    {
-		i++; continue;
-	    }
+            if (id >= 0 && !strcmp(hrec->vals[id], "GT"))
+            {
+                i++;
+                continue;
+            }
         }
         nrm++;
         hdr->nhrec--;
-        if ( i < hdr->nhrec )
-            memmove(&hdr->hrec[i],&hdr->hrec[i+1],(hdr->nhrec-i)*sizeof(bcf_hrec_t*));
+        if (i < hdr->nhrec)
+        {
+            memmove(&hdr->hrec[i], &hdr->hrec[i + 1], (hdr->nhrec - i) * sizeof(bcf_hrec_t *));
+        }
         bcf_hrec_destroy(hrec);
     }
-    if ( nrm ) bcf_hdr_sync(hdr);
+    if (nrm)
+    { bcf_hdr_sync(hdr); }
 }
 
 void remove_info(bcf1_t *line)
 {
     // remove all INFO fields
-    if ( !(line->unpacked & BCF_UN_INFO) ) bcf_unpack(line, BCF_UN_INFO);
+    if (!(line->unpacked & BCF_UN_INFO))
+    { bcf_unpack(line, BCF_UN_INFO); }
 
     int i;
-    for (i=0; i<line->n_info; i++)
+    for (i = 0; i < line->n_info; i++)
     {
         bcf_info_t *inf = &line->d.info[i];
-        if ( inf->vptr_free )
+        if (inf->vptr_free)
         {
             free(inf->vptr - inf->vptr_off);
             inf->vptr_free = 0;
@@ -48,236 +53,238 @@ void remove_info(bcf1_t *line)
         line->d.shared_dirty |= BCF1_DIRTY_INF;
         inf->vptr = nullptr;
     }
-    line->n_info=0;
+    line->n_info = 0;
 }
 
 int GVCFReader::flush_buffer(const bcf1_t *record)
 {
-    _depth_buffer.flush_buffer(record->rid,record->pos-1);
-    int num_flushed=      _variant_buffer.flush_buffer(record);
+    _depth_buffer.flush_buffer(record->rid, record->pos - 1);
+    int num_flushed = _variant_buffer.flush_buffer(record);
     fill_buffer();
-    return(num_flushed);
+    return (num_flushed);
 }
 
-int GVCFReader::flush_buffer(int chrom,int pos)
+int GVCFReader::flush_buffer(int chrom, int pos)
 {
-    _depth_buffer.flush_buffer(chrom,pos);
-    int num_flushed=    _variant_buffer.flush_buffer(chrom,pos);
+    _depth_buffer.flush_buffer(chrom, pos);
+    int num_flushed = _variant_buffer.flush_buffer(chrom, pos);
     fill_buffer();
-    return(num_flushed);
-}  
+    return (num_flushed);
+}
 
 int GVCFReader::flush_buffer()
 {
     _depth_buffer.flush_buffer();
-    return(_variant_buffer.flush_buffer());
-}  
+    return (_variant_buffer.flush_buffer());
+}
 
-GVCFReader::GVCFReader(const std::string & input_gvcf,const std::string & reference_genome_fasta,const int buffer_size, const string& region /*=""*/, const int is_file /*=0*/)  
+GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &reference_genome_fasta, const int buffer_size,
+                       const string &region /*=""*/, const int is_file /*=0*/)
 {
-    _bcf_record=nullptr;
-    _bcf_reader =  bcf_sr_init(); 
-    if (!region.empty()) 
+    _bcf_record = nullptr;
+    _bcf_reader = bcf_sr_init();
+    if (!region.empty())
     {
-        if(bcf_sr_set_regions(_bcf_reader,region.c_str(),is_file)==-1) 
-	{
+        if (bcf_sr_set_regions(_bcf_reader, region.c_str(), is_file) == -1)
+        {
             die("Cannot navigate to region " + region);
         }
     }
-    if(!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
+    if (!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-	    die("problem opening input");
+        die("problem opening input");
     }
-    if(buffer_size<2)
+    if (buffer_size < 2)
     {
-	    die("GVCFReader needs buffer size of at least 2");
+        die("GVCFReader needs buffer size of at least 2");
     }
-    _buffer_size=buffer_size;
-    _bcf_record=nullptr;
+    _buffer_size = buffer_size;
+    _bcf_record = nullptr;
 
     //header setup
-    _bcf_header= _bcf_reader->readers[0].header;    
+    _bcf_header = _bcf_reader->readers[0].header;
 
-    _normaliser = new Normaliser(reference_genome_fasta,_bcf_header);
+    _normaliser = new Normaliser(reference_genome_fasta, _bcf_header);
     fill_buffer();
 
     // flush variant buffer to get rid of variants overlapping 
     // the interval start
     string chr;
     int64_t start, end = 0;
-    stringutil::parsePos(region,chr,start,end);
-    if (!region.empty()) 
+    stringutil::parsePos(region, chr, start, end);
+    if (!region.empty())
     {
-	int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
-	flush_buffer(rid,start);
+        int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+        flush_buffer(rid, start);
     }
 }
 
 GVCFReader::~GVCFReader()
 {
-    if ( _bcf_reader->errnum )
+    if (_bcf_reader->errnum)
     {
-	error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
+        error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
     }
     bcf_sr_destroy(_bcf_reader);
-    delete _normaliser;    
+    delete _normaliser;
 }
 
 size_t GVCFReader::fill_buffer()
 {
 
-    if(_variant_buffer.size()<2)
+    if (_variant_buffer.size() < 2)
     {
-	read_lines(2);
+        read_lines(2);
     }
-    while(_variant_buffer.size()>1 && _variant_buffer.back()->rid==_variant_buffer.front()->rid && (_variant_buffer.back()->pos-_variant_buffer.front()->pos)<_buffer_size)
+    while (_variant_buffer.size() > 1 && _variant_buffer.back()->rid == _variant_buffer.front()->rid &&
+           (_variant_buffer.back()->pos - _variant_buffer.front()->pos) < _buffer_size)
     {
-	int num_read=read_lines(1);
-	if(num_read==0)
-	{
-	    break;
-	}
+        int num_read = read_lines(1);
+        if (num_read == 0)
+        {
+            break;
+        }
     }
 
-    return(_variant_buffer.size());
+    return (_variant_buffer.size());
 }
 
-int GVCFReader::read_until(int rid,int pos)
+int GVCFReader::read_until(int rid, int pos)
 {
-    int num_read=0;
+    int num_read = 0;
 //    bcf1_t *rec=_variant_buffer.back();
-    DepthBlock *db=_depth_buffer.back();
-    while(db==nullptr)
+    DepthBlock *db = _depth_buffer.back();
+    while (db == nullptr)
     {
-	read_lines(1);
-	db=_depth_buffer.back();
+        read_lines(1);
+        db = _depth_buffer.back();
     }
 
-    while(db!=nullptr && bcf_sr_has_line(_bcf_reader,0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos) ) )
+    while (db != nullptr && bcf_sr_has_line(_bcf_reader, 0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos)))
     {
-	if(read_lines(1)<1)
-	{
-	    break;
-	}
-	else
-	{
-	    num_read++;
-	}
-	db=_depth_buffer.back();
+        if (read_lines(1) < 1)
+        {
+            break;
+        }
+        else
+        {
+            num_read++;
+        }
+        db = _depth_buffer.back();
     }
 
-    return(num_read);
+    return (num_read);
 }
 
 int GVCFReader::read_lines(int num_lines)
 {
-    if(num_lines<=0)
+    if (num_lines <= 0)
     {
-	return(0);
+        return (0);
     }
 
-    int num_read=0;
-   
-    while(num_read<num_lines && bcf_sr_next_line(_bcf_reader))
-    {
-	_bcf_record =  bcf_sr_get_line(_bcf_reader, 0);
-   	if(_bcf_record->n_allele>1)//is this line a variant?
-	{
-	    int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *)".");
-	    bcf_update_format_int32(_bcf_header,_bcf_record,"FT",&pass,1);
-	    bcf_update_filter(_bcf_header,_bcf_record,nullptr,0);
-	    bcf_update_id(_bcf_header,_bcf_record,nullptr);
-	    remove_info(_bcf_record);
-	    vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
-	    for(size_t i=0;i<atomised_variants.size();i++)
-	    {
-		_variant_buffer.push_back(atomised_variants[i]);
-	    }
-	    num_read++;
-	}
+    int num_read = 0;
 
-	//buffer a depth block
-	int num_format_values=0;
-	int32_t *value_pointer=nullptr;
+    while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
+    {
+        _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
+        if (_bcf_record->n_allele > 1)//is this line a variant?
+        {
+            int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
+            bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
+            bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
+            bcf_update_id(_bcf_header, _bcf_record, nullptr);
+            remove_info(_bcf_record);
+            vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
+            for (size_t i = 0; i < atomised_variants.size(); i++)
+            {
+                _variant_buffer.push_back(atomised_variants[i]);
+            }
+            num_read++;
+        }
+
+        //buffer a depth block
+        int num_format_values = 0;
+        int32_t *value_pointer = nullptr;
 //if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
-	if(bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer,&num_format_values)==1)
-	{
-	    int start=_bcf_record->pos;
-	    int32_t dp,dpf,gq,end;
-	    dp = *value_pointer;
-	    end = get_end_of_gvcf_block(_bcf_header,_bcf_record);
-	    //if it is a SNP use GQ else use GQX (this is a illumina GVCF quirk)
-	    if(_bcf_record->n_allele>1)
-	    {
-		bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer , &num_format_values);
-	    }	    
-	    else
-	    {
-		bcf_get_format_int32(_bcf_header, _bcf_record, "GQX", &value_pointer , &num_format_values);
-	    }
-	    gq = *value_pointer;
-	    bcf_get_format_int32(_bcf_header, _bcf_record, "DPF", &value_pointer , &num_format_values);
-	    dpf = *value_pointer;
-	    _depth_buffer.push_back(DepthBlock(_bcf_record->rid,start,end,dp,dpf,gq));
-	    free(value_pointer);
-	}
+        if (bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer, &num_format_values) == 1)
+        {
+            int start = _bcf_record->pos;
+            int32_t dp, dpf, gq, end;
+            dp = *value_pointer;
+            end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
+            //if it is a SNP use GQ else use GQX (this is a illumina GVCF quirk)
+            if (_bcf_record->n_allele > 1)
+            {
+                bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
+            }
+            else
+            {
+                bcf_get_format_int32(_bcf_header, _bcf_record, "GQX", &value_pointer, &num_format_values);
+            }
+            gq = *value_pointer;
+            bcf_get_format_int32(_bcf_header, _bcf_record, "DPF", &value_pointer, &num_format_values);
+            dpf = *value_pointer;
+            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq));
+            free(value_pointer);
+        }
 
     }
 
-    return(num_read);
+    return (num_read);
 }
 
 bcf1_t *GVCFReader::front()
 {
     fill_buffer();
-    return(_variant_buffer.front());
+    return (_variant_buffer.front());
 }
 
 bcf1_t *GVCFReader::pop()
 {
     int num_read = fill_buffer();
 
-    if(_variant_buffer.empty() && num_read==0)
+    if (_variant_buffer.empty() && num_read == 0)
     {
-	return(nullptr);
+        return (nullptr);
     }
 
-    return(_variant_buffer.pop());
+    return (_variant_buffer.pop());
 }
 
 bool GVCFReader::empty()
 {
-    if(_variant_buffer.empty())
+    if (_variant_buffer.empty())
     {
-	return(fill_buffer()==0);
+        return (fill_buffer() == 0);
     }
     else
     {
-	return(false);
+        return (false);
     }
 }
 
 const bcf_hdr_t *GVCFReader::get_header()
 {
-    return(_bcf_header);
+    return (_bcf_header);
 }
 
 //gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
-void GVCFReader::get_depth(int rid,int start,int stop,DepthBlock & db)
+void GVCFReader::get_depth(int rid, int start, int stop, DepthBlock &db)
 {
-    read_until(rid,stop);
-    if( _depth_buffer.interpolate(rid,start,stop,db)<0)
+    read_until(rid, stop);
+    if (_depth_buffer.interpolate(rid, start, stop, db) < 0)
     {
-	die("GVCFReader::get_depth problem with depth buffer");
+        die("GVCFReader::get_depth problem with depth buffer");
     }
 }
 
 size_t GVCFReader::get_num_variants()
 {
-    return(_variant_buffer.size());
+    return (_variant_buffer.size());
 }
 
 size_t GVCFReader::get_num_depth()
 {
-    return(_depth_buffer.size());
+    return (_depth_buffer.size());
 }
