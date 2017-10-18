@@ -77,10 +77,10 @@ static void fix_ref(args_t *args, bcf1_t *line)
   if ( !strncasecmp(line->d.allele[0],ref,reflen) ) { free(ref); return; }
 
   // is the REF allele missing or N?
-  if ( reflen==1 && (line->d.allele[0][0]=='.' || line->d.allele[0][0]=='N' || line->d.allele[0][0]=='n') ) 
-    { 
-      line->d.allele[0][0] = ref[0]; 
-      args->nref.set++; 
+  if ( reflen==1 && (line->d.allele[0][0]=='.' || line->d.allele[0][0]=='N' || line->d.allele[0][0]=='n') )
+    {
+      line->d.allele[0][0] = ref[0];
+      args->nref.set++;
       free(ref);
       bcf_update_alleles(args->hdr,line,(const char**)line->d.allele,line->n_allele);
       return;
@@ -166,7 +166,7 @@ static void fix_ref(args_t *args, bcf1_t *line)
       ac[i-1] = ni;
       bcf_update_info_int32(args->hdr, line, "AC", ac, nac);
     }
-    
+
   free(str.s);
 }
 
@@ -1735,7 +1735,7 @@ int main_vcfnorm(int argc, char *argv[])
       break;
     case 'o': args->output_fname = optarg; break;
     case 'D':
-      fprintf(stderr,"Warning: `-D` is functional but deprecated, replaced by `-d both`.\n"); 
+      fprintf(stderr,"Warning: `-D` is functional but deprecated, replaced by `-d both`.\n");
       args->rmdup = COLLAPSE_NONE<<1;
       break;
     case 's': args->strict_filter = 1; break;

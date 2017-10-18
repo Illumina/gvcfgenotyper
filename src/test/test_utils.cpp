@@ -30,3 +30,22 @@ TEST(UtilTest,comparators)
     ASSERT_TRUE(bcf1_less_than(record1,record2));
     ASSERT_FALSE(bcf1_less_than(record2,record1));
 }
+
+TEST(UtilTest,GenotypeIndex)
+{
+    ASSERT_EQ(0,get_gl_index(0,0));
+    ASSERT_EQ(1,get_gl_index(0,1));
+    ASSERT_EQ(2,get_gl_index(1,1));
+    ASSERT_EQ(3,get_gl_index(0,2));
+    ASSERT_EQ(4,get_gl_index(1,2));
+    ASSERT_EQ(5,get_gl_index(2,2));
+}
+
+TEST(UtilTest,phred)
+{
+    ASSERT_EQ(0,phred(1.0));
+    ASSERT_EQ(30,phred(.001));
+    ASSERT_FLOAT_EQ(1.0,unphred(0));
+    ASSERT_FLOAT_EQ(.001,unphred(30));
+}
+
