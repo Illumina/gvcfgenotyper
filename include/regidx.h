@@ -74,14 +74,14 @@ extern "C" {
 typedef struct _regidx_t regidx_t;
 typedef struct
 {
-    uint32_t beg,end;
+    uint32_t beg, end;
     void *payload;
     char *seq;
     void *itr;
 }
-regitr_t;
+        regitr_t;
 
-#define regitr_payload(itr,type_t) (*((type_t*)(itr)->payload))
+#define regitr_payload(itr, type_t) (*((type_t*)(itr)->payload))
 
 /*
  *  regidx_parse_f - Function to parse one input line, such as regidx_parse_bed
@@ -95,7 +95,9 @@ regitr_t;
  *
  *  Return value: 0 on success, -1 to skip a record, -2 on fatal error.
  */
-typedef int  (*regidx_parse_f)(const char *line, char **chr_beg, char **chr_end, uint32_t *beg, uint32_t *end, void *payload, void *usr);
+typedef int  (*regidx_parse_f)(const char *line, char **chr_beg, char **chr_end, uint32_t *beg, uint32_t *end,
+                               void *payload, void *usr);
+
 typedef void (*regidx_free_f)(void *payload);
 
 /*
@@ -103,9 +105,12 @@ typedef void (*regidx_free_f)(void *payload);
  *      - leading spaces are ignored
  *      - lines starting with "#" are ignored
  */
-int regidx_parse_bed(const char*,char**,char**,uint32_t*,uint32_t*,void*,void*);   // CHROM or whitespace-sepatated CHROM,FROM,TO (0-based,right-open)
-int regidx_parse_tab(const char*,char**,char**,uint32_t*,uint32_t*,void*,void*);   // CHROM or whitespace-separated CHROM,POS (1-based, inclusive)
-int regidx_parse_reg(const char*,char**,char**,uint32_t*,uint32_t*,void*,void*);   // CHROM, CHROM:POS, CHROM:FROM-TO, CHROM:FROM- (1-based, inclusive)
+int regidx_parse_bed(const char *, char **, char **, uint32_t *, uint32_t *, void *,
+                     void *);   // CHROM or whitespace-sepatated CHROM,FROM,TO (0-based,right-open)
+int regidx_parse_tab(const char *, char **, char **, uint32_t *, uint32_t *, void *,
+                     void *);   // CHROM or whitespace-separated CHROM,POS (1-based, inclusive)
+int regidx_parse_reg(const char *, char **, char **, uint32_t *, uint32_t *, void *,
+                     void *);   // CHROM, CHROM:POS, CHROM:FROM-TO, CHROM:FROM- (1-based, inclusive)
 
 /*
  *  regidx_init() - creates new index
@@ -145,7 +150,9 @@ int regidx_overlap(regidx_t *idx, const char *chr, uint32_t beg, uint32_t end, r
  *  Returns 0 on success or -1 on error.
  */
 int regidx_insert(regidx_t *idx, char *line);
+
 int regidx_insert_list(regidx_t *idx, char *line, char delim);
+
 int regidx_push(regidx_t *idx, char *chr_beg, char *chr_end, uint32_t beg, uint32_t end, void *payload);
 
 /*
@@ -158,6 +165,7 @@ char **regidx_seq_names(regidx_t *idx, int *n);
  *  regidx_nregs()  - total number of regions
  */
 int regidx_seq_nregs(regidx_t *idx, const char *seq);
+
 int regidx_nregs(regidx_t *idx);
 
 /*
@@ -169,7 +177,9 @@ int regidx_nregs(regidx_t *idx);
  *                  Not required with regitr_overlap.
  */
 regitr_t *regitr_init(regidx_t *idx);
+
 void regitr_destroy(regitr_t *itr);
+
 void regitr_reset(regidx_t *idx, regitr_t *itr);
 
 /*

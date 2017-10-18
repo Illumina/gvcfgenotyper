@@ -43,16 +43,19 @@
 class GTestEnvironment : public testing::Environment
 {
 public:
-    explicit GTestEnvironment(const char* _bpath)
-        : bpath(_bpath)
+    explicit GTestEnvironment(const char *_bpath)
+            : bpath(_bpath)
     {
     }
-    virtual ~GTestEnvironment() {}
 
-    std::string getBasePath() const { return bpath; }
+    virtual ~GTestEnvironment()
+    {}
+
+    std::string getBasePath() const
+    { return bpath; }
 
 protected:
     std::string bpath;
 };
 
-extern GTestEnvironment* g_testenv;
+extern GTestEnvironment *g_testenv;

@@ -29,9 +29,9 @@ THE SOFTWARE.  */
 
 typedef struct
 {
-    int m,n,f;    // m: allocated size, n: number of elements in the buffer, f: first element
+    int m, n, f;    // m: allocated size, n: number of elements in the buffer, f: first element
 }
-rbuf_t;
+        rbuf_t;
 
 /**
  *  rbuf_init() - initialize round buffer
@@ -41,8 +41,10 @@ rbuf_t;
  */
 static inline void rbuf_init(rbuf_t *rbuf, int size)
 {
-    rbuf->m = size; rbuf->n = rbuf->f = 0;
+    rbuf->m = size;
+    rbuf->n = rbuf->f = 0;
 }
+
 /**
  *  rbuf_kth() - get index of the k-th element of the round buffer
  *  @rbuf:  the rbuf_t holder
@@ -50,9 +52,11 @@ static inline void rbuf_init(rbuf_t *rbuf, int size)
  */
 static inline int rbuf_kth(rbuf_t *rbuf, int k)
 {
-    if ( k >= rbuf->n || k<0 ) return -1;
+    if (k >= rbuf->n || k < 0)
+    { return -1; }
     int i = k + rbuf->f;
-    if ( i >= rbuf->m ) i -= rbuf->m;
+    if (i >= rbuf->m)
+    { i -= rbuf->m; }
     return i;
 }
 /**
@@ -74,14 +78,22 @@ static inline int rbuf_kth(rbuf_t *rbuf, int k)
  */
 static inline int rbuf_next(rbuf_t *rbuf, int *i)
 {
-    if ( !rbuf->n ) return 0;
-    if ( *i==-1 ) { *i = rbuf->f; return 1; }
+    if (!rbuf->n)
+    { return 0; }
+    if (*i == -1)
+    {
+        *i = rbuf->f;
+        return 1;
+    }
     int n = (rbuf->f <= *i) ? *i - rbuf->f + 1 : *i + rbuf->m - rbuf->f + 1;
-    if ( ++(*i) >= rbuf->m ) *i = 0;
-    if ( n < rbuf->n ) return 1;
+    if (++(*i) >= rbuf->m)
+    { *i = 0; }
+    if (n < rbuf->n)
+    { return 1; }
     *i = rbuf->f;
     return 0;
 }
+
 /**
  *  rbuf_prev() - get index of the previous element in the round buffer
  *  @rbuf:  the rbuf_t holder
@@ -93,15 +105,18 @@ static inline int rbuf_next(rbuf_t *rbuf, int *i)
  */
 static inline int rbuf_prev(rbuf_t *rbuf, int *i)
 {
-    if ( !rbuf->n || *i==rbuf->f ) return 0;
-    if ( *i==-1 )
+    if (!rbuf->n || *i == rbuf->f)
+    { return 0; }
+    if (*i == -1)
     {
         *i = rbuf_last(rbuf);
         return 1;
     }
-    if ( --(*i) < 0 ) *i = rbuf->m - 1;
+    if (--(*i) < 0)
+    { *i = rbuf->m - 1; }
     return 1;
 }
+
 /**
  *  rbuf_prepend() - register new element at the start of the round buffer
  *  @rbuf:  the rbuf_t holder
@@ -110,11 +125,13 @@ static inline int rbuf_prev(rbuf_t *rbuf, int *i)
  */
 static inline int rbuf_prepend(rbuf_t *rbuf)
 {
-    if ( rbuf->n < rbuf->m ) rbuf->n++;
+    if (rbuf->n < rbuf->m)
+    { rbuf->n++; }
 
     rbuf->f = rbuf->f > 0 ? rbuf->f - 1 : rbuf->m - 1;
     return rbuf->f;
 }
+
 /**
  *  rbuf_append() - register new element at the end of the round buffer
  *  @rbuf:  the rbuf_t holder
@@ -123,7 +140,7 @@ static inline int rbuf_prepend(rbuf_t *rbuf)
  */
 static inline int rbuf_append(rbuf_t *rbuf)
 {
-    if ( rbuf->n < rbuf->m )
+    if (rbuf->n < rbuf->m)
     {
         rbuf->n++;
         int i = rbuf->f + rbuf->n;
@@ -131,13 +148,14 @@ static inline int rbuf_append(rbuf_t *rbuf)
     }
 
     rbuf->f++;
-    if ( rbuf->f >= rbuf->m )
+    if (rbuf->f >= rbuf->m)
     {
         rbuf->f = 0;
         return rbuf->m - 1;
     }
     return rbuf->f - 1;
 }
+
 /**
  *  rbuf_shift() - removes first element from the buffer
  *  @rbuf:  the rbuf_t holder
@@ -146,13 +164,16 @@ static inline int rbuf_append(rbuf_t *rbuf)
  */
 static inline int rbuf_shift(rbuf_t *rbuf)
 {
-    if ( !rbuf->n ) return -1;
+    if (!rbuf->n)
+    { return -1; }
     int ret = rbuf->f;
     rbuf->f++;
-    if ( rbuf->f >= rbuf->m ) rbuf->f = 0;
+    if (rbuf->f >= rbuf->m)
+    { rbuf->f = 0; }
     rbuf->n--;
     return ret;
 }
+
 /**
  *  rbuf_shift_n() - removes first n elements from the buffer
  *  @rbuf:  the rbuf_t holder
@@ -160,14 +181,15 @@ static inline int rbuf_shift(rbuf_t *rbuf)
  */
 static inline void rbuf_shift_n(rbuf_t *rbuf, int n)
 {
-    if ( n >= rbuf->n )
+    if (n >= rbuf->n)
     {
         rbuf->n = rbuf->f = 0;
         return;
     }
     rbuf->n -= n;
     rbuf->f += n;
-    if ( rbuf->f >= rbuf->m ) rbuf->f -= rbuf->m;
+    if (rbuf->f >= rbuf->m)
+    { rbuf->f -= rbuf->m; }
 }
 
 /**
@@ -180,7 +202,7 @@ static inline void rbuf_shift_n(rbuf_t *rbuf, int n)
  *  Note: The new array is linearized and leaves the rbuf.f offset untouched,
  *  thus the size of the new buffer is determined by the current position.
  */
-#define rbuf_expand0(rbuf,type_t,n,data) \
+#define rbuf_expand0(rbuf, type_t, n, data) \
 { \
     if ( n > (rbuf)->m ) \
     { \
