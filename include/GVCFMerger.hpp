@@ -25,12 +25,12 @@ public:
 private:
     void build_header();
 
-    bcf1_t *get_next_variant();
+    int get_next_variant(bcf1_t *output);
 
     void set_output_buffers_to_missing();
 
     vector<GVCFReader> _readers;
-    int _num_gvcfs;
+    size_t _num_gvcfs;
 
     bool all_readers_empty();
 
