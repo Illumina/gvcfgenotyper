@@ -31,7 +31,7 @@ private:
 
     vector<GVCFReader> _readers;
     int _num_gvcfs;
-
+    int get_next_pos(int & rid,int &pos);
     bool all_readers_empty();
 
 //stuff for output
@@ -42,6 +42,19 @@ private:
     bool var_without_gq_seen;
 };
 
+//gathers multiple alleles. kind of like a set() for bcf1_t
+class multiAllele
+{
+    multiAllelebcf_hdr_t *hdr;
+    ~multiAllele();
+    int insert(bcf1_t *record);
+    int allele(bcf1_t *record);
+    bcf1_t *collapse();
+
+private:
+    int _rid,_pos;
+    bcf_hdr_t *_hdr;
+    list<bcf1_t*> _records;//FIXME. we should probably use some sorted data structure + binary search here. in practice in might not matter.
+};
+
 #endif
-
-

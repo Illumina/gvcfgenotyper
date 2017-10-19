@@ -1,6 +1,7 @@
 #include "GVCFMerger.hpp"
 #include "utils.hpp"
 #include <stdexcept>
+#include <htslib/vcf.h>
 // #define DEBUG
 
 GVCFMerger::~GVCFMerger()
@@ -53,7 +54,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _output_record = bcf_init1();
 }
 
-bcf1_t *GVCFMerger::get_next_variant()
+int GVCFMerger::get_next_pos(int & rid,int & pos)
 {
     assert(_readers.size() == _num_gvcfs);
     if (all_readers_empty())
@@ -74,9 +75,10 @@ bcf1_t *GVCFMerger::get_next_variant()
             }
         }
     }
-
     assert(min_rec != nullptr);
-    return (min_rec);
+    pos = min_rec->pos;
+    rid = min_rec->rid;
+    return(1);
 }
 
 bool GVCFMerger::all_readers_empty()
@@ -113,15 +115,13 @@ bcf1_t *GVCFMerger::next()
         return (nullptr);
     }
     bcf_clear(_output_record);
-    int n_allele = 2;
     DepthBlock homref_block;//working structure to store homref info.
-    //copy allele information from new variant
-    bcf1_t *next_variant = get_next_variant();
-    assert(bcf1_not_equal(next_variant, _output_record));
-    assert(next_variant != nullptr);
+
+    int next_rid,next_pos;
+    get_next_pos(next_rid,next_pos);
     bcf_update_id(_output_header, _output_record, ".");
-    _output_record->rid = next_variant->rid;
-    _output_record->pos = next_variant->pos;
+    _output_record->rid = next_rid;
+    _output_record->pos = next_pos;
     bcf_update_alleles(_output_header, _output_record, (const char **) next_variant->d.allele, next_variant->n_allele);
     _output_record->qual = 0;
 #ifdef DEBUG
@@ -191,8 +191,7 @@ bcf1_t *GVCFMerger::next()
         }
         else    //this sample does not have the variant, reconstruct the format fields from homref blocks
         {
-            _readers[i].get_depth(_output_record->rid, _output_record->pos, get_end_of_variant(_output_record),
-                                  homref_block);
+            _readers[i].get_depth(_output_record->rid, _output_record->pos, get_end_of_variant(_output_record),homref_block);
             _format_dp[i] = homref_block._dp;
             _format_dpf[i] = homref_block._dpf;
             _format_gq[i] = homref_block._gq;

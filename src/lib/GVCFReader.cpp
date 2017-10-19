@@ -196,7 +196,7 @@ int GVCFReader::read_lines(int num_lines)
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             remove_info(_bcf_record);
-            vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
+            vector<bcf1_t *> atomised_variants = _normaliser->unarise(_bcf_record);
             for (size_t i = 0; i < atomised_variants.size(); i++)
             {
                 _variant_buffer.push_back(atomised_variants[i]);

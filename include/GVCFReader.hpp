@@ -58,7 +58,7 @@ public:
 
     ~Normaliser();
 
-    std::vector<bcf1_t *> atomise(bcf1_t *rec);
+    std::vector<bcf1_t *> unarise(bcf1_t *rec);
 
 private:
     args_t *_norm_args;
