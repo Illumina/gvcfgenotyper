@@ -47,7 +47,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
                     bool has_been_seen = false;
                     for (int k = 0; k < j; k++)
                     {
-                        has_been_seen = alleles[j][i] == alleles[k][i];
+                        has_been_seen |= alleles[j][i] == alleles[k][i];
                     }
                     if (!has_been_seen)
                     {
