@@ -134,7 +134,8 @@ static inline int cmp_regs(reg_t *a, reg_t *b)
     { return 1; }
     if (a->end < b->end)
     { return 1; }    // longer intervals come first
-    if (a->end > b->end) return -1;
+    if (a->end > b->end)
+    { return -1; }
     return 0;
 }
 
@@ -198,7 +199,8 @@ int regidx_insert(regidx_t *idx, char *line)
     int ret = idx->parse(line, &chr_from, &chr_to, &beg, &end, idx->payload, idx->usr);
     if (ret == -2)
     { return -1; }   // error
-    if (ret == -1) return 0;    // skip the line
+    if (ret == -1)
+    { return 0; }    // skip the line
     regidx_push(idx, chr_from, chr_to, beg, end, idx->payload);
     return 0;
 }
@@ -372,21 +374,27 @@ int regidx_overlap(regidx_t *regidx, const char *chr, uint32_t beg, uint32_t end
     { return 0; }    // no such sequence
 
     reglist_t *list = &regidx->seq[iseq];
-    if (!list->nreg) return 0;
+    if (!list->nreg)
+    { return 0; }
 
     if (list->nreg == 1)
     {
-        if (beg > list->reg[0].end) return 0;
-        if (end < list->reg[0].beg) return 0;
+        if (beg > list->reg[0].end)
+        { return 0; }
+        if (end < list->reg[0].beg)
+        { return 0; }
         ireg = 0;
     }
     else
     {
         if (!list->idx)
+        {
             _reglist_build_index(regidx, list);
+        }
 
         int ibeg = iBIN(beg);
-        if (ibeg >= list->nidx) return 0;     // beg is too big
+        if (ibeg >= list->nidx)
+        { return 0; }     // beg is too big
 
         // find a matching region
         uint32_t i = list->idx[ibeg];
@@ -409,7 +417,8 @@ int regidx_overlap(regidx_t *regidx, const char *chr, uint32_t beg, uint32_t end
         if (ireg >= list->nreg) return 0;   // no match
     }
 
-    if (!regitr) return 1;    // match, but no more info to save
+    if (!regitr)
+    { return 1; }    // match, but no more info to save
 
     // may need to iterate over the matching regions later
     _itr_t *itr = (_itr_t *) regitr->itr;
@@ -436,7 +445,8 @@ int regidx_parse_bed(const char *line, char **chr_beg, char **chr_end, uint32_t 
     while (*ss && isspace(*ss)) ss++;
     if (!*ss)
     { return -1; }      // skip blank lines
-    if (*ss == '#') return -1;  // skip comments
+    if (*ss == '#')
+    { return -1; }  // skip comments
 
     char *se = ss;
     while (*se && !isspace(*se)) se++;
@@ -478,7 +488,8 @@ int regidx_parse_tab(const char *line, char **chr_beg, char **chr_end, uint32_t 
     while (*ss && isspace(*ss)) ss++;
     if (!*ss)
     { return -1; }      // skip blank lines
-    if (*ss == '#') return -1;  // skip comments
+    if (*ss == '#')
+    { return -1; }  // skip comments
 
     char *se = ss;
     while (*se && !isspace(*se)) se++;
@@ -532,7 +543,8 @@ int regidx_parse_reg(const char *line, char **chr_beg, char **chr_end, uint32_t 
     while (*ss && isspace(*ss)) ss++;
     if (!*ss)
     { return -1; }      // skip blank lines
-    if (*ss == '#') return -1;  // skip comments
+    if (*ss == '#')
+    { return -1; }  // skip comments
 
     char *se = ss;
     while (*se && *se != ':') se++;
@@ -622,7 +634,8 @@ int regitr_overlap(regitr_t *regitr)
     {
         if (list->reg[i].beg > itr->end)
         { return 0; }   // no match, past the query region
-        if (list->reg[i].end >= itr->beg && list->reg[i].beg <= itr->end) break; // found
+        if (list->reg[i].end >= itr->beg && list->reg[i].beg <= itr->end)
+        { break; } // found
     }
 
     if (i >= list->nreg)
@@ -633,7 +646,9 @@ int regitr_overlap(regitr_t *regitr)
     regitr->beg = list->reg[i].beg;
     regitr->end = list->reg[i].end;
     if (itr->ridx->payload_size)
+    {
         regitr->payload = list->dat + itr->ridx->payload_size * i;
+    }
 
     return 1;
 }

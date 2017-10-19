@@ -678,14 +678,16 @@ void normalize_alleles(char **als, int nals)
     {
         for (j = 1; j < nals; j++)
         {
-            if (i >= lens[j]) done = 1;
+            if (i >= lens[j])
+            { done = 1; }
             if (als[j][lens[j] - i] != als[0][lens[0] - i])
             {
                 done = 1;
                 break;
             }
         }
-        if (done) break;
+        if (done)
+        { break; }
         i++;
     }
     if (i > 1)
@@ -764,7 +766,8 @@ char **merge_alleles(char **a, int na, int *map, char **b, int *nb, int *mb)
         {
             if (b[i][0] == '<')
             { continue; }   // symbolic allele, do not modify
-            if (b[i][0] == '*') continue;   // overlapping deletion (*), do not modify
+            if (b[i][0] == '*')
+            { continue; }   // overlapping deletion (*), do not modify
             int l = strlen(b[i]);
             b[i] = (char *) realloc(b[i], l + rla - rlb + 1);
             memcpy(b[i] + l, a[0] + rlb, rla - rlb + 1);
@@ -1174,7 +1177,8 @@ int copy_string_field(char *src, int isrc, int src_len, kstring_t *dst, int idst
     while (end_src < src_len && src[end_src] && src[end_src] != ',') end_src++;
 
     int nsrc_cpy = end_src - start_src;
-    if (nsrc_cpy == 1 && src[start_src] == '.') return 0;   // don't write missing values, dst is already initialized
+    if (nsrc_cpy == 1 && src[start_src] == '.')
+    { return 0; }   // don't write missing values, dst is already initialized
 
     int ith_dst = 0, start_dst = 0;
     while (ith_dst < idst && start_dst < dst->l)
@@ -1402,7 +1406,8 @@ void merge_info(args_t *args, bcf1_t *out)
             }  // AC and AN are done in merge_format() after genotypes are done
 
             int id = bcf_hdr_id2int(out_hdr, BCF_DT_ID, key);
-            if (id == -1) error("Error: The INFO field is not defined in the header: %s\n", key);
+            if (id == -1)
+            { error("Error: The INFO field is not defined in the header: %s\n", key); }
 
             kitr = kh_get(strdict, tmph, key);  // have we seen the tag in one of the readers?
             int len = bcf_hdr_id2length(hdr, BCF_HL_INFO, inf->key);
@@ -1414,7 +1419,8 @@ void merge_info(args_t *args, bcf1_t *out)
                 {
                     maux1_t *als = (len == BCF_VL_A || len == BCF_VL_G || len == BCF_VL_R) ? &ma->buf[i].rec[irec]
                                                                                            : NULL;
-                    if (info_rules_add_values(args, hdr, line, rule, als, len)) continue;
+                    if (info_rules_add_values(args, hdr, line, rule, als, len))
+                    { continue; }
                 }
             }
 
@@ -1449,8 +1455,10 @@ void merge_info(args_t *args, bcf1_t *out)
                 kitr = kh_get(strdict, tmph, key);
                 int idx = kh_val(tmph, kitr);
                 if (idx < 0)
+                {
                     error("Error occurred while processing INFO tag \"%s\" at %s:%d\n", key, bcf_seqname(hdr, line),
                           line->pos + 1);
+                }
                 merge_AGR_info_tag(hdr, line, inf, len, &ma->buf[i].rec[irec], &ma->AGR_info[idx]);
                 continue;
             }
@@ -1473,7 +1481,9 @@ void merge_info(args_t *args, bcf1_t *out)
                 memcpy(out->d.info[out->n_info].vptr, inf->vptr - inf->vptr_off, inf->vptr_len + inf->vptr_off);
                 out->d.info[out->n_info].vptr += inf->vptr_off;
                 if ((args->output_type & FT_BCF) && id != bcf_hdr_id2int(hdr, BCF_DT_ID, key))
+                {
                     bcf_info_set_id(out, &out->d.info[out->n_info], id, &args->tmps);
+                }
                 out->d.shared_dirty |= BCF1_DIRTY_INF;
                 out->n_info++;
                 kitr = kh_put(strdict, tmph, key, &ret);
@@ -2106,11 +2116,13 @@ void gvcf_flush(args_t *args, int done)
     {
         // Get current position and chromosome
         for (i = 0; i < maux->n; i++)
-            if (bcf_sr_has_line(maux->files, i)) break;
+            if (bcf_sr_has_line(maux->files, i))
+            { break; }
         bcf1_t *line = bcf_sr_get_line(maux->files, i);
         bcf_hdr_t *hdr = bcf_sr_get_header(maux->files, i);
 
-        if (!strcmp(maux->chr, bcf_seqname(hdr, line))) flush_until = line->pos;    // still on the same chr
+        if (!strcmp(maux->chr, bcf_seqname(hdr, line)))
+        { flush_until = line->pos; }    // still on the same chr
     }
 
     // When called on a region, trim the blocks accordingly
@@ -2124,8 +2136,10 @@ void gvcf_flush(args_t *args, int done)
             rstart = args->regs_itr->beg;
             while (regitr_overlap(args->regs_itr)) rend = args->regs_itr->end;
         }
-        if (rstart > start) start = rstart;
-        if (rend < flush_until) flush_until = rend + 1;
+        if (rstart > start)
+        { start = rstart; }
+        if (rend < flush_until)
+        { flush_until = rend + 1; }
     }
 
     // output all finished blocks
@@ -2133,7 +2147,8 @@ void gvcf_flush(args_t *args, int done)
     {
         // does the block end before the new line or is it interrupted?
         int tmp = maux->gvcf_min < flush_until ? maux->gvcf_min : flush_until;
-        if (start > tmp - 1) break;
+        if (start > tmp - 1)
+        { break; }
         gvcf_write_block(args, start, tmp - 1); // gvcf_min is 1-based
         start = tmp;
     }
@@ -2198,10 +2213,13 @@ void gvcf_stage(args_t *args, int pos)
             args->files->readers[i].buffer[irec]->pos = maux->pos;
 
             // Update block offsets
-            if (maux->gvcf_min > gaux[i].end + 1) maux->gvcf_min = gaux[i].end + 1;
+            if (maux->gvcf_min > gaux[i].end + 1)
+            { maux->gvcf_min = gaux[i].end + 1; }
         }
         else
-            maux->gvcf_break = line->pos;   // must break the gvcf block 
+        {
+            maux->gvcf_break = line->pos;
+        }   // must break the gvcf block
     }
     maux->ntmp_arr = nend * sizeof(int32_t);
     maux->tmp_arr = end;
@@ -2236,7 +2254,8 @@ void clean_buffer(args_t *args)
         { continue; }   // nothing to clean
 
         bcf1_t **buf = reader->buffer;
-        if (buf[1]->rid != ma->buf[ir].rid || buf[1]->pos != ma->pos) continue;    // nothing to flush
+        if (buf[1]->rid != ma->buf[ir].rid || buf[1]->pos != ma->pos)
+        { continue; }    // nothing to flush
 
         int a = 1, b = 2;
         while (b <= reader->nbuffer && buf[b]->rid == ma->buf[ir].rid && buf[b]->pos == ma->pos) b++;
@@ -2273,7 +2292,8 @@ void debug_maux(args_t *args)
             { fprintf(stderr, "["); }  // this record will not be merged in this round
             for (l = 0; l < line->n_allele; l++)
                 fprintf(stderr, "%s%s", l == 0 ? "" : ",", line->d.allele[l]);
-            if (buf->rec[k].skip) fprintf(stderr, "]");
+            if (buf->rec[k].skip)
+            { fprintf(stderr, "]"); }
         }
         fprintf(stderr, "\n");
     }
@@ -2381,10 +2401,13 @@ int can_merge(args_t *args)
                     }   // refs not compatible
                     for (k = 1; k < line->n_allele; k++)
                     {
-                        if (vcmp_find_allele(args->vcmp, maux->als + 1, maux->nals - 1, line->d.allele[k]) >= 0) break;
+                        if (vcmp_find_allele(args->vcmp, maux->als + 1, maux->nals - 1, line->d.allele[k]) >= 0)
+                        { break; }
                     }
                     if (!(line_type & ref_mask) && k == line->n_allele)
-                        continue;  // not a REF-only site and there is no matching allele
+                    {
+                        continue;
+                    }  // not a REF-only site and there is no matching allele
                 }
                 if (!(args->collapse & COLLAPSE_ANY))
                 {
@@ -2397,7 +2420,9 @@ int can_merge(args_t *args)
                         if (!(line_type & snp_mask) && maux->var_types & snp_mask)
                         { continue; }  // SNPs come first
                         if (args->do_gvcf && maux->var_types & ref_mask)
-                            continue;  // never merge indels with gVCF blocks
+                        {
+                            continue;
+                        }  // never merge indels with gVCF blocks
                     }
                 }
             }
@@ -2467,7 +2492,8 @@ void stage_line(args_t *args)
         // find lines with the same allele
         for (j = buf->beg; j < buf->end; j++)
         {
-            if (buf->rec[j].skip) continue;   // done or not compatible
+            if (buf->rec[j].skip)
+            { continue; }   // done or not compatible
             if (args->merge_by_id) break;
             if (maux->nals == 1 && buf->lines[j]->n_allele == 1) break;   // REF-only record
 
@@ -2479,11 +2505,13 @@ void stage_line(args_t *args)
         if (j >= buf->end)
         {
             // no matching allele found in this file
-            if (args->collapse == COLLAPSE_NONE) continue;
+            if (args->collapse == COLLAPSE_NONE)
+            { continue; }
 
             for (j = buf->beg; j < buf->end; j++)
             {
-                if (buf->rec[j].skip) continue;   // done or not compatible
+                if (buf->rec[j].skip)
+                { continue; }   // done or not compatible
                 if (args->collapse & COLLAPSE_ANY) break;   // anything can be merged
                 int line_type = bcf_get_variant_types(buf->lines[j]);
                 if (maux->var_types & snp_mask && line_type & VCF_SNP && (args->collapse & COLLAPSE_SNPS)) break;
@@ -2579,7 +2607,9 @@ void merge_vcf(args_t *args)
     if (args->header_fname)
     {
         if (bcf_hdr_set(args->out_hdr, args->header_fname))
+        {
             error("Could not read/parse the header: %s\n", args->header_fname);
+        }
     }
     else
     {
@@ -2590,7 +2620,8 @@ void merge_vcf(args_t *args)
             snprintf(buf, 10, "%d", i + 1);
             merge_headers(args->out_hdr, args->files->readers[i].header, buf, args->force_samples);
         }
-        if (args->record_cmd_line) bcf_hdr_append_version(args->out_hdr, args->argc, args->argv, "bcftools_merge");
+        if (args->record_cmd_line)
+        { bcf_hdr_append_version(args->out_hdr, args->argc, args->argv, "bcftools_merge"); }
         bcf_hdr_sync(args->out_hdr);
     }
     info_rules_init(args);
@@ -2604,7 +2635,8 @@ void merge_vcf(args_t *args)
         return;
     }
 
-    if (args->collapse == COLLAPSE_NONE) args->vcmp = vcmp_init();
+    if (args->collapse == COLLAPSE_NONE)
+    { args->vcmp = vcmp_init(); }
     args->maux = maux_init(args);
     args->out_line = bcf_init1();
     args->tmph = kh_init(strdict);
@@ -2613,13 +2645,17 @@ void merge_vcf(args_t *args)
     {
         // output cached gVCF blocks which end before the new record
         if (args->do_gvcf)
+        {
             gvcf_flush(args, 0);
+        }
 
         maux_reset(args->maux);
 
         // determine which of the new records are gvcf blocks
         if (args->do_gvcf)
+        {
             gvcf_stage(args, args->maux->pos);
+        }
 
         while (can_merge(args))
         {
@@ -2629,7 +2665,9 @@ void merge_vcf(args_t *args)
         clean_buffer(args);
     }
     if (args->do_gvcf)
+    {
         gvcf_flush(args, 1);
+    }
 
     info_rules_destroy(args);
     maux_destroy(args->maux);
@@ -2637,8 +2675,10 @@ void merge_vcf(args_t *args)
     hts_close(args->out_fh);
     bcf_destroy1(args->out_line);
     kh_destroy(strdict, args->tmph);
-    if (args->tmps.m) free(args->tmps.s);
-    if (args->vcmp) vcmp_destroy(args->vcmp);
+    if (args->tmps.m)
+    { free(args->tmps.s); }
+    if (args->vcmp)
+    { vcmp_destroy(args->vcmp); }
 }
 
 static void usage(void)

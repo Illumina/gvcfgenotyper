@@ -2,6 +2,7 @@
 #include "StringUtil.hpp"
 //#define DEBUG
 
+
 static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
 {
     int i = 0, nrm = 0;
@@ -206,9 +207,8 @@ int GVCFReader::read_lines(int num_lines)
         //buffer a depth block
         int num_format_values = 0;
         int32_t *value_pointer = nullptr;
-//if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
         if (bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer, &num_format_values) == 1)
-        {
+        {//if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
             int start = _bcf_record->pos;
             int32_t dp, dpf, gq, end;
             dp = *value_pointer;
@@ -230,7 +230,6 @@ int GVCFReader::read_lines(int num_lines)
         }
 
     }
-
     return (num_read);
 }
 

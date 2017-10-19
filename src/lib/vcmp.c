@@ -102,24 +102,31 @@ int vcmp_find_allele(vcmp_t *vcmp, char **als1, int nals1, char *al2)
         { continue; }   // mismatch
         if (!vcmp->ndref)
         {
-            if (!*a && !*b) break;    // found
+            if (!*a && !*b)
+            { break; }    // found
             continue;
         }
 
         // the prefixes match
         if (*a)
         {
-            if (vcmp->ndref < 0) continue;
+            if (vcmp->ndref < 0)
+            { continue; }
             for (j = 0; j < vcmp->ndref; j++)
-                if (!a[j] || toupper(a[j]) != vcmp->dref[j]) break;
-            if (j != vcmp->ndref || a[j]) continue;
+                if (!a[j] || toupper(a[j]) != vcmp->dref[j])
+                { break; }
+            if (j != vcmp->ndref || a[j])
+            { continue; }
             break;  // found
         }
 
-        if (vcmp->ndref > 0) continue;
+        if (vcmp->ndref > 0)
+        { continue; }
         for (j = 0; j < -vcmp->ndref; j++)
-            if (!b[j] || toupper(b[j]) != vcmp->dref[j]) break;
-        if (j != -vcmp->ndref || b[j]) continue;
+            if (!b[j] || toupper(b[j]) != vcmp->dref[j])
+            { break; }
+        if (j != -vcmp->ndref || b[j])
+        { continue; }
         break;  // found
     }
     if (i == nals1)

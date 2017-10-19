@@ -4,8 +4,11 @@ using namespace std;
 
 int *zeros(int n)
 {
-    int *ret = new int[n];
-    for (int i = 0; i < n; i++) ret[i] = 0;
+    int *ret = (int *) malloc(sizeof(int) * n);
+    for (int i = 0; i < n; i++)
+    {
+        ret[i] = 0;
+    }
     return (ret);
 }
 
@@ -28,11 +31,6 @@ string percent(int num, int den)
     sprintf(buffer, "%d / %d\t( %.4f%% )\t", num, den, 100. * float(num) / float(den));
     return (buffer);
 }
-
-/*void die(const string& s) {
-    cerr << "ERROR: " << s << "\nExiting..." << endl;
-    exit(1);
-}*/
 
 int strsplit(const string &input, const char split, vector<string> &out)
 {
