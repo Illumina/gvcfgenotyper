@@ -53,12 +53,12 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _output_record = bcf_init1();
 }
 
-int GVCFMerger::get_next_variant(bcf1_t *output)
+bcf1_t *GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);
     if (all_readers_empty())
     {
-        return(nullptr);
+        return (nullptr);
     }
     bcf1_t *min_rec = nullptr;
     int min_index = -1;
@@ -75,14 +75,9 @@ int GVCFMerger::get_next_variant(bcf1_t *output)
         }
     }
 
-    _output_record->rid = min_rec->rid;
-    _output_record->pos = min_rec->pos;
-
-
-    bcf_update_alleles(_output_header, _output_record, (const char **) next_variant->d.allele, next_variant->n_allele);
-    return(0);
+    assert(min_rec != nullptr);
+    return (min_rec);
 }
-
 
 bool GVCFMerger::all_readers_empty()
 {
@@ -113,7 +108,6 @@ void GVCFMerger::set_output_buffers_to_missing()
 
 bcf1_t *GVCFMerger::next()
 {
-    const int max_num_allele = 3;
     if (all_readers_empty())
     {
         return (nullptr);
@@ -122,8 +116,13 @@ bcf1_t *GVCFMerger::next()
     int n_allele = 2;
     DepthBlock homref_block;//working structure to store homref info.
     //copy allele information from new variant
-    get_next_variant(_output_record);
+    bcf1_t *next_variant = get_next_variant();
+    assert(bcf1_not_equal(next_variant, _output_record));
+    assert(next_variant != nullptr);
     bcf_update_id(_output_header, _output_record, ".");
+    _output_record->rid = next_variant->rid;
+    _output_record->pos = next_variant->pos;
+    bcf_update_alleles(_output_header, _output_record, (const char **) next_variant->d.allele, next_variant->n_allele);
     _output_record->qual = 0;
 #ifdef DEBUG
     print_variant(_output_header,_output_record);
@@ -156,7 +155,7 @@ bcf1_t *GVCFMerger::next()
             }
             ptr = _format_ad + 2 * i;
 
-            assert(bcf_get_format_int32(sample_header, sample_record, "AD", &ptr, &nval) <= max_num_allele);
+            assert(bcf_get_format_int32(sample_header, sample_record, "AD", &ptr, &nval) == 2);
             nval = 1;
             ptr = _format_dp + i;
             if (bcf_get_format_int32(sample_header, sample_record, "DP", &ptr, &nval) < 0)

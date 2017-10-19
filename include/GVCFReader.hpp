@@ -57,7 +57,8 @@ public:
     Normaliser(const std::string &ref_fname, bcf_hdr_t *hdr);
 
     ~Normaliser();
-    vector<bcf1_t *> unarise(bcf1_t *bcf_record_to_marginalise);
+
+    std::vector<bcf1_t *> atomise(bcf1_t *rec);
 
 private:
     args_t *_norm_args;
