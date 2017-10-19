@@ -26,17 +26,7 @@ extern "C" {
 
 int *zeros(int n);
 
-template<typename T>
-void assign(int n, T val, T *x)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        x[i] = val;
-    }
-};
-
 bool fileexists(const string &fname);
-
 
 inline void die(const string &s)
 {
@@ -240,3 +230,12 @@ static int inline get_gl_index(int g0, int g1)
     int b = g0 > g1 ? g0 : g1;
     return (choose(a, 1) + choose(b + 1, 2));
 }
+
+template<typename T>
+void assign(int n, T val, T *x)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        x[i] = val;
+    }
+};
