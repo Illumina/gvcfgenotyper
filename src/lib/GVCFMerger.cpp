@@ -59,7 +59,7 @@ int GVCFMerger::get_next_pos(int & rid,int & pos)
     assert(_readers.size() == _num_gvcfs);
     if (all_readers_empty())
     {
-        return (nullptr);
+        return (0);
     }
     bcf1_t *min_rec = nullptr;
     int min_index = -1;
@@ -122,7 +122,7 @@ bcf1_t *GVCFMerger::next()
     bcf_update_id(_output_header, _output_record, ".");
     _output_record->rid = next_rid;
     _output_record->pos = next_pos;
-    bcf_update_alleles(_output_header, _output_record, (const char **) next_variant->d.allele, next_variant->n_allele);
+    multiAllele m(next_rid,next_pos,_output_header);
     _output_record->qual = 0;
 #ifdef DEBUG
     print_variant(_output_header,_output_record);
@@ -221,7 +221,7 @@ bcf1_t *GVCFMerger::next()
     }
     bcf_update_format_int32(_output_header, _output_record, "DP", _format_dp, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "DPF", _format_dpf, _num_gvcfs);
-    bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * n_allele);
+    bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * _output_record->n_allele);
     return (_output_record);
 }
 

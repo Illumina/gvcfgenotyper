@@ -5,6 +5,53 @@
 
 #include <dirent.h>
 
+static bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const string & alleles)
+{
+    bcf1_t *ret = bcf_init1();
+    ret->rid = rid;
+    ret->pos = pos;
+    bcf_update_alleles_str(hdr, ret, alleles.c_str());
+    return(ret);
+}
+
+static bcf_hdr_t *get_header()
+{
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    return(bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r")));
+}
+
+TEST(multiAllele,test1)
+{
+    int rid=1;
+    int pos=99;
+    auto hdr = get_header();
+    auto rec1 = generate_record(hdr,rid,pos,"C,G");
+    auto rec2 = generate_record(hdr,rid,pos,"C,A");
+    auto rec3 = generate_record(hdr,rid,200,"CTG,C");
+    auto rec4 = generate_record(hdr,rid,pos,"CTGG,C");
+    auto rec5 = generate_record(hdr,rid,pos,"C,CAAAAAAAA");
+
+    multiAllele m(rid,pos,hdr);
+    ASSERT_EQ(m.allele(rec1),1);
+    ASSERT_EQ(m.allele(rec2),2);
+    ASSERT_EQ(m.allele(rec1),1);
+    ASSERT_EQ(m.allele(rec3),0);
+    ASSERT_EQ(m.allele(rec2),2);
+    ASSERT_EQ(m.allele(rec4),3);
+    ASSERT_EQ(m.allele(rec5),4);
+
+    bcf1_t *v = m.collapse();
+    //print_variant(hdr,v);
+
+    auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
+    ASSERT_TRUE(bcf1_equal(truth,v));
+    bcf_destroy(rec1);
+    bcf_destroy(rec2);
+    bcf_destroy(rec3);
+    bcf_destroy(rec4);
+    bcf_destroy(rec5);
+}
+
 TEST(GVCFMerger, platinumGenomeTinyTest)
 {
     std::vector<std::string> files;

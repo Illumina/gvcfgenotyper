@@ -3,6 +3,8 @@
 
 #include "utils.hpp"
 #include "GVCFReader.hpp"
+#include <list>
+
 
 extern "C" {
 #include <htslib/hts.h>
@@ -45,7 +47,8 @@ private:
 //gathers multiple alleles. kind of like a set() for bcf1_t
 class multiAllele
 {
-    multiAllelebcf_hdr_t *hdr;
+public:
+    multiAllele(int rid,int pos,bcf_hdr_t *hdr);
     ~multiAllele();
     int insert(bcf1_t *record);
     int allele(bcf1_t *record);
