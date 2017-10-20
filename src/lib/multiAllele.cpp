@@ -91,8 +91,8 @@ bcf1_t *multiAllele::collapse()
         size_t rightpad = max_ref_len - old_ref_len;
         char *new_alt=(*rec)->d.allele[1];
         new_alleles[index]=(char *)malloc(strlen(new_alt)+rightpad+1);
-        strcpy(new_alleles[index],new_alt);
-        strncpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad);
+        memcpy(new_alleles[index],new_alt,strlen(new_alt));
+        memcpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad+1);
     }
     bcf_update_alleles(_hdr,ret,(const char**)new_alleles,num_alleles);
     for(size_t i=0;i<_records.size();i++)

@@ -41,7 +41,7 @@ TEST(multiAllele,test1)
     ASSERT_EQ(m.allele(rec5),4);
 
     bcf1_t *v = m.collapse();
-    //print_variant(hdr,v);
+    print_variant(hdr,v);
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
     ASSERT_TRUE(bcf1_equal(truth,v));
