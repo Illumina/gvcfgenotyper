@@ -44,7 +44,7 @@ int multiAllele::allele(bcf1_t *record)
 
     bcf1_t *tmp = copy_alleles(_hdr,record);
     auto location = _records.begin();
-    while(location!=_records.end() && bcf1_not_equal(*location,record))
+    while(location!=_records.end() && bcf1_not_equal(*location,tmp))
     {
         location++;
     }

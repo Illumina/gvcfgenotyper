@@ -302,10 +302,12 @@ vector<bcf1_t *> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
 //    {
 //        return(ret);
 //    }
-    auto it = _buffer.front();
-    while(!_buffer.empty() && chrom==it->rid && stop>=it->pos);
+
+    auto it = _buffer.begin();
+    while(!_buffer.empty() && it != _buffer.end() && chrom==(*it)->rid && stop>=(*it)->pos)
     {
-        ret.push_back(it);
+        ret.push_back(*it);
         it++;
     }
+    return(ret);
 }

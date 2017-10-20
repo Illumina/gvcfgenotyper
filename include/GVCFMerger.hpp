@@ -23,7 +23,7 @@ public:
     void collapse(bcf1_t *output);
     int get_pos() {return _pos;};
     int get_rid() {return _rid;};
-
+    int num_alleles() {return _records.size();};
 private:
     int _rid,_pos;
     bcf_hdr_t *_hdr;
@@ -43,7 +43,7 @@ public:
 
 private:
     void build_header();
-    void set_output_buffers_to_missing();
+    void set_output_buffers_to_missing(int num_alleles);
     vector<GVCFReader> _readers;
     int _num_gvcfs;
     bool all_readers_empty();

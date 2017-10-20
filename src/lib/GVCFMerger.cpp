@@ -74,6 +74,7 @@ multiAllele GVCFMerger::get_next_variant()
     }
     assert(min_rec != nullptr);
     multiAllele ret(min_rec->rid,min_rec->pos,_output_header);
+
     for(auto it=_readers.begin();it!=_readers.end();it++)
     {
         std::vector<bcf1_t *> variants = it->get_all_variants_in_interval(min_rec->rid,min_rec->pos);
@@ -97,19 +98,27 @@ bool GVCFMerger::all_readers_empty()
     return (true);
 }
 
-void GVCFMerger::set_output_buffers_to_missing()
+void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 {
-    for (int i = 0; i < _num_gvcfs; i++)
-    {
-        _format_gt[i * 2] = bcf_gt_missing;
-        _format_gt[i * 2 + 1] = bcf_gt_missing;
-        _format_ad[i * 2] = bcf_int32_missing;
-        _format_ad[i * 2 + 1] = bcf_int32_missing;
-        _format_dp[i] = bcf_int32_missing;
-        _format_gq[i] = bcf_int32_missing;
-        _format_dpf[i] = bcf_int32_missing;
-        _format_ps[i] = bcf_int32_missing;
-    }
+    _format_ad = (int32_t *)realloc(_format_ad,num_alleles * _num_gvcfs * sizeof(int32_t));
+    std::fill(_format_gt,_format_gt + 2*_num_gvcfs,bcf_gt_missing);
+    std::fill(_format_ad,_format_ad + num_alleles * _num_gvcfs,bcf_int32_missing);
+    std::fill(_format_dp,_format_dp + _num_gvcfs,bcf_int32_missing);
+    std::fill(_format_dpf,_format_dpf + _num_gvcfs,bcf_int32_missing);
+    std::fill(_format_gq,_format_gq + _num_gvcfs,bcf_int32_missing);
+    std::fill(_format_ps,_format_ps + _num_gvcfs,bcf_int32_missing);
+//
+//    for (int i = 0; i < _num_gvcfs; i++)
+//    {
+//        _format_gt[i * 2] = bcf_gt_missing;
+//        _format_gt[i * 2 + 1] = bcf_gt_missing;
+//        _format_ad[i * 2] = bcf_int32_missing;
+//        _format_ad[i * 2 + 1] = bcf_int32_missing;
+//        _format_dp[i] = bcf_int32_missing;
+//        _format_gq[i] = bcf_int32_missing;
+//        _format_dpf[i] = bcf_int32_missing;
+//        _format_ps[i] = bcf_int32_missing;
+//    }
 }
 
 bcf1_t *GVCFMerger::next()
@@ -125,69 +134,73 @@ bcf1_t *GVCFMerger::next()
     m.collapse(_output_record);
     _output_record->qual = 0;
 #ifdef DEBUG
+    std::cerr<<"GVCFMerger::next()"<<std::endl;
     print_variant(_output_header,_output_record);
 #endif
     //fill in the format information for every sample.
-    set_output_buffers_to_missing();
+    set_output_buffers_to_missing(_output_record->n_allele);
 
     // count the number of written PS tags
     unsigned nps_written(0);
     for (int i = 0; i < _num_gvcfs; i++)
     {
-        vector<bcf1_t  *>  sample_variants = _readers[i].get_all_variants_in_interval(m.get_rid(),m.get_pos());
+        std::vector<bcf1_t *>  sample_variants = _readers[i].get_all_variants_in_interval(m.get_rid(),m.get_pos());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
 
         if (!sample_variants.empty())
-        {//this sample has an explicit copy of the variant. just copy the format fields into output rrecorc
-            bcf1_t  *sample_record = sample_variants.front();
-            _output_record->qual += sample_record->qual;
-            int nval = 2;
-            int32_t *ptr = _format_gt + 2 * i;
-            int num_gt_in_sample = bcf_get_genotypes(sample_header, sample_record, &ptr, &nval);
-            if (num_gt_in_sample != 2 && num_gt_in_sample != 1)
+        {//this sample has an explicit variant at this position, we need to populate its FORMAT field
+            for(auto it=sample_variants.begin();it!=sample_variants.end();it++)
             {
-                std::cerr << _output_record->rid << ":" << _output_record->pos + 1 << ":" << _output_record->d.allele[0]
-                          << ":" << _output_record->d.allele[1] << std::endl;
-                throw std::runtime_error("GVCFMerger: invalid genotypes");
-            }
-            if (num_gt_in_sample == 1)//pad the GT with vector_end
-            {
-                ptr[1] = bcf_int32_vector_end;
-            }
-            ptr = _format_ad + 2 * i;
+                bcf1_t *sample_record = *it;
+                _output_record->qual += sample_record->qual;
+                Genotype g(_readers[i].get_header(), sample_record);
 
-            assert(bcf_get_format_int32(sample_header, sample_record, "AD", &ptr, &nval) == 2);
-            nval = 1;
-            ptr = _format_dp + i;
-            if (bcf_get_format_int32(sample_header, sample_record, "DP", &ptr, &nval) < 0)
-            {//FORMAT/DP not present (indels)P. we take DP = SUM(AD)
-                _format_dp[i] = _format_ad[2 * i] + _format_ad[2 * i + 1];
-            }
-            ptr = _format_dpf + i;
-            bcf_get_format_int32(sample_header, sample_record, "DPF", &ptr, &nval);
-
-            //this is a bit dangerous: we specify GQ as Float when it should be Integer according to vcf spec
-            //so we have to do some fiddly casting
-            float *gq_ptr = nullptr;
-            nval = 0;
-            if (bcf_get_format_float(sample_header, sample_record, "GQ", &gq_ptr, &nval) != 1)
-            {
-                if (!var_without_gq_seen) {
-                    std::cerr << "WARNING: missing FORMAT/GQ at " << bcf_hdr_id2name(_output_header, _output_record->rid) \
-                        << ":" << _output_record->pos + 1 << ":" << _output_record->d.allele[0] << ":" << _output_record->d.allele[1] \
-                         << std::endl;
-                    std::cerr << "Suppressing future warnings. " << std::endl;
-                    var_without_gq_seen=true;
+                int nval = 2;
+                int32_t *ptr = _format_gt + 2 * i;
+                int num_gt_in_sample = bcf_get_genotypes(sample_header, sample_record, &ptr, &nval);
+                if (num_gt_in_sample != 2 && num_gt_in_sample != 1) {
+                    std::cerr << _output_record->rid << ":" << _output_record->pos + 1 << ":"
+                              << _output_record->d.allele[0]
+                              << ":" << _output_record->d.allele[1] << std::endl;
+                    throw std::runtime_error("GVCFMerger: invalid genotypes");
                 }
+                if (num_gt_in_sample == 1)//pad the GT with vector_end
+                {
+                    ptr[1] = bcf_int32_vector_end;
+                }
+                ptr = _format_ad + 2 * i;
+                //            Genotype old_genotype(_hdr, decomposed_record);
+                assert(bcf_get_format_int32(sample_header, sample_record, "AD", &ptr, &nval) == 2);
+                nval = 1;
+                ptr = _format_dp + i;
+                if (bcf_get_format_int32(sample_header, sample_record, "DP", &ptr, &nval) <
+                    0) {//FORMAT/DP not present (indels)P. we take DP = SUM(AD)
+                    _format_dp[i] = _format_ad[2 * i] + _format_ad[2 * i + 1];
+                }
+                ptr = _format_dpf + i;
+                bcf_get_format_int32(sample_header, sample_record, "DPF", &ptr, &nval);
+
+                //this is a bit dangerous: we specify GQ as Float when it should be Integer according to vcf spec
+                //so we have to do some fiddly casting
+                float *gq_ptr = nullptr;
+                nval = 0;
+                if (bcf_get_format_float(sample_header, sample_record, "GQ", &gq_ptr, &nval) != 1) {
+                    if (!var_without_gq_seen) {
+                        std::cerr << "WARNING: missing FORMAT/GQ at "
+                                  << bcf_hdr_id2name(_output_header, _output_record->rid) \
+ << ":" << _output_record->pos + 1 << ":" << _output_record->d.allele[0] << ":" << _output_record->d.allele[1] \
+ << std::endl;
+                        std::cerr << "Suppressing future warnings. " << std::endl;
+                        var_without_gq_seen = true;
+                    }
+                } else {
+                    _format_gq[i] = (int32_t) (*gq_ptr);
+                    free(gq_ptr);
+                }
+                ptr = _format_ps + i;
+                int res = bcf_get_format_int32(sample_header, sample_record, "PS", &ptr, &nval);
+                nps_written += (res > 0 ? res : 0);
             }
-            else
-            {
-                _format_gq[i] = (int32_t) (*gq_ptr);
-                free(gq_ptr);
-            }
-            ptr = _format_ps + i;
-            int res = bcf_get_format_int32(sample_header, sample_record, "PS", &ptr, &nval);
-            nps_written += (res > 0 ? res : 0);
         }
         else    //this sample does not have the variant, reconstruct the format fields from homref blocks
         {

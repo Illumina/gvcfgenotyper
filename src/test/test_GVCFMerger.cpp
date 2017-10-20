@@ -33,6 +33,7 @@ TEST(multiAllele,test1)
 
     multiAllele m(rid,pos,hdr);
     ASSERT_EQ(m.allele(rec1),1);
+    ASSERT_EQ(m.allele(rec1),1);
     ASSERT_EQ(m.allele(rec2),2);
     ASSERT_EQ(m.allele(rec1),1);
     ASSERT_EQ(m.allele(rec3),0);
