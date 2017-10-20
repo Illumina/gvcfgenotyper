@@ -60,12 +60,11 @@ int multiAllele::allele(bcf1_t *record)
     }
 }
 
-bcf1_t *multiAllele::collapse()
+void multiAllele::collapse(bcf1_t *output)
 {
     assert(!_records.empty());
-    bcf1_t *ret = bcf_init1();
-    ret->pos = _pos;
-    ret->rid = _rid;
+    output->pos = _pos;
+    output->rid = _rid;
 
     int num_alleles = (int)_records.size()+1;
     char **new_alleles = (char **)malloc(sizeof(char*) * num_alleles);
@@ -94,11 +93,10 @@ bcf1_t *multiAllele::collapse()
         memcpy(new_alleles[index],new_alt,strlen(new_alt));
         memcpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad+1);
     }
-    bcf_update_alleles(_hdr,ret,(const char**)new_alleles,num_alleles);
+    bcf_update_alleles(_hdr,output,(const char**)new_alleles,num_alleles);
     for(size_t i=0;i<_records.size();i++)
     {
         free(new_alleles[i]);
     }
     free(new_alleles);
-    return(ret);
 }

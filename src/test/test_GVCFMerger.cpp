@@ -40,7 +40,8 @@ TEST(multiAllele,test1)
     ASSERT_EQ(m.allele(rec4),3);
     ASSERT_EQ(m.allele(rec5),4);
 
-    bcf1_t *v = m.collapse();
+    bcf1_t *v = bcf_init1();
+    m.collapse(v);
     print_variant(hdr,v);
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
@@ -50,6 +51,7 @@ TEST(multiAllele,test1)
     bcf_destroy(rec3);
     bcf_destroy(rec4);
     bcf_destroy(rec5);
+    bcf_destroy(v);
 }
 
 TEST(GVCFMerger, platinumGenomeTinyTest)

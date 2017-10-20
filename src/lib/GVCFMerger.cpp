@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include <stdexcept>
 #include <htslib/vcf.h>
-// #define DEBUG
+ #define DEBUG
 
 GVCFMerger::~GVCFMerger()
 {
@@ -54,13 +54,10 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _output_record = bcf_init1();
 }
 
-int GVCFMerger::get_next_pos(int & rid,int & pos)
+multiAllele GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);
-    if (all_readers_empty())
-    {
-        return (0);
-    }
+    assert(!all_readers_empty());
     bcf1_t *min_rec = nullptr;
     int min_index = -1;
     for (int i = 0; i < _num_gvcfs; i++)
@@ -76,9 +73,16 @@ int GVCFMerger::get_next_pos(int & rid,int & pos)
         }
     }
     assert(min_rec != nullptr);
-    pos = min_rec->pos;
-    rid = min_rec->rid;
-    return(1);
+    multiAllele ret(min_rec->rid,min_rec->pos,_output_header);
+    for(auto it=_readers.begin();it!=_readers.end();it++)
+    {
+        std::vector<bcf1_t *> variants = it->get_all_variants_in_interval(min_rec->rid,min_rec->pos);
+        for(auto rec = variants.begin();rec!=variants.end();rec++)
+        {
+            ret.allele(*rec);
+        }
+    }
+    return(ret);
 }
 
 bool GVCFMerger::all_readers_empty()
@@ -116,13 +120,9 @@ bcf1_t *GVCFMerger::next()
     }
     bcf_clear(_output_record);
     DepthBlock homref_block;//working structure to store homref info.
-
-    int next_rid,next_pos;
-    get_next_pos(next_rid,next_pos);
+    multiAllele m = get_next_variant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
-    _output_record->rid = next_rid;
-    _output_record->pos = next_pos;
-    multiAllele m(next_rid,next_pos,_output_header);
+    m.collapse(_output_record);
     _output_record->qual = 0;
 #ifdef DEBUG
     print_variant(_output_header,_output_record);
@@ -134,11 +134,12 @@ bcf1_t *GVCFMerger::next()
     unsigned nps_written(0);
     for (int i = 0; i < _num_gvcfs; i++)
     {
-        bcf1_t *sample_record = _readers[i].front();
+        vector<bcf1_t  *>  sample_variants = _readers[i].get_all_variants_in_interval(m.get_rid(),m.get_pos());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
 
-        if (sample_record != nullptr && bcf1_equal(sample_record, _output_record))
+        if (!sample_variants.empty())
         {//this sample has an explicit copy of the variant. just copy the format fields into output rrecorc
+            bcf1_t  *sample_record = sample_variants.front();
             _output_record->qual += sample_record->qual;
             int nval = 2;
             int32_t *ptr = _format_gt + 2 * i;
@@ -167,7 +168,6 @@ bcf1_t *GVCFMerger::next()
 
             //this is a bit dangerous: we specify GQ as Float when it should be Integer according to vcf spec
             //so we have to do some fiddly casting
-            //solution is to make this general such that it handles integer or float
             float *gq_ptr = nullptr;
             nval = 0;
             if (bcf_get_format_float(sample_header, sample_record, "GQ", &gq_ptr, &nval) != 1)

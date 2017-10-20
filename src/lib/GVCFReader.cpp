@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "GVCFReader.hpp"
 #include "StringUtil.hpp"
 //#define DEBUG
@@ -286,4 +287,25 @@ size_t GVCFReader::get_num_variants()
 size_t GVCFReader::get_num_depth()
 {
     return (_depth_buffer.size());
+}
+
+//gets all variants in interval start<=x<=stop
+vector<bcf1_t *> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
+{
+    return(_variant_buffer.get_all_variants_in_interval(chrom,stop));
+}
+
+vector<bcf1_t *> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
+{
+    vector<bcf1_t *> ret;
+//    if(_buffer.empty() || chrom!=_buffer.front()->rid || stop<_buffer.front()->pos)
+//    {
+//        return(ret);
+//    }
+    auto it = _buffer.front();
+    while(!_buffer.empty() && chrom==it->rid && stop>=it->pos);
+    {
+        ret.push_back(it);
+        it++;
+    }
 }
