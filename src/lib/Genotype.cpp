@@ -20,15 +20,17 @@ Genotype::Genotype(int ploidy, int num_allele)
     _gl.assign(_num_pl, 0.);
 }
 
-Genotype::Genotype(bcf_hdr_t *header, bcf1_t *record)
+Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 {
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
 
     //this chunk of codes reads our canonical FORMAT fields (PL,GQ,DP,DPF,AD)
-    _gt = _ad = _gq = _dpf = _dp = _pl = nullptr;
-    _num_gt = 0;
+    _gt = (int *)malloc(2*sizeof(int));//force gt to be of length 2.
+    _gt[1] = bcf_int32_vector_end;
+    _ad = _gq = _dpf = _dp = _pl = nullptr;
+    _num_gt = 2;
     _ploidy = bcf_get_genotypes(header, record, &_gt, &_num_gt);
     assert(_ploidy >= 0 && _ploidy <= 2);
     _num_gl = _ploidy == 1 ? _ploidy : _num_allele * (1 + _num_allele) / 2;
@@ -55,7 +57,7 @@ Genotype::Genotype(bcf_hdr_t *header, bcf1_t *record)
         float *tmp_gq = nullptr;
         _num_gq = 0;
         assert(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) == 1);
-        _gq = new int32_t[1];
+        _gq = (int32_t  *)malloc(sizeof(int32_t));
         _gq[0] = (int32_t) tmp_gq[0];
         free(tmp_gq);
     }

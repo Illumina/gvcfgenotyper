@@ -32,7 +32,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
 class Genotype
 {
 public:
-    Genotype(bcf_hdr_t *header, bcf1_t *record);
+    Genotype(bcf_hdr_t const *header, bcf1_t *record);
 
     Genotype(int ploidy, int num_allele);
 

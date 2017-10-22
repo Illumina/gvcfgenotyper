@@ -60,6 +60,7 @@ void remove_info(bcf1_t *line)
 
 int GVCFReader::flush_buffer(const bcf1_t *record)
 {
+    assert(record!=nullptr);
     _depth_buffer.flush_buffer(record->rid, record->pos - 1);
     int num_flushed = _variant_buffer.flush_buffer(record);
     fill_buffer();
