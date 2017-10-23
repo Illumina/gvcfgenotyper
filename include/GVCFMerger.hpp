@@ -45,7 +45,7 @@ private:
     void build_header();
     void set_output_buffers_to_missing(int num_alleles);
     vector<GVCFReader> _readers;
-    int _num_gvcfs;
+    size_t _num_gvcfs;
     bool all_readers_empty();
 
 //stuff for output
@@ -53,7 +53,8 @@ private:
     htsFile *_output_file;
     bcf_hdr_t *_output_header;
     int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps, *format_pl;
-    bool var_without_gq_seen;
+    bool _var_without_gq_seen;
+    int _num_variants;
 };
 
 #endif

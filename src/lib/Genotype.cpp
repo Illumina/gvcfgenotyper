@@ -33,12 +33,25 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _num_gt = 2;
     _ploidy = bcf_get_genotypes(header, record, &_gt, &_num_gt);
     assert(_ploidy >= 0 && _ploidy <= 2);
-    _num_gl = _ploidy == 1 ? _ploidy : _num_allele * (1 + _num_allele) / 2;
+    _num_pl = _num_gl = _ploidy == 1 ? _num_allele : _num_allele * (1 + _num_allele) / 2;
     _num_ad = 0, _num_gq = 0, _num_dpf = 0, _num_pl = 0, _num_dp = 0;
 
+    _pl = (int32_t *)malloc(sizeof(int32_t)*_num_gl);
     int ret;
     ret = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
-    assert(ret == _num_gl);
+    if(ret==1)
+    {
+        std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
+        std::fill(_pl,_pl+_num_gl,bcf_int32_missing);
+        ret=_num_gl;
+    }
+
+    if(ret != _num_gl)
+    {
+        print_variant((bcf_hdr_t *)header,record);
+        std::cerr << "Got " << ret << " values instead of " << _num_gl << std::endl;
+        die("incorrect number of values in  FORMAT/PL");
+    }
     assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
     if (bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp) == -3)
     {

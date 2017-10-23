@@ -201,6 +201,7 @@ int GVCFReader::read_lines(int num_lines)
             vector<bcf1_t *> atomised_variants = _normaliser->unarise(_bcf_record);
             for (size_t i = 0; i < atomised_variants.size(); i++)
             {
+//                print_variant(_bcf_header,atomised_variants[i]); //debug
                 _variant_buffer.push_back(atomised_variants[i]);
             }
             num_read++;

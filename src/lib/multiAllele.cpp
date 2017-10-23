@@ -85,7 +85,11 @@ void multiAllele::collapse(bcf1_t *output)
     strcpy(new_alleles[index++],ptr_to_longest);
     for(auto rec=_records.begin();rec!=_records.end();rec++)
     {
-        assert(strncmp(new_alleles[0],(*rec)->d.allele[0],strlen((*rec)->d.allele[0]))==0);
+        if(strncmp(new_alleles[0],(*rec)->d.allele[0],strlen((*rec)->d.allele[0]))!=0)
+        {
+            std::cerr << _pos+1 << " " <<  new_alleles[0] << "!=" <<(*rec)->d.allele[0] << std::endl;
+            die("inconsistent REF");
+        }
         size_t old_ref_len = strlen((*rec)->d.allele[0]);
         size_t rightpad = max_ref_len - old_ref_len;
         char *new_alt=(*rec)->d.allele[1];

@@ -129,23 +129,16 @@ static bool bcf1_less_than(const bcf1_t *a, const bcf1_t *b)
 
     if (a->pos == b->pos)
     {
-        if (a->n_allele < b->n_allele)
+        for (int i = 0; i < min(a->n_allele,b->n_allele); i++)
         {
-            return (true);
-        }
-        else
-        {
-            for (int i = 0; i < a->n_allele; i++)
+            int val = strcmp(a->d.allele[i], b->d.allele[i]);
+            if (val < 0)
             {
-                int val = strcmp(a->d.allele[i], b->d.allele[i]);
-                if (val < 0)
-                {
-                    return (true);
-                }
-                if (val > 0)
-                {
-                    return (false);
-                }
+                return (true);
+            }
+            if (val > 0)
+            {
+                return (false);
             }
         }
     }

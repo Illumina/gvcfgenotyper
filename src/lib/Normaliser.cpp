@@ -161,18 +161,20 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
             bcf1_t *new_record = bcf_init1();
             new_record->rid = decomposed_record->rid;
             new_record->pos = decomposed_record->pos;
-
             new_alleles[reference_allele] = decomposed_record->d.allele[reference_allele];
             new_alleles[primary_allele] = decomposed_record->d.allele[i];
+            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
+            if (realign(_norm_args, new_record) != ERR_OK)
+            {
+                die("vcf record did not match the reference");
+            }
+            new_alleles[reference_allele] = new_record->d.allele[0];
+            new_alleles[primary_allele] = new_record->d.allele[1];
             bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
 
             Genotype new_genotype = old_genotype.marginalise(i);
             new_genotype.update_bcf1_t(_hdr, new_record);
 
-            if (realign(_norm_args, new_record) != ERR_OK)
-            {
-                die("vcf record did not match the reference");
-            }
 
             atomised_variants.push_back(new_record);
         }

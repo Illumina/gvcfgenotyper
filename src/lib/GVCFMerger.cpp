@@ -27,6 +27,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
                        const string &region /*= ""*/,
                        const int is_file /*= 0*/)
 {
+    _num_variants=0;
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" << std::endl;
@@ -37,7 +38,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     }
     assert(_readers.size() == _num_gvcfs);
 
-    _output_file = hts_open(output_filename != "" ? output_filename.c_str() : "-", ("w" + output_mode).c_str());
+    _output_file = hts_open(!output_filename.empty() ? output_filename.c_str() : "-", ("w" + output_mode).c_str());
 
     if (!_output_file)
     {
@@ -116,6 +117,8 @@ bcf1_t *GVCFMerger::next()
     {
         return (nullptr);
     }
+    int prev_pos = _output_record->pos;
+    int prev_rid = _output_record->rid;
     bcf_clear(_output_record);
     DepthBlock homref_block;//working structure to store homref info.
     multiAllele m = get_next_variant(); //stores all the alleles at the next position.
@@ -126,6 +129,7 @@ bcf1_t *GVCFMerger::next()
     std::cerr << "GVCFMerger::next()" << std::endl;
     print_variant(_output_header, _output_record);
 #endif
+    assert(_num_variants==0 || _output_record->pos>prev_pos || _output_record->rid>prev_rid);
     //fill in the format information for every sample.
     set_output_buffers_to_missing(_output_record->n_allele);
 
@@ -161,7 +165,9 @@ bcf1_t *GVCFMerger::next()
                 _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
             }
         }
-        _readers[i].flush_buffer(_output_record);
+        _readers[i].flush_buffer(_output_record->rid,_output_record->pos+1);
+        _readers[i].flush_buffer(_output_record->rid,_output_record->pos+1);
+        _num_variants++;;
     }
 #ifdef DEBUG
     std::cerr << "BUFFER SIZES:";
