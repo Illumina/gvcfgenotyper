@@ -144,7 +144,7 @@ TEST(Normaliser, unarise1)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
-    print_variant(hdr, record1);
+    //print_variant(hdr, record1);
 
 
     vector<bcf1_t *> buffer = norm.unarise(record1);
@@ -154,7 +154,7 @@ TEST(Normaliser, unarise1)
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         bcf_write1(output_file, hdr, *it);
-        print_variant(hdr, *it);
+        //print_variant(hdr, *it);
     }
     hts_close(output_file);
 }
@@ -183,7 +183,7 @@ TEST(Normaliser, unarise2)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
-    print_variant(hdr, record1);
+    //print_variant(hdr, record1);
 
     vector<bcf1_t *> buffer = norm.unarise(record1);
     htsFile *output_file = hts_open("test.out", "wv");
@@ -192,7 +192,7 @@ TEST(Normaliser, unarise2)
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         bcf_write1(output_file, hdr, *it);
-        print_variant(hdr, *it);
+        //print_variant(hdr, *it);
     }
     hts_close(output_file);
 }
@@ -220,7 +220,7 @@ TEST(Normaliser, unarise3)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
-    print_variant(hdr, record1);
+    //print_variant(hdr, record1);
 
 
     vector<bcf1_t *> buffer = norm.unarise(record1);
@@ -230,7 +230,7 @@ TEST(Normaliser, unarise3)
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         bcf_write1(output_file, hdr, *it);
-        print_variant(hdr, *it);
+        //print_variant(hdr, *it);
     }
     hts_close(output_file);
 }
@@ -254,7 +254,7 @@ TEST(Normaliser, qual)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
-    print_variant(hdr, record1);
+    //print_variant(hdr, record1);
 
     vector<bcf1_t *> buffer = norm.unarise(record1);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
