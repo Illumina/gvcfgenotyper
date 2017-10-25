@@ -1,10 +1,12 @@
 #!/bin/bash
 
+set -e
+
 tmpdir=`mktemp -d`
 
 bcftools=/illumina/thirdparty/bcftools/bcftools-1.5/bcftools
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../data/smoke_test_output/
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../../data/smoke_test_output/
 
 echo running FORMAT/PS behaviour test....
 
