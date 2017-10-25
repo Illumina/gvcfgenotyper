@@ -23,12 +23,63 @@ TEST(UtilTest, comparators)
     ASSERT_FALSE(bcf1_equal(record1, record2));
     ASSERT_TRUE(bcf1_less_than(record1, record2));
     ASSERT_FALSE(bcf1_greater_than(record1, record2));
+    ASSERT_TRUE(bcf1_leq(record2,record2));
 
     record2->pos = record1->pos = 2399;
     bcf_update_alleles_str(hdr, record1, "C,CTTTTTT");
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_snp(record1));
+
+    bcf_update_alleles_str(hdr, record2, "CTTTTT,C");
+    ASSERT_TRUE(is_deletion(record2));
+    ASSERT_FALSE(is_insertion(record2));
+    ASSERT_FALSE(is_snp(record2));
+
+    ASSERT_TRUE(bcf1_less_than(record1, record2));
+    ASSERT_FALSE(bcf1_less_than(record2, record1));
+
+    bcf_update_alleles_str(hdr, record1, "C,G");
     bcf_update_alleles_str(hdr, record2, "CTTTTT,C");
     ASSERT_TRUE(bcf1_less_than(record1, record2));
     ASSERT_FALSE(bcf1_less_than(record2, record1));
+
+    bcf_update_alleles_str(hdr, record1, "C,G");
+    ASSERT_TRUE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+
+    bcf_update_alleles_str(hdr, record1, "C,CGGGG");
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_FALSE(is_complex(record1));
+
+    bcf_update_alleles_str(hdr, record1, "CTTTTTT,C");
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_TRUE(is_deletion(record1));
+    ASSERT_FALSE(is_complex(record1));
+
+    bcf_update_alleles_str(hdr, record1, "CTTTTTT,G");
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_TRUE(is_complex(record1));
+
+    bcf_update_alleles_str(hdr, record1, "T,C");
+    bcf_update_alleles_str(hdr, record2, "T,C,X");
+    ASSERT_TRUE(bcf1_leq(record1,record2));
+
+    bcf_update_alleles_str(hdr, record1, "C,CA");
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+
+    bcf_update_alleles_str(hdr, record2, "CAAAAAAA,CA,C,CAA");
+    ASSERT_TRUE(is_deletion(record2));
+    ASSERT_FALSE(is_insertion(record2));
+
+    ASSERT_TRUE(bcf1_leq(record1,record2));
 }
 
 TEST(UtilTest, GenotypeIndex)

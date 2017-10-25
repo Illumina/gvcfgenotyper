@@ -51,10 +51,10 @@ int VariantBuffer::push_back(bcf1_t *rec)
     return (1);
 }
 
-int VariantBuffer::flush_buffer(const bcf1_t *record)
+int VariantBuffer::flush_buffer(bcf1_t const *record)
 {
     int num_flushed = 0;
-    while (_buffer.size() > 0 && bcf1_leq(_buffer.front(), record))
+    while (!_buffer.empty() && bcf1_leq(_buffer.front(), record))
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
@@ -66,13 +66,13 @@ int VariantBuffer::flush_buffer(const bcf1_t *record)
 int VariantBuffer::flush_buffer(int chrom, int pos)
 {
     int num_flushed = 0;
-    while (_buffer.size() > 0 && _buffer.front()->rid < chrom)
+    while (!_buffer.empty() && _buffer.front()->rid < chrom)
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
         num_flushed++;
     }
-    while (_buffer.size() > 0 && _buffer.front()->pos < pos && _buffer.front()->rid == chrom)
+    while (!_buffer.empty() && _buffer.front()->pos < pos && _buffer.front()->rid == chrom)
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
@@ -83,7 +83,7 @@ int VariantBuffer::flush_buffer(int chrom, int pos)
 
 int VariantBuffer::flush_buffer()
 {
-    if (_buffer.size() > 0)
+    if (!_buffer.empty())
     {
         int ret = flush_buffer(_buffer.back()->rid, _buffer.back()->pos);
         return (ret);

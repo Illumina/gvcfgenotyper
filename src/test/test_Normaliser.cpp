@@ -5,6 +5,7 @@
 #include "gtest/gtest.h"
 #include "GVCFReader.hpp"
 #include "common.hpp"
+#include "test_utils.h"
 
 TEST(Normaliser, mnp_split1)
 {
@@ -95,6 +96,30 @@ TEST(Normaliser, mnp_split2)
     ASSERT_TRUE(bcf1_equal(record3, buffer[1]));
 }
 
+TEST(Normaliser, mnp_split3)
+{
+    int rid=3;
+    int pos=527;
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr,rid,pos,"CATTCAAGTGC,CGTTTAAGCGA");
+    int32_t ad[2] = {10, 17};
+    int32_t gt[2] = {bcf_gt_unphased(1), bcf_gt_unphased(2)};
+    int32_t dp = ad[0] + ad[1];
+    int32_t pl[3] = {255,0,255};
+    float gq = 58;
+    bcf_update_genotypes(hdr,record1,gt,2);
+    bcf_update_format_int32(hdr, record1, "DPI", &dp, 1);
+    bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
+    bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
+    bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
+    vector<bcf1_t *> decomposed;
+    mnp_split(record1,hdr,decomposed);
+    for(auto rec = decomposed.begin();rec!=decomposed.end();rec++)
+    {
+        Genotype g(hdr,*rec);
+        ASSERT_EQ(g.get_dp(),bcf_int32_missing);
+    }
+}
 
 TEST(Normaliser, unarise1)
 {
@@ -210,3 +235,30 @@ TEST(Normaliser, unarise3)
     hts_close(output_file);
 }
 
+//regression test checking that QUAL is correctly propagated by Normaliser::unarise
+TEST(Normaliser, qual)
+{
+    int rid=1;
+    int pos=4151;
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,rid,pos,"A,ATTT");
+    int qual = 221;
+    record1->qual = qual;
+    int32_t ad[2] = {17, 10};
+    int32_t pl[3] = {255, 0,255};
+    int32_t gt[2] = {bcf_gt_unphased(0), bcf_gt_unphased(1)};
+    float gq = 58;
+    bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
+    bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
+    bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
+    bcf_update_genotypes(hdr, record1, gt, 2);
+    print_variant(hdr, record1);
+
+    vector<bcf1_t *> buffer = norm.unarise(record1);
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        ASSERT_FLOAT_EQ((*it)->qual,221);
+    }
+}

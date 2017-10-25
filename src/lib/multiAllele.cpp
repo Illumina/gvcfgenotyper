@@ -60,6 +60,19 @@ int multiAllele::allele(bcf1_t *record)
     }
 }
 
+bcf1_t *multiAllele::get_max()
+{
+    bcf1_t *ret = nullptr;
+    for(auto rec=_records.begin();rec!=_records.end();rec++)
+    {
+        if(ret== nullptr || bcf1_greater_than(*rec,ret))
+        {
+            ret = *rec;
+        }
+    }
+    return(ret);
+}
+
 void multiAllele::collapse(bcf1_t *output)
 {
     assert(!_records.empty());

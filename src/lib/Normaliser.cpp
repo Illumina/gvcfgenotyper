@@ -24,7 +24,12 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
         is_mnp = is_mnp && ref_len == strlen(alleles[i]);
     }
 
-    if (is_mnp)
+    if (!is_mnp)
+    {
+        output.push_back(bcf_dup(record_to_split));
+        return (1);
+    }
+    else
     {
         char **new_alleles = new char *[num_allele];
         for (int i = 0; i < num_allele; i++)
@@ -64,12 +69,12 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
                 bcf_unpack(new_var, BCF_UN_ALL);
                 new_var->pos += i;
                 bcf_update_alleles(header, new_var, (const char **) new_alleles, num_new_allele);
-                if (num_new_allele !=
-                    num_allele)//the number of alleles changed so we have to reformat the FORMAT fields
+                //the number of alleles changed so we have to reformat the FORMAT fields
+                int *ptr= nullptr,nptr=0;
+                if (num_new_allele != num_allele)
                 {
-                    Genotype new_genotype(old_genotype._ploidy, num_new_allele);
-
                     //creates a mapping from old alleles -> new alleles
+                    Genotype new_genotype(old_genotype._ploidy, num_new_allele);
                     vector<int> allele_remap(num_allele);
                     for (int new_allele = 0; new_allele < num_new_allele; new_allele++)
                     {
@@ -109,9 +114,9 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
                                                           allele_remap[j])] += old_genotype._gl[get_gl_index(i, j)];
                         }
                     }
+                    new_genotype._dp[0] = old_genotype._dp[0];
                     new_genotype._dpf[0] = old_genotype._dpf[0];
                     new_genotype._gq[0] = old_genotype._gq[0];
-                    new_genotype.setDepthFromAD();
                     new_genotype.update_bcf1_t(header, new_var);
                 }
                 output.push_back(new_var);
@@ -125,17 +130,18 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
         delete[] new_alleles;
         return (num_new_snps);
     }
-    else
-    {
-        output.push_back(bcf_dup(record_to_split));
-        return (1);
-    }
 }
 
 
 vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
 {
     vector<bcf1_t *> atomised_variants; //return value
+
+    //bi-allelic snp. just copy the variant into the buffer.
+    if(is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
+    {
+        atomised_variants.push_back(bcf_dup(bcf_record_to_marginalise));
+    }
 
     const int reference_allele = 0;
     const int primary_allele = 1;
@@ -148,7 +154,7 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     new_alleles[symbolic_allele][1] = '\0';
 
     //FIXME: we would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
-    //FIXME: for now this at least allows us to behave well for SNPs.
+    //FIXME: for now this at least allows us to behave well for SNPs that are hidden in MNPS
     vector<bcf1_t *> decomposed_variants;
     mnp_split(bcf_record_to_marginalise, _hdr, decomposed_variants);
 
@@ -161,6 +167,7 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
             bcf1_t *new_record = bcf_init1();
             new_record->rid = decomposed_record->rid;
             new_record->pos = decomposed_record->pos;
+            new_record->qual = decomposed_record->qual;
             new_alleles[reference_allele] = decomposed_record->d.allele[reference_allele];
             new_alleles[primary_allele] = decomposed_record->d.allele[i];
             bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
@@ -171,11 +178,8 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
             new_alleles[reference_allele] = new_record->d.allele[0];
             new_alleles[primary_allele] = new_record->d.allele[1];
             bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
-
             Genotype new_genotype = old_genotype.marginalise(i);
             new_genotype.update_bcf1_t(_hdr, new_record);
-
-
             atomised_variants.push_back(new_record);
         }
         bcf_destroy(decomposed_record);

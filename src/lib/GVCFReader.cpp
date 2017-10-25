@@ -191,7 +191,7 @@ int GVCFReader::read_lines(int num_lines)
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
         _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
-        if (_bcf_record->n_allele > 1)//is this line a variant?
+        if(is_variant(_bcf_record))
         {
             int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
             bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
@@ -199,10 +199,9 @@ int GVCFReader::read_lines(int num_lines)
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             remove_info(_bcf_record);
             vector<bcf1_t *> atomised_variants = _normaliser->unarise(_bcf_record);
-            for (size_t i = 0; i < atomised_variants.size(); i++)
+            for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
-//                print_variant(_bcf_header,atomised_variants[i]); //debug
-                _variant_buffer.push_back(atomised_variants[i]);
+                _variant_buffer.push_back(*v);
             }
             num_read++;
         }
@@ -216,8 +215,8 @@ int GVCFReader::read_lines(int num_lines)
             int32_t dp, dpf, gq, end;
             dp = *value_pointer;
             end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
-            //if it is a SNP use GQ else use GQX (this is a illumina GVCF quirk)
-            if (_bcf_record->n_allele > 1)
+            //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
+            if (is_variant(_bcf_record))
             {
                 bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
             }
@@ -297,16 +296,29 @@ vector<bcf1_t *> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
     return(_variant_buffer.get_all_variants_in_interval(chrom,stop));
 }
 
+vector<bcf1_t *> GVCFReader::get_all_variants_up_to(bcf1_t *record)
+{
+    return(_variant_buffer.get_all_variants_up_to(record));
+}
+
 vector<bcf1_t *> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
 {
     vector<bcf1_t *> ret;
-//    if(_buffer.empty() || chrom!=_buffer.front()->rid || stop<_buffer.front()->pos)
-//    {
-//        return(ret);
-//    }
 
     auto it = _buffer.begin();
     while(!_buffer.empty() && it != _buffer.end() && chrom==(*it)->rid && stop>=(*it)->pos)
+    {
+        ret.push_back(*it);
+        it++;
+    }
+    return(ret);
+}
+
+vector<bcf1_t *> VariantBuffer::get_all_variants_up_to(bcf1_t * record)
+{
+    vector<bcf1_t *> ret;
+    auto it = _buffer.begin();
+    while(!_buffer.empty() && it != _buffer.end() && bcf1_leq(*it,record))
     {
         ret.push_back(*it);
         it++;

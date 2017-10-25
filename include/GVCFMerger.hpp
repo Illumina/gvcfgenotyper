@@ -24,6 +24,7 @@ public:
     int get_pos() {return _pos;};
     int get_rid() {return _rid;};
     int num_alleles() {return _records.size();};
+    bcf1_t *get_max();//returns the maximum allele (as defined by bcf1_t_less_than)
 private:
     int _rid,_pos;
     bcf_hdr_t *_hdr;

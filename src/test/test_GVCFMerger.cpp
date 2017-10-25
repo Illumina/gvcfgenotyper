@@ -2,23 +2,8 @@
 #include "GVCFMerger.hpp"
 #include "common.hpp"
 #include "StringUtil.hpp"
-
+#include "test_utils.h"
 #include <dirent.h>
-
-static bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const string & alleles)
-{
-    bcf1_t *ret = bcf_init1();
-    ret->rid = rid;
-    ret->pos = pos;
-    bcf_update_alleles_str(hdr, ret, alleles.c_str());
-    return(ret);
-}
-
-static bcf_hdr_t *get_header()
-{
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
-    return(bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r")));
-}
 
 TEST(multiAllele,test1)
 {
@@ -81,8 +66,8 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
     int buffer_size = 200;
 
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
-    std::string output_file_name = std::tmpnam(NULL);
-//    std::cerr << "Outputting to " << output_file_name << std::endl;
+    std::string output_file_name = "test.out";//std::tmpnam(NULL);
+    std::cerr << "Outputting to " << output_file_name << std::endl;
     GVCFMerger g(files, output_file_name, "z", ref_file_name, buffer_size);
     g.write_vcf();
 }

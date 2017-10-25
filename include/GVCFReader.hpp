@@ -33,17 +33,17 @@ class Genotype
 {
 public:
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
-
     Genotype(int ploidy, int num_allele);
-
     Genotype marginalise(int index);
-
     ~Genotype();
-
     void setDepthFromAD();
-
     int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
-
+    int get_gq();
+    int get_dp();
+    int get_dpf();
+    int get_ad(int index);
+    void set_dp_missing();
+    bool is_dp_missing();
     int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl;
     int _num_allele, _num_pl, _ploidy, _num_gt, _num_ad, _num_gq, _num_dp, _num_dpf, _num_gl;
     std::vector<float> _gl;
@@ -70,7 +70,6 @@ class VariantBuffer
 {
 public:
     VariantBuffer();
-
     ~VariantBuffer();
 
     int push_back(bcf1_t *v);    //add a new variant (and sort if necessary)
@@ -78,6 +77,7 @@ public:
     int flush_buffer();//empty the buffer
     int flush_buffer(const bcf1_t *record);
     vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);//gets all variants in interval start<=x<=stop
+    vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);//gets all variants in interval start<=x<=stop
 
     bool has_variant(bcf1_t *v);//does the buffer already have v?
     bcf1_t *front(); //return pointer to current vcf record
@@ -164,6 +164,7 @@ public:
     int flush_buffer(int chrom, int pos);//empty buffer containing rows before and including chrom/pos
     int flush_buffer(const bcf1_t *record);
 
+    vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);
     vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
