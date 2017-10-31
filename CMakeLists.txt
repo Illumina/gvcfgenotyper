@@ -12,6 +12,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -pg -g -Wall")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -pg -g -Wall")
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
         message(FATAL_ERROR "GCC version must be at least 4.7")
