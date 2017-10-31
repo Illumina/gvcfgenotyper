@@ -64,7 +64,9 @@ int DepthBuffer::flush_buffer(int rid, int pos)
 
 int DepthBuffer::flush_buffer()
 {
-    return (flush_buffer(_buffer.back()._rid, _buffer.back()._end));
+    int num_flushed=_buffer.size();
+    _buffer.clear();
+    return num_flushed;
 }
 
 DepthBlock *DepthBuffer::back()

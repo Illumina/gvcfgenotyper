@@ -5,13 +5,13 @@
   </component>
   <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true" buildAllGenerated="true">
     <generated>
-      <config projectName="gvcfgenotyper" targetName="gtest" />
       <config projectName="gvcfgenotyper" targetName="libhts.a" />
-      <config projectName="gvcfgenotyper" targetName="gvcfgenotyper" />
-      <config projectName="gvcfgenotyper" targetName="gmock" />
       <config projectName="gvcfgenotyper" targetName="gmock_main" />
-      <config projectName="gvcfgenotyper" targetName="gtest_main" />
+      <config projectName="gvcfgenotyper" targetName="gtest" />
+      <config projectName="gvcfgenotyper" targetName="gvcfgenotyper" />
       <config projectName="gvcfgenotyper" targetName="test_gvcfgenotyper" />
+      <config projectName="gvcfgenotyper" targetName="gmock" />
+      <config projectName="gvcfgenotyper" targetName="gtest_main" />
     </generated>
   </component>
   <component name="CMakeSettings">
@@ -20,12 +20,14 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="46dc3e0c-6d36-4cb7-a3fd-a4a27b43f8ea" name="Default" comment="Merge remote-tracking branch 'remotes/origin/master' into multi_allelic_handling&#10;&#10;# Conflicts:&#10;#&#9;include/utils.hpp&#10;#&#9;src/lib/GVCFReader.cpp&#10;#&#9;src/lib/Normaliser.cpp&#10;#&#9;src/lib/utils.cpp&#10;#&#9;src/lib/vcfnorm.c">
+    <list default="true" id="46dc3e0c-6d36-4cb7-a3fd-a4a27b43f8ea" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/test_utils.h" afterPath="$PROJECT_DIR$/include/test_utils.h" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/utils.hpp" afterPath="$PROJECT_DIR$/include/utils.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/VariantBuffer.cpp" afterPath="$PROJECT_DIR$/src/lib/VariantBuffer.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/test_GVCFReader.cpp" afterPath="$PROJECT_DIR$/src/test/test_GVCFReader.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/DepthBuffer.cpp" afterPath="$PROJECT_DIR$/src/lib/DepthBuffer.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" afterPath="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/Genotype.cpp" afterPath="$PROJECT_DIR$/src/lib/Genotype.cpp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/Normaliser.cpp" afterPath="$PROJECT_DIR$/src/lib/Normaliser.cpp" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/test_utils.cpp" afterPath="$PROJECT_DIR$/src/test/test_utils.cpp" />
     </list>
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
@@ -751,31 +753,41 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="utils.hpp" pinned="false" current-in-tab="false">
+      <file leaf-file-name="utils.hpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/include/utils.hpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
-              <caret line="148" column="29" lean-forward="true" selection-start-line="148" selection-start-column="29" selection-end-line="148" selection-end-column="29" />
+            <state relative-caret-position="208">
+              <caret line="182" column="4" lean-forward="false" selection-start-line="182" selection-start-column="4" selection-end-line="182" selection-end-column="4" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_GVCFReader.cpp" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/test/test_GVCFReader.cpp">
+      <file leaf-file-name="test_utils.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/test_utils.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="415">
-              <caret line="67" column="31" lean-forward="true" selection-start-line="67" selection-start-column="31" selection-end-line="67" selection-end-column="31" />
+            <state relative-caret-position="365">
+              <caret line="92" column="0" lean-forward="false" selection-start-line="90" selection-start-column="0" selection-end-line="92" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="VariantBuffer.cpp" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/lib/VariantBuffer.cpp">
+      <file leaf-file-name="test_utils.h" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/include/test_utils.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="757">
-              <caret line="55" column="19" lean-forward="true" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+            <state relative-caret-position="426">
+              <caret line="39" column="92" lean-forward="false" selection-start-line="39" selection-start-column="92" selection-end-line="39" selection-end-column="92" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Normaliser.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/lib/Normaliser.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="847">
+              <caret line="127" column="33" lean-forward="false" selection-start-line="127" selection-start-column="33" selection-end-line="127" selection-end-column="33" />
               <folding />
             </state>
           </provider>
@@ -785,12 +797,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>vcf_parse(</find>
-      <find>sync1</find>
-      <find>update_alleles_str</find>
-      <find>sync</find>
-      <find>var_</find>
-      <find>update_id</find>
       <find>bcf_copy</find>
       <find>alleles</find>
       <find>print_v</find>
@@ -815,6 +821,12 @@
       <find>print_var</find>
       <find>ret</find>
       <find>print_</find>
+      <find>ncorrect</find>
+      <find>incorrect</find>
+      <find>flush_bu</find>
+      <find>flush_buffer(</find>
+      <find>depthbuffer</find>
+      <find>get_format</find>
     </findStrings>
     <replaceStrings>
       <replace>bcf_record_to_marginalise</replace>
@@ -865,22 +877,23 @@
         <option value="$PROJECT_DIR$/include/GVCFMerger.hpp" />
         <option value="$PROJECT_DIR$/include/test_utild.h" />
         <option value="$APPLICATION_CONFIG_DIR$/clion.vmoptions" />
-        <option value="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" />
         <option value="$PROJECT_DIR$/src/lib/GVCFReader.cpp" />
         <option value="$PROJECT_DIR$/include/GVCFReader.hpp" />
         <option value="$PROJECT_DIR$/external/htslib-1.5/vcf.c" />
         <option value="$PROJECT_DIR$/external/htslib-1.5/synced_bcf_reader.c" />
         <option value="$PROJECT_DIR$/external/htslib-1.5/htslib/vcf.h" />
         <option value="$PROJECT_DIR$/src/test/test_GVCFMerger.cpp" />
-        <option value="$PROJECT_DIR$/src/lib/Genotype.cpp" />
         <option value="$PROJECT_DIR$/src/lib/multiAllele.cpp" />
-        <option value="$PROJECT_DIR$/src/lib/Normaliser.cpp" />
         <option value="$PROJECT_DIR$/src/test/test_Normaliser.cpp" />
-        <option value="$PROJECT_DIR$/include/test_utils.h" />
-        <option value="$PROJECT_DIR$/src/test/test_utils.cpp" />
         <option value="$PROJECT_DIR$/src/lib/VariantBuffer.cpp" />
-        <option value="$PROJECT_DIR$/include/utils.hpp" />
         <option value="$PROJECT_DIR$/src/test/test_GVCFReader.cpp" />
+        <option value="$PROJECT_DIR$/src/lib/Genotype.cpp" />
+        <option value="$PROJECT_DIR$/src/lib/DepthBuffer.cpp" />
+        <option value="$PROJECT_DIR$/include/test_utils.h" />
+        <option value="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" />
+        <option value="$PROJECT_DIR$/src/test/test_utils.cpp" />
+        <option value="$PROJECT_DIR$/src/lib/Normaliser.cpp" />
+        <option value="$PROJECT_DIR$/include/utils.hpp" />
       </list>
     </option>
   </component>
@@ -1031,7 +1044,7 @@
       <workItem from="1508483212351" duration="152000" />
       <workItem from="1508741859956" duration="44161000" />
       <workItem from="1508945071562" duration="307000" />
-      <workItem from="1509447849722" duration="4077000" />
+      <workItem from="1509447849722" duration="6601000" />
     </task>
     <task id="LOCAL-00001" summary="multi-allelic work">
       <created>1507798001186</created>
@@ -1100,9 +1113,6 @@
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="test_gvcfgenotyper - 2017.10.23 at 12h 55m 08s.xml">
-      <configuration name="test_gvcfgenotyper" configurationId="CMakeGoogleTestRunConfigurationType" />
-    </history-entry>
     <history-entry file="test_gvcfgenotyper - 2017.10.23 at 12h 57m 21s.xml">
       <configuration name="test_gvcfgenotyper" configurationId="CMakeGoogleTestRunConfigurationType" />
     </history-entry>
@@ -1130,9 +1140,12 @@
     <history-entry file="test_gvcfgenotyper - 2017.10.27 at 15h 46m 50s.xml">
       <configuration name="test_gvcfgenotyper" configurationId="CMakeGoogleTestRunConfigurationType" />
     </history-entry>
+    <history-entry file="test_gvcfgenotyper - 2017.10.31 at 13h 12m 06s.xml">
+      <configuration name="test_gvcfgenotyper" configurationId="CMakeGoogleTestRunConfigurationType" />
+    </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="152229000" />
+    <option name="totallyTimeSpent" value="154753000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="2560" height="1415" extended-state="6" />
@@ -1140,14 +1153,14 @@
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.20429687" sideWeight="0.49439776" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2731446" sideWeight="0.49427754" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2731446" sideWeight="0.49427754" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.26931107" sideWeight="0.49570817" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32904884" sideWeight="0.50572246" order="8" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1992288" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25991648" sideWeight="0.4968051" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32985386" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3984576" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3978577" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.1512247" sideWeight="0.50560224" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297568" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -1181,19 +1194,22 @@
           <line>301</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/include/utils.hpp</url>
+          <line>185</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/include/utils.hpp</url>
+          <line>178</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="3" />
+      <option name="time" value="5" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/lib/Normaliser.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2745">
-          <caret line="183" column="0" lean-forward="false" selection-start-line="183" selection-start-column="0" selection-end-line="183" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/external/htslib-1.5/htslib/vcf.h">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="8385">
@@ -1236,7 +1252,7 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#4268#4366#0" expanded="false" />
-            <element signature="e#8937#9153#0" expanded="false" />
+            <element signature="e#8926#9142#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1297,7 +1313,7 @@
           <caret line="156" column="83" lean-forward="false" selection-start-line="156" selection-start-column="15" selection-end-line="156" selection-end-column="83" />
           <folding>
             <element signature="e#4268#4366#0" expanded="false" />
-            <element signature="e#8937#9153#0" expanded="false" />
+            <element signature="e#8926#9142#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1330,7 +1346,7 @@
           <caret line="156" column="83" lean-forward="false" selection-start-line="156" selection-start-column="15" selection-end-line="156" selection-end-column="83" />
           <folding>
             <element signature="e#4268#4366#0" expanded="false" />
-            <element signature="e#8937#9153#0" expanded="false" />
+            <element signature="e#8926#9142#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1363,7 +1379,7 @@
           <caret line="19" column="15" lean-forward="false" selection-start-line="19" selection-start-column="15" selection-end-line="19" selection-end-column="15" />
           <folding>
             <element signature="e#4268#4366#0" expanded="false" />
-            <element signature="e#8937#9153#0" expanded="false" />
+            <element signature="e#8926#9142#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -1387,13 +1403,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="132">
           <caret line="39" column="0" lean-forward="false" selection-start-line="39" selection-start-column="0" selection-end-line="39" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/lib/DepthBlock.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -1430,17 +1439,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/lib/GVCFMerger.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="269">
-          <caret line="86" column="58" lean-forward="false" selection-start-line="86" selection-start-column="58" selection-end-line="86" selection-end-column="58" />
-          <folding>
-            <element signature="e#4268#4366#0" expanded="false" />
-            <element signature="e#8937#9153#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/include/GVCFReader.hpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="130">
@@ -1468,21 +1466,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="136">
           <caret line="69" column="20" lean-forward="false" selection-start-line="69" selection-start-column="20" selection-end-line="69" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/external/htslib-1.5/htslib/vcf.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="181" column="41" lean-forward="false" selection-start-line="181" selection-start-column="37" selection-end-line="181" selection-end-column="41" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/lib/GVCFReader.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5454">
-          <caret line="303" column="32" lean-forward="false" selection-start-line="303" selection-start-column="17" selection-end-line="303" selection-end-column="32" />
           <folding />
         </state>
       </provider>
@@ -1503,34 +1486,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/lib/Genotype.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="448">
-          <caret line="131" column="39" lean-forward="false" selection-start-line="131" selection-start-column="39" selection-end-line="131" selection-end-column="39" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/lib/utils.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="5" lean-forward="false" selection-start-line="0" selection-start-column="5" selection-end-line="0" selection-end-column="5" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/lib/Normaliser.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1100">
-          <caret line="197" column="25" lean-forward="false" selection-start-line="197" selection-start-column="25" selection-end-line="197" selection-end-column="25" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/test_utils.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="419">
-          <caret line="28" column="0" lean-forward="true" selection-start-line="28" selection-start-column="0" selection-end-line="28" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -1543,18 +1502,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/include/test_utils.h">
+    <entry file="file://$PROJECT_DIR$/src/lib/DepthBuffer.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="714">
-          <caret line="55" column="0" lean-forward="false" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
+        <state relative-caret-position="617">
+          <caret line="68" column="23" lean-forward="false" selection-start-line="68" selection-start-column="23" selection-end-line="68" selection-end-column="23" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/include/utils.hpp">
+    <entry file="file://$PROJECT_DIR$/src/lib/GVCFReader.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="148" column="29" lean-forward="true" selection-start-line="148" selection-start-column="29" selection-end-line="148" selection-end-column="29" />
+        <state relative-caret-position="329">
+          <caret line="158" column="10" lean-forward="false" selection-start-line="158" selection-start-column="4" selection-end-line="158" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/lib/DepthBlock.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="329">
+          <caret line="45" column="10" lean-forward="false" selection-start-line="45" selection-start-column="10" selection-end-line="45" selection-end-column="10" />
           <folding />
         </state>
       </provider>
@@ -1562,7 +1529,15 @@
     <entry file="file://$PROJECT_DIR$/src/lib/VariantBuffer.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="757">
-          <caret line="55" column="19" lean-forward="true" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+          <caret line="55" column="19" lean-forward="false" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/external/htslib-1.5/htslib/vcf.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="449">
+          <caret line="663" column="54" lean-forward="false" selection-start-line="663" selection-start-column="0" selection-end-line="663" selection-end-column="54" />
           <folding />
         </state>
       </provider>
@@ -1570,7 +1545,55 @@
     <entry file="file://$PROJECT_DIR$/src/test/test_GVCFReader.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="415">
-          <caret line="67" column="31" lean-forward="true" selection-start-line="67" selection-start-column="31" selection-end-line="67" selection-end-column="31" />
+          <caret line="67" column="31" lean-forward="false" selection-start-line="67" selection-start-column="31" selection-end-line="67" selection-end-column="31" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/lib/Genotype.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="239">
+          <caret line="87" column="24" lean-forward="false" selection-start-line="87" selection-start-column="24" selection-end-line="87" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/lib/GVCFMerger.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="401">
+          <caret line="146" column="70" lean-forward="true" selection-start-line="146" selection-start-column="70" selection-end-line="146" selection-end-column="70" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/lib/Normaliser.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="847">
+          <caret line="127" column="33" lean-forward="false" selection-start-line="127" selection-start-column="33" selection-end-line="127" selection-end-column="33" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/test_utils.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="426">
+          <caret line="39" column="92" lean-forward="false" selection-start-line="39" selection-start-column="92" selection-end-line="39" selection-end-column="92" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/test_utils.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="365">
+          <caret line="92" column="0" lean-forward="false" selection-start-line="90" selection-start-column="0" selection-end-line="92" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/include/utils.hpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="208">
+          <caret line="182" column="4" lean-forward="false" selection-start-line="182" selection-start-column="4" selection-end-line="182" selection-end-column="4" />
           <folding />
         </state>
       </provider>

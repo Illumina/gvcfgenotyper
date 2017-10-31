@@ -175,14 +175,19 @@ static bool bcf1_equal(bcf1_t *a, bcf1_t *b)
 
 static bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
 {
+
     if (a == NULL || b == NULL)
     {
         die("bcf1_less_than: tried to compare NULL bcf1_t");
     }
-
+    
     if (a->rid < b->rid)
     {
         return (true);
+    }
+    if (a->rid > b->rid)
+    {
+        return (false);
     }
 
     if (a->pos < b->pos)

@@ -87,6 +87,14 @@ TEST(UtilTest, comparators)
     ASSERT_TRUE(is_insertion(record1));
     print_variant(record1);
     print_variant(record2);
+
+    update_record(hdr,0,11017,"C,T",record1);
+    update_record(hdr,1,10000,"T,A",record2);
+    ASSERT_FALSE(bcf1_equal(record2,record1));
+    ASSERT_FALSE(bcf1_less_than(record2,record1));
+    ASSERT_TRUE(bcf1_greater_than(record2,record1));
+    bcf_destroy(record1);
+    bcf_destroy(record2);
 }
 
 TEST(UtilTest, GenotypeIndex)

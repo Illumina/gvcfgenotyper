@@ -85,7 +85,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _pl = (int32_t *)malloc(sizeof(int32_t)*_num_gl);
     int ret;
     ret = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
-    if(ret==1)
+    if(ret==1 || ret==-3)
     {
         std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
         //std::cerr<<_pl[0]<<std::endl;

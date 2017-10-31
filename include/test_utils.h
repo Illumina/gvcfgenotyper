@@ -37,7 +37,7 @@ static bcf1_t *generate_record(bcf_hdr_t *hdr,const string & vcfrow)
 
 static bcf_hdr_t *get_header()
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/test2/NA12887_S1.vcf.gz";
     return(bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r")));
 }
 

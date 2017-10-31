@@ -140,13 +140,13 @@ bcf1_t *GVCFMerger::next()
 #endif
     if(prev_rec!=nullptr && !bcf1_greater_than(_output_record,prev_rec))//DEBUG
     {
-        print_variant(_output_header, prev_rec);
-        print_variant(_output_header, _output_record);
+        print_variant(prev_rec);
+        print_variant(_output_record);
         std::cerr<<bcf1_greater_than(_output_record,prev_rec)<<std::endl;
         std::cerr<<bcf1_equal(_output_record,prev_rec)<<std::endl;
         std::cerr<<bcf1_less_than(_output_record,prev_rec)<<std::endl;
         std::cerr<<get_variant_rank(_output_record)<< " "<<get_variant_rank(prev_rec) <<std::endl;
-        die("incorrect variant order detected");
+        throw std::runtime_error("incorrect variant order detected");
     }
     //fill in the format information for every sample.
     set_output_buffers_to_missing(_output_record->n_allele);

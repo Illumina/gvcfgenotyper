@@ -31,10 +31,10 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
     }
     else
     {
-        char **new_alleles = new char *[num_allele];
+        char **new_alleles = (char **)malloc(sizeof(char *)*num_allele);
         for (int i = 0; i < num_allele; i++)
         {
-            new_alleles[i] = new char[2];
+            new_alleles[i] = (char *)malloc(sizeof(char)*2);
             new_alleles[i][1] = '\0';
         }
         Genotype old_genotype(header, record_to_split);
@@ -125,9 +125,9 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
         }
         for (int i = 0; i < num_allele; i++)
         {
-            delete new_alleles[i];
+            free(new_alleles[i]);
         }
-        delete[] new_alleles;
+        free(new_alleles);
         return (num_new_snps);
     }
 }
