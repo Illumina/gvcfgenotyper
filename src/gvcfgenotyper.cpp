@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
-
+    
     static struct option loptions[] = {
             {"list",        1, 0, 'l'},
             {"fasta-ref",   1, 0, 'f'},
