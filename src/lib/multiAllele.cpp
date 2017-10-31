@@ -30,19 +30,43 @@ inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)
     return(dst);
 }
 
-multiAllele::multiAllele(int rid,int pos,bcf_hdr_t *hdr)
+multiAllele::multiAllele()
 {
+    _rid = -1;
+    _pos = -1;
+    _hdr = nullptr;
+}
+
+void multiAllele::setPosition(int rid,int pos)
+{
+    assert(_hdr!= nullptr);
+    clear();
     _rid = rid;
     _pos = pos;
+}
+
+void multiAllele::init(bcf_hdr_t *hdr)
+{
     _hdr = bcf_hdr_dup(hdr);
+}
+
+int multiAllele::clear()
+{
+    _rid = -1;
+    _pos = -1;
+    for (auto rec = _records.begin(); rec != _records.end(); rec++)
+    {
+        bcf_destroy(*rec);
+    }
+    int ret = _records.size();
+    _records.clear();
+    return(ret);
 }
 
 multiAllele::~multiAllele()
 {
-    for(auto rec=_records.begin();rec!=_records.end();rec++)
-    {
-        bcf_destroy(*rec);
-    }
+    clear();
+    bcf_hdr_destroy(_hdr);
 }
 
 int multiAllele::allele(bcf1_t *record)
@@ -123,7 +147,7 @@ void multiAllele::collapse(bcf1_t *output)
         memcpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad+1);
     }
     bcf_update_alleles(_hdr,output,(const char**)new_alleles,num_alleles);
-    for(size_t i=0;i<_records.size();i++)
+    for(size_t i=0;i<num_alleles;i++)
     {
         free(new_alleles[i]);
     }

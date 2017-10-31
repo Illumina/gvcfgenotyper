@@ -48,6 +48,7 @@ bool Genotype::is_dp_missing()
 
 Genotype::Genotype(int ploidy, int num_allele)
 {
+    _has_pl=true;
     _ploidy = ploidy;
     _num_allele = num_allele;
     assert(_ploidy >= 0 && _ploidy <= 2);
@@ -87,12 +88,13 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     ret = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
     if(ret==1 || ret==-3)
     {
-        std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
+        //std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
         //std::cerr<<_pl[0]<<std::endl;
         //assert(_pl[0]==bcf_int32_missing);//FIXME: I don't understand why some times this is *not* bcf_int32_missing. Probably need to look at the htslib code to understand.
         std::fill(_pl,_pl+_num_gl,bcf_int32_missing);
         _num_pl=_num_gl;
         ret=_num_gl;
+        _has_pl=false;
     }
 
     if(ret != _num_gl)
@@ -102,7 +104,18 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         throw std::runtime_error("incorrect number of values in  FORMAT/PL");
     }
     assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
-    bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
+    ret = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
+    if(ret!=1)
+    {
+        if(ret==-3)
+        {
+            setDepthFromAD();
+        }
+        else
+        {
+            throw std::runtime_error("problem extracting FORMAT/DP");
+        }
+    }
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
     //FIXME: GQ is should be an integer but is sometimes set as float. we need to catch and handle this.
     if (bcf_get_format_int32(header, record, "GQ", &_gq, &_num_gq) == -2)

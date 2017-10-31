@@ -16,7 +16,9 @@ TEST(multiAllele,test1)
     auto rec4 = generate_record(hdr,rid,pos,"CTGG,C");
     auto rec5 = generate_record(hdr,rid,pos,"C,CAAAAAAAA");
 
-    multiAllele m(rid,pos-1,hdr);
+    multiAllele m;
+    m.init(hdr);
+    m.setPosition(rid,pos-1);
     ASSERT_EQ(m.allele(rec1),1);
     ASSERT_EQ(m.allele(rec1),1);
     ASSERT_EQ(m.allele(rec2),2);

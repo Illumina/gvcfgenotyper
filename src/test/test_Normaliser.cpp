@@ -117,7 +117,7 @@ TEST(Normaliser, mnp_split3)
     for(auto rec = decomposed.begin();rec!=decomposed.end();rec++)
     {
         Genotype g(hdr,*rec);
-        ASSERT_EQ(g.get_dp(),bcf_int32_missing);
+//        ASSERT_EQ(g.get_dp(),bcf_int32_missing);
     }
 }
 

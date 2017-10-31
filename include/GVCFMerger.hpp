@@ -17,14 +17,18 @@ extern "C" {
 class multiAllele
 {
 public:
-    multiAllele(int rid,int pos,bcf_hdr_t *hdr);
+    multiAllele();
     ~multiAllele();
+
+    void init(bcf_hdr_t *hdr);
+    void setPosition(int rid,int pos);
     int allele(bcf1_t *record);
     void collapse(bcf1_t *output);
     int get_pos() {return _pos;};
     int get_rid() {return _rid;};
     int num_alleles() {return _records.size();};
     bcf1_t *get_max();//returns the maximum allele (as defined by bcf1_t_less_than)
+    int clear();//wipes the _records
 private:
     int _rid,_pos;
     bcf_hdr_t *_hdr;
@@ -40,7 +44,7 @@ public:
     ~GVCFMerger();
     void write_vcf();
     bcf1_t *next();
-    multiAllele get_next_variant();
+    int get_next_variant();
 
 private:
     void build_header();
@@ -48,6 +52,7 @@ private:
     vector<GVCFReader> _readers;
     size_t _num_gvcfs;
     bool all_readers_empty();
+    multiAllele _record_collapser;
 
 //stuff for output
     bcf1_t *_output_record;

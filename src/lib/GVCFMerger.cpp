@@ -53,10 +53,11 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _format_dpf = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
 
     build_header();
+    _record_collapser.init(_output_header);
     _output_record = bcf_init1();
 }
 
-multiAllele GVCFMerger::get_next_variant()
+int GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);
     assert(!all_readers_empty());
@@ -77,8 +78,7 @@ multiAllele GVCFMerger::get_next_variant()
     assert(min_rec != nullptr);
     int rank = get_variant_rank(min_rec);
 
-    multiAllele ret(min_rec->rid, min_rec->pos, _output_header);
-
+    _record_collapser.setPosition(min_rec->rid, min_rec->pos);
     for (auto it = _readers.begin(); it != _readers.end(); it++)
     {
         std::vector<bcf1_t *> variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
@@ -86,11 +86,12 @@ multiAllele GVCFMerger::get_next_variant()
         {
             if(get_variant_rank(*rec) == get_variant_rank(min_rec))
             {
-                ret.allele(*rec);
+                _record_collapser.allele(*rec);
             }
         }
     }
-    return (ret);
+
+    return(1);
 }
 
 bool GVCFMerger::all_readers_empty()
@@ -122,22 +123,23 @@ bcf1_t *GVCFMerger::next()
     {
         return (nullptr);
     }
+#ifdef DEBUG
     bcf1_t *prev_rec = nullptr;
     if(_num_variants>0)//DEBUG
     {
         prev_rec = bcf_dup(_output_record);//debug
         bcf_unpack(prev_rec,BCF_UN_ALL);
     }
+#endif
     bcf_clear(_output_record);
     DepthBlock homref_block;//working structure to store homref info.
-    multiAllele m = get_next_variant(); //stores all the alleles at the next position.
+    get_next_variant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
-    m.collapse(_output_record);
+    _record_collapser.collapse(_output_record);
     _output_record->qual = 0;
 #ifdef DEBUG
     std::cerr << "GVCFMerger::next()" << std::endl;
     print_variant(_output_header, _output_record);
-#endif
     if(prev_rec!=nullptr && !bcf1_greater_than(_output_record,prev_rec))//DEBUG
     {
         print_variant(prev_rec);
@@ -148,6 +150,7 @@ bcf1_t *GVCFMerger::next()
         std::cerr<<get_variant_rank(_output_record)<< " "<<get_variant_rank(prev_rec) <<std::endl;
         throw std::runtime_error("incorrect variant order detected");
     }
+#endif
     //fill in the format information for every sample.
     set_output_buffers_to_missing(_output_record->n_allele);
 
@@ -155,7 +158,7 @@ bcf1_t *GVCFMerger::next()
     unsigned nps_written(0);
     for (int i = 0; i < _num_gvcfs; i++)
     {
-        std::vector<bcf1_t *> sample_variants = _readers[i].get_all_variants_up_to(m.get_max());
+        std::vector<bcf1_t *> sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
         if (!sample_variants.empty())
         {//this sample has variants at this position, we need to populate its FORMAT field
@@ -168,7 +171,7 @@ bcf1_t *GVCFMerger::next()
                     _output_record->qual += sample_record->qual;
                 }
                 Genotype g(_readers[i].get_header(), sample_record);
-                int allele = m.allele(sample_record);
+                int allele = _record_collapser.allele(sample_record);
                 for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
                 {
                     if (sample_variants.size() == 1)//there is only one variant at this position in this sample. simple copy.
@@ -218,7 +221,7 @@ bcf1_t *GVCFMerger::next()
                 _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
             }
         }
-        _readers[i].flush_buffer(m.get_max());
+        _readers[i].flush_buffer(_record_collapser.get_max());
         if((_format_gt[2*i]==bcf_gt_missing) != (_format_gt[2*i+1]==bcf_gt_missing))
         {
 //            print_variant(_output_header,_output_record);

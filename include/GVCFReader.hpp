@@ -47,6 +47,7 @@ public:
     int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl;
     int _num_allele, _num_pl, _ploidy, _num_gt, _num_ad, _num_gq, _num_dp, _num_dpf, _num_gl;
     std::vector<float> _gl;
+    bool _has_pl;
 };
 
 //this basically wraps bcftools norm in a class.
@@ -61,6 +62,7 @@ public:
     std::vector<bcf1_t *> unarise(bcf1_t *rec);
 
 private:
+    char _symbolic_allele[2];
     args_t *_norm_args;
     bcf_hdr_t *_hdr;
 };

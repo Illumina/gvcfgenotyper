@@ -5,6 +5,8 @@ Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
 {
     _hdr = hdr;
     _norm_args = init_vcfnorm(_hdr, ref_fname.c_str());
+    _symbolic_allele[0]='X';
+    _symbolic_allele[1]='\0';
 }
 
 Normaliser::~Normaliser()
@@ -149,9 +151,6 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     const int num_new_allele = 3;
 
     auto **new_alleles = new char *[num_new_allele];
-    new_alleles[symbolic_allele] = new char[2];
-    new_alleles[symbolic_allele][0] = 'X';
-    new_alleles[symbolic_allele][1] = '\0';
 
     //FIXME: we would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
     //FIXME: for now this at least allows us to behave well for SNPs that are hidden in MNPS
@@ -186,6 +185,7 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
                 //now add the symbolic allele
                 new_alleles[0] =  new_record->d.allele[0];
                 new_alleles[1] =  new_record->d.allele[1];
+                new_alleles[2] =  _symbolic_allele;
                 bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
 
                 Genotype new_genotype = old_genotype.marginalise(i);

@@ -180,7 +180,7 @@ static bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
     {
         die("bcf1_less_than: tried to compare NULL bcf1_t");
     }
-    
+
     if (a->rid < b->rid)
     {
         return (true);

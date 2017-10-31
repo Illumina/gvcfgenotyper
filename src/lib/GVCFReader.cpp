@@ -112,13 +112,16 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
 
     // flush variant buffer to get rid of variants overlapping 
     // the interval start
-    string chr;
-    int64_t start, end = 0;
-    stringutil::parsePos(region, chr, start, end);
-    if (!region.empty())
+    if(region.find(":")!=std::string::npos)
     {
-        int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
-        flush_buffer(rid, start);
+        string chr;
+        int64_t start, end = 0;
+        stringutil::parsePos(region, chr, start, end);
+        if (!region.empty())
+        {
+            int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+            flush_buffer(rid, start);
+        }
     }
 }
 
