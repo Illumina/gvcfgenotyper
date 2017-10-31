@@ -6,14 +6,48 @@
 #define GVCFGENOTYPER_TEST_UTILD_H
 
 
+static void update_record(bcf_hdr_t *hdr,int rid,int pos,const string & alleles,bcf1_t *record)
+{
+    bcf_destroy(record);
+    record = bcf_init();
+    kstring_t str = {0,0,nullptr};
+    int comma = alleles.find(",");
+    string ref = alleles.substr(0,comma);
+    string alt = alleles.substr(comma+1,alleles.size());
+    ksprintf(&str,"%s\t%d\t.\t%s\t%s\t1691\tPASS\t.\tGT\t0/1",bcf_hdr_int2id(hdr,BCF_DT_CTG,rid),pos,ref.c_str(),alt.c_str());
+    vcf_parse(&str,hdr,record);
+    bcf_unpack(record,BCF_UN_ALL);
+    free(str.s);
+}
+
+
 static bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const string & alleles)
 {
     bcf1_t *ret = bcf_init1();
-    ret->rid = rid;
-    ret->pos = pos;
-    bcf_update_alleles_str(hdr, ret, alleles.c_str());
+    kstring_t str = {0,0,nullptr};
+    int comma = alleles.find(",");
+    assert(comma<alleles.size());
+    string ref = alleles.substr(0,comma);
+    string alt = alleles.substr(comma+1,alleles.size());
+    ksprintf(&str,"%s\t%d\t.\t%s\t%s\t1691\tPASS\t.\tGT\t0/1",bcf_hdr_int2id(hdr,BCF_DT_CTG,rid),pos,ref.c_str(),alt.c_str());
+    vcf_parse(&str,hdr,ret);
+    bcf_unpack(ret,BCF_UN_ALL);
+    free(str.s);
     return(ret);
 }
+
+
+static bcf1_t *generate_record(bcf_hdr_t *hdr,const string & vcfrow)
+{
+    bcf1_t *ret = bcf_init1();
+    kstring_t str = {0,0,nullptr};
+    kputs(vcfrow.c_str(),&str);
+    vcf_parse(&str,hdr,ret);
+    bcf_unpack(ret,BCF_UN_ALL);
+    free(str.s);
+    return(ret);
+}
+
 
 static bcf_hdr_t *get_header()
 {

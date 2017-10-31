@@ -98,8 +98,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     if(ret != _num_gl)
     {
         print_variant((bcf_hdr_t *)header,record);
-        std::cerr << "Got " << ret << " values instead of " << _num_gl << std::endl;
-        die("incorrect number of values in  FORMAT/PL");
+        std::cerr << "Got " << ret << " values instead of " << _num_gl << " ploidy="<<_ploidy<<" num_allele="<<_num_allele<<std::endl;
+        throw std::runtime_error("incorrect number of values in  FORMAT/PL");
     }
     assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
     bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);

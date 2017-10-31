@@ -1180,7 +1180,7 @@ static int _regions_match_alleles(bcf_sr_regions_t *reg, int als_idx, bcf1_t *re
         reg->nals++;
         reg->als_type = max_len > 1 ? VCF_INDEL : VCF_SNP;  // this is a simplified check, see vcf.c:bcf_set_variant_types
     }
-    int type = bcf_get_variant_types(rec);
+    int type = bcf_get_zvariant_types(rec);
     if ( reg->als_type & VCF_INDEL )
         return type & VCF_INDEL ? 1 : 0;
     return !(type & VCF_INDEL) ? 1 : 0;

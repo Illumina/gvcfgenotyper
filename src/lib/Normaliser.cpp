@@ -161,28 +161,39 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); it++)
     {
         bcf1_t *decomposed_record = *it;
-        Genotype old_genotype(_hdr, decomposed_record);
-        for (int i = 1; i < old_genotype._num_allele; i++)
+        if(decomposed_record->n_allele==2)//bi-alleic. no further decomposition needed.
         {
-            bcf1_t *new_record = bcf_init1();
-            new_record->rid = decomposed_record->rid;
-            new_record->pos = decomposed_record->pos;
-            new_record->qual = decomposed_record->qual;
-            new_alleles[reference_allele] = decomposed_record->d.allele[reference_allele];
-            new_alleles[primary_allele] = decomposed_record->d.allele[i];
-            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
-            if (realign(_norm_args, new_record) != ERR_OK)
+            if (realign(_norm_args, decomposed_record) != ERR_OK)
             {
                 die("vcf record did not match the reference");
             }
-            new_alleles[reference_allele] = new_record->d.allele[0];
-            new_alleles[primary_allele] = new_record->d.allele[1];
-            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
-            Genotype new_genotype = old_genotype.marginalise(i);
-            new_genotype.update_bcf1_t(_hdr, new_record);
-            atomised_variants.push_back(new_record);
+            atomised_variants.push_back(decomposed_record);
         }
-        bcf_destroy(decomposed_record);
+        else
+        {
+            Genotype old_genotype(_hdr, decomposed_record);
+            for (int i = 1; i < old_genotype._num_allele; i++)
+            {
+                bcf1_t *new_record = bcf_dup(decomposed_record);
+                bcf_unpack(new_record,BCF_UN_ALL);
+                new_alleles[reference_allele] = decomposed_record->d.allele[reference_allele];
+                new_alleles[primary_allele] = decomposed_record->d.allele[i];
+                bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
+                if (realign(_norm_args, new_record) != ERR_OK)
+                {
+                    die("vcf record did not match the reference");
+                }
+                //now add the symbolic allele
+                new_alleles[0] =  new_record->d.allele[0];
+                new_alleles[1] =  new_record->d.allele[1];
+                bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
+
+                Genotype new_genotype = old_genotype.marginalise(i);
+                new_genotype.update_bcf1_t(_hdr, new_record);
+                atomised_variants.push_back(new_record);
+            }
+            bcf_destroy(decomposed_record);
+        }
     }
     delete[] new_alleles;
 

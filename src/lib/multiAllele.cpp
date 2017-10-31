@@ -13,11 +13,21 @@ inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)
         assert(src->d.allele[2][0]=='X');
     }
 
-    bcf1_t *alleles = bcf_init1();
-    alleles->pos = src->pos;
-    alleles->rid = src->rid;
-    bcf_update_alleles(hdr,alleles,(const char**)src->d.allele,2);
-    return(alleles);
+    bcf1_t *dst = bcf_init1();
+
+    bcf_clear(dst);
+    dst->rid  = src->rid;
+    dst->pos  = src->pos;
+    dst->rlen = src->rlen;
+    dst->qual = src->qual;
+    bcf_update_id(hdr,dst,".");
+    kstring_t str = {0,0,nullptr};
+    kputs(src->d.allele[0], &str);
+    kputc(',', &str);
+    kputs(src->d.allele[1],&str);
+    bcf_update_alleles_str(hdr,dst,str.s);
+    free(str.s);
+    return(dst);
 }
 
 multiAllele::multiAllele(int rid,int pos,bcf_hdr_t *hdr)
@@ -67,6 +77,7 @@ bcf1_t *multiAllele::get_max()
     {
         if(ret== nullptr || bcf1_greater_than(*rec,ret))
         {
+//            print_variant(*rec);
             ret = *rec;
         }
     }
@@ -101,7 +112,8 @@ void multiAllele::collapse(bcf1_t *output)
         if(strncmp(new_alleles[0],(*rec)->d.allele[0],strlen((*rec)->d.allele[0]))!=0)
         {
             std::cerr << _pos+1 << " " <<  new_alleles[0] << "!=" <<(*rec)->d.allele[0] << std::endl;
-            die("inconsistent REF");
+            print_variant(*rec);
+            throw std::runtime_error("inconsistent REF on first allele");
         }
         size_t old_ref_len = strlen((*rec)->d.allele[0]);
         size_t rightpad = max_ref_len - old_ref_len;

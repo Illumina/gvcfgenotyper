@@ -118,6 +118,7 @@ TEST(GVCFReader, readAGVCF)
     DepthBlock db;
     while (line != nullptr)
     {
+//        print_variant(hdr,line);
         ofs << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos + 1 << ":" << line->d.allele[0] << ":" << line->d.allele[1] << std::endl;
         if (is_snp(line))
         {
@@ -164,7 +165,7 @@ TEST(Genotype,format)
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
-    auto record1 = generate_record(hdr,rid,pos,"G,GA,GAA");
+    auto record1 = generate_record(hdr,rid,pos+1,"G,GA,GAA");
     int qual = 786;
     record1->qual = qual;
     int32_t ad[3] = {2,24,17};

@@ -84,7 +84,7 @@ multiAllele GVCFMerger::get_next_variant()
         std::vector<bcf1_t *> variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
         for (auto rec = variants.begin(); rec != variants.end(); rec++)
         {
-            if(get_variant_rank((bcf1_t const *)*rec) == get_variant_rank((bcf1_t const *)min_rec))
+            if(get_variant_rank(*rec) == get_variant_rank(min_rec))
             {
                 ret.allele(*rec);
             }
@@ -140,8 +140,12 @@ bcf1_t *GVCFMerger::next()
 #endif
     if(prev_rec!=nullptr && !bcf1_greater_than(_output_record,prev_rec))//DEBUG
     {
-        print_variant(_output_header, _output_record);
         print_variant(_output_header, prev_rec);
+        print_variant(_output_header, _output_record);
+        std::cerr<<bcf1_greater_than(_output_record,prev_rec)<<std::endl;
+        std::cerr<<bcf1_equal(_output_record,prev_rec)<<std::endl;
+        std::cerr<<bcf1_less_than(_output_record,prev_rec)<<std::endl;
+        std::cerr<<get_variant_rank(_output_record)<< " "<<get_variant_rank(prev_rec) <<std::endl;
         die("incorrect variant order detected");
     }
     //fill in the format information for every sample.
@@ -155,6 +159,7 @@ bcf1_t *GVCFMerger::next()
         const bcf_hdr_t *sample_header = _readers[i].get_header();
         if (!sample_variants.empty())
         {//this sample has variants at this position, we need to populate its FORMAT field
+            int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
             for (auto it = sample_variants.begin(); it != sample_variants.end(); it++)
             {
                 bcf1_t *sample_record = *it;
@@ -166,16 +171,26 @@ bcf1_t *GVCFMerger::next()
                 int allele = m.allele(sample_record);
                 for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
                 {
-                    if (sample_variants.size() == 1)//there is only one variant at this position in this sample
+                    if (sample_variants.size() == 1)//there is only one variant at this position in this sample. simple copy.
                     {
-                        _format_gt[2 * i + genotype_index] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
+                       assert(dst_genotype_count<=2);
+                        _format_gt[2 * i + dst_genotype_count] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
+                        dst_genotype_count++;
                     }
-                    else
+                    else //there are multiple variants at this position. we need to do some careful genotype counting.
                     {
                         if(bcf_gt_allele(g._gt[genotype_index]) == 1)
                         {
-                            assert(bcf_gt_is_missing(_format_gt[2 * i + genotype_index]));
-                            _format_gt[2 * i + genotype_index] = bcf_gt_unphased(allele);
+                            if(dst_genotype_count>=2)
+                            {
+                                std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(i)+" due to conflicting genotype calls" <<std::endl;
+                                print_variant(sample_header,sample_record);
+                            }
+                            else
+                            {
+                                _format_gt[2 * i + dst_genotype_count] = bcf_gt_unphased(allele);
+                                dst_genotype_count++;
+                            }
                         }
                     }
                     _format_gq[i] = g.get_gq();
@@ -204,8 +219,14 @@ bcf1_t *GVCFMerger::next()
             }
         }
         _readers[i].flush_buffer(m.get_max());
-        _num_variants++;;
+        if((_format_gt[2*i]==bcf_gt_missing) != (_format_gt[2*i+1]==bcf_gt_missing))
+        {
+//            print_variant(_output_header,_output_record);
+//            std::cerr << i << " " <<  bcf_gt_allele(_format_gt[2*i]) << "/" << bcf_gt_allele(_format_gt[2*i+1]) << std::endl;
+         //   die("bad genotypes");
+        }
     }
+    _num_variants++;
 #ifdef DEBUG
     std::cerr << "BUFFER SIZES:";
     for (int i = 0; i < _num_gvcfs; i++)

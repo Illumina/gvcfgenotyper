@@ -55,37 +55,35 @@ static bool is_variant(bcf1_t const *record)
     return(record->n_allele>1);
 }
 
-static bool is_snp(bcf1_t const *record)
+static bool is_snp(bcf1_t *record)
 {
-    return (record->n_allele >= 2 && strlen(record->d.allele[0]) == 1 && strlen(record->d.allele[1]) == 1);
+    assert(record->n_allele>1);
+    bcf_unpack(record,BCF_UN_ALL);
+    return(bcf_get_variant_type(record,1)&VCF_SNP);
 }
 
-static bool is_deletion(bcf1_t const *record)
+static bool is_deletion(bcf1_t *record)
 {
+    bcf_unpack(record,BCF_UN_ALL);
     int l1 = strlen(record->d.allele[0]);
     int l2 = strlen(record->d.allele[1]);
-    return (record->n_allele >= 2
-            && l1>1
-            && l1>l2
-            && strncmp(record->d.allele[0],record->d.allele[1],min(l1,l2))==0);
+    return (bcf_get_variant_type(record,1) == VCF_INDEL && l2<l1);
 }
 
-static bool is_insertion(bcf1_t const *record)
+static bool is_insertion(bcf1_t *record)
 {
+    bcf_unpack(record,BCF_UN_ALL);
     int l1 = strlen(record->d.allele[0]);
     int l2 = strlen(record->d.allele[1]);
-    return (record->n_allele >= 2
-            && l2>1
-            && l1<l2
-            && strncmp(record->d.allele[0],record->d.allele[1],min(l1,l2))==0);
+    return (bcf_get_variant_type(record,1) == VCF_INDEL && l2>l1);
 }
 
-static bool is_complex(bcf1_t const *record)
+static bool is_complex(bcf1_t *record)
 {
     return(!is_snp(record) && !is_deletion(record) && !is_insertion(record));
 }
 
-static int get_variant_rank(bcf1_t const *record)
+static int get_variant_rank(bcf1_t *record)
 {
     if(is_complex(record)||is_snp(record))
     {
@@ -152,7 +150,7 @@ static bool bcf1_equal(bcf1_t const *a, bcf1_t const *b)
 }
 
 
-static bool bcf1_less_than(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
 {
     if (a == NULL || b == NULL)
     {
@@ -194,22 +192,22 @@ static bool bcf1_less_than(bcf1_t const *a, bcf1_t const *b)
     return (false);
 }
 
-static bool bcf1_greater_than(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_greater_than(bcf1_t *a, bcf1_t *b)
 {
     return (!bcf1_equal(a, b) && !bcf1_less_than(a, b));
 }
 
-static bool bcf1_leq(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_leq(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_greater_than(a, b)));
 }
 
-static bool bcf1_geq(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_geq(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_less_than(a, b)));
 }
 
-static bool bcf1_not_equal(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_not_equal(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_equal(a, b)));
 }
@@ -225,7 +223,7 @@ static void print_variant(bcf_hdr_t const *header, bcf1_t *record)
     std::cerr << std::endl;
 }
 
-static void print_variant(bcf1_t const *record)
+static void print_variant(bcf1_t *record)
 {
     std::cerr << record->rid << ":" << record->pos + 1 << ":" << record->d.allele[0];
     for (int i = 1; i < record->n_allele; i++)

@@ -75,7 +75,7 @@ public:
     int push_back(bcf1_t *v);    //add a new variant (and sort if necessary)
     int flush_buffer(int rid, int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
-    int flush_buffer(const bcf1_t *record);
+    int flush_buffer(bcf1_t *record);
     vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);//gets all variants in interval start<=x<=stop
     vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);//gets all variants in interval start<=x<=stop
 
@@ -162,7 +162,7 @@ public:
     int flush_buffer();
 
     int flush_buffer(int chrom, int pos);//empty buffer containing rows before and including chrom/pos
-    int flush_buffer(const bcf1_t *record);
+    int flush_buffer(bcf1_t *record);
 
     vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);
     vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);
