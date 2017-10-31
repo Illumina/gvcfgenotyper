@@ -20,20 +20,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="46dc3e0c-6d36-4cb7-a3fd-a4a27b43f8ea" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/GVCFMerger.hpp" afterPath="$PROJECT_DIR$/include/GVCFMerger.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/GVCFReader.hpp" afterPath="$PROJECT_DIR$/include/GVCFReader.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/include/utils.hpp" afterPath="$PROJECT_DIR$/include/utils.hpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/DepthBuffer.cpp" afterPath="$PROJECT_DIR$/src/lib/DepthBuffer.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" afterPath="$PROJECT_DIR$/src/lib/GVCFMerger.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/GVCFReader.cpp" afterPath="$PROJECT_DIR$/src/lib/GVCFReader.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/Genotype.cpp" afterPath="$PROJECT_DIR$/src/lib/Genotype.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/Normaliser.cpp" afterPath="$PROJECT_DIR$/src/lib/Normaliser.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/lib/multiAllele.cpp" afterPath="$PROJECT_DIR$/src/lib/multiAllele.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/test_GVCFMerger.cpp" afterPath="$PROJECT_DIR$/src/test/test_GVCFMerger.cpp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/test_Normaliser.cpp" afterPath="$PROJECT_DIR$/src/test/test_Normaliser.cpp" />
-    </list>
+    <list default="true" id="46dc3e0c-6d36-4cb7-a3fd-a4a27b43f8ea" name="Default" comment="" />
     <ignored path="$PROJECT_DIR$/cmake-build-debug/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -1114,7 +1101,7 @@
       <workItem from="1508741859956" duration="44161000" />
       <workItem from="1508945071562" duration="307000" />
       <workItem from="1509447849722" duration="6774000" />
-      <workItem from="1509456818330" duration="4835000" />
+      <workItem from="1509456818330" duration="5326000" />
     </task>
     <task id="LOCAL-00001" summary="multi-allelic work">
       <created>1507798001186</created>
@@ -1215,7 +1202,7 @@
     </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="159761000" />
+    <option name="totallyTimeSpent" value="160252000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="2560" height="1415" extended-state="6" />
