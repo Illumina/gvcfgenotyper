@@ -64,8 +64,8 @@ TEST(VariantBuffer, test1)
 
     auto rec2 = generate_record(hdr,rid,pos,"C,G");
     auto rec3 = generate_record(hdr,rid,pos,"C,CG");
-    v.push_back(rec2);
-    v.push_back(rec3);
+    v.push_back(bcf_dup(rec2));
+    v.push_back(bcf_dup(rec3));
 
     v.flush_buffer(rec2);
     ASSERT_FALSE(v.empty());

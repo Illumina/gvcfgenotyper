@@ -24,6 +24,27 @@ extern "C" {
 #include <htslib/synced_bcf_reader.h>
 }
 
+static void print_variant(bcf_hdr_t const *header, bcf1_t *record)
+{
+    bcf_unpack(record, BCF_UN_ALL);
+    std::cerr << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
+    for (int i = 1; i < record->n_allele; i++)
+    {
+        std::cerr << ":" << record->d.allele[i];
+    }
+    std::cerr << std::endl;
+}
+
+static void print_variant(bcf1_t *record)
+{
+    std::cerr << record->rid << ":" << record->pos + 1 << ":" << record->d.allele[0];
+    for (int i = 1; i < record->n_allele; i++)
+    {
+        std::cerr << ":" << record->d.allele[i];
+    }
+    std::cerr << std::endl;
+}
+
 int *zeros(int n);
 
 bool fileexists(const string &fname);
@@ -122,9 +143,11 @@ static int get_end_of_variant(bcf1_t *record)
     return (record->pos + strlen(record->d.allele[0]) - 1);
 }
 
-static bool bcf1_equal(bcf1_t const *a, bcf1_t const *b)
+static bool bcf1_equal(bcf1_t *a, bcf1_t *b)
 {
-    if (a == NULL || b == NULL)
+    bcf_unpack(a,BCF_UN_ALL);
+    bcf_unpack(b,BCF_UN_ALL);
+    if (a == nullptr || b == nullptr)
     {
         die("bcf1_equal: tried to compare NULL bcf1_t");
     }
@@ -212,26 +235,7 @@ static bool bcf1_not_equal(bcf1_t *a, bcf1_t *b)
     return (!(bcf1_equal(a, b)));
 }
 
-static void print_variant(bcf_hdr_t const *header, bcf1_t *record)
-{
-    bcf_unpack(record, BCF_UN_ALL);
-    std::cerr << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
-    for (int i = 1; i < record->n_allele; i++)
-    {
-        std::cerr << ":" << record->d.allele[i];
-    }
-    std::cerr << std::endl;
-}
 
-static void print_variant(bcf1_t *record)
-{
-    std::cerr << record->rid << ":" << record->pos + 1 << ":" << record->d.allele[0];
-    for (int i = 1; i < record->n_allele; i++)
-    {
-        std::cerr << ":" << record->d.allele[i];
-    }
-    std::cerr << std::endl;
-}
 static size_t get_number_of_likelihoods(int ploidy, int num_allele)
 {
     assert(ploidy == 1 || ploidy == 2);

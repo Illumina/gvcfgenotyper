@@ -53,6 +53,7 @@ int VariantBuffer::push_back(bcf1_t *rec)
 
 int VariantBuffer::flush_buffer(bcf1_t *record)
 {
+    assert(record!=nullptr);
     int num_flushed = 0;
     while (!_buffer.empty() && bcf1_leq(_buffer.front(), record))
     {

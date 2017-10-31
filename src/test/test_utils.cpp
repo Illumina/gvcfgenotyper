@@ -77,9 +77,7 @@ TEST(UtilTest, comparators)
     ASSERT_FALSE(is_insertion(record2));
     ASSERT_TRUE(bcf1_leq(record1,record2));
 
-    record2->pos = record1->pos = 128540798;
     update_record(hdr,2,2400,"G,GGTGTGT",record1);
-
     update_record(hdr,2,2400,"GGGGTGTGTGT,GGT,G",record2);
     ASSERT_EQ(get_variant_rank(record1),1);
     ASSERT_EQ(get_variant_rank(record2),2);
