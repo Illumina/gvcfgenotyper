@@ -1,5 +1,8 @@
 #include "GVCFReader.hpp"
 
+#include <stdexcept>
+
+
 int Genotype::get_gq()
 {
     return(*_gq);
