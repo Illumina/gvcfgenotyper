@@ -76,13 +76,12 @@ int GVCFMerger::get_next_variant()
         }
     }
     assert(min_rec != nullptr);
-    int rank = get_variant_rank(min_rec);
 
     _record_collapser.setPosition(min_rec->rid, min_rec->pos);
     for (auto it = _readers.begin(); it != _readers.end(); it++)
     {
-        std::vector<bcf1_t *> variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
-        for (auto rec = variants.begin(); rec != variants.end(); rec++)
+        auto variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
+        for (auto rec = variants.first; rec != variants.second; rec++)
         {
             if(get_variant_rank(*rec) == get_variant_rank(min_rec))
             {
@@ -158,12 +157,12 @@ bcf1_t *GVCFMerger::next()
     unsigned nps_written(0);
     for (int i = 0; i < _num_gvcfs; i++)
     {
-        std::vector<bcf1_t *> sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
+        auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
-        if (!sample_variants.empty())
+        if (sample_variants.first!=sample_variants.second)
         {//this sample has variants at this position, we need to populate its FORMAT field
             int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
-            for (auto it = sample_variants.begin(); it != sample_variants.end(); it++)
+            for (auto it = sample_variants.first; it != sample_variants.second; it++)
             {
                 bcf1_t *sample_record = *it;
                 if(!bcf_float_is_missing(sample_record->qual))
@@ -174,7 +173,7 @@ bcf1_t *GVCFMerger::next()
                 int allele = _record_collapser.allele(sample_record);
                 for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
                 {
-                    if (sample_variants.size() == 1)//there is only one variant at this position in this sample. simple copy.
+                    if ((sample_variants.second - sample_variants.first)== 1)//there is only one variant at this position in this sample. simple copy.
                     {
                        assert(dst_genotype_count<=2);
                         _format_gt[2 * i + dst_genotype_count] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);

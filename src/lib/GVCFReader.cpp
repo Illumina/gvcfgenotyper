@@ -294,37 +294,13 @@ size_t GVCFReader::get_num_depth()
 }
 
 //gets all variants in interval start<=x<=stop
-vector<bcf1_t *> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
 {
     return(_variant_buffer.get_all_variants_in_interval(chrom,stop));
 }
 
-vector<bcf1_t *> GVCFReader::get_all_variants_up_to(bcf1_t *record)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator>  GVCFReader::get_all_variants_up_to(bcf1_t *record)
 {
     return(_variant_buffer.get_all_variants_up_to(record));
 }
 
-vector<bcf1_t *> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
-{
-    vector<bcf1_t *> ret;
-
-    auto it = _buffer.begin();
-    while(!_buffer.empty() && it != _buffer.end() && chrom==(*it)->rid && stop>=(*it)->pos)
-    {
-        ret.push_back(*it);
-        it++;
-    }
-    return(ret);
-}
-
-vector<bcf1_t *> VariantBuffer::get_all_variants_up_to(bcf1_t * record)
-{
-    vector<bcf1_t *> ret;
-    auto it = _buffer.begin();
-    while(!_buffer.empty() && it != _buffer.end() && bcf1_leq(*it,record))
-    {
-        ret.push_back(*it);
-        it++;
-    }
-    return(ret);
-}

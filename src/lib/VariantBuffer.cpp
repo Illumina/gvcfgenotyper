@@ -150,3 +150,34 @@ bcf1_t *VariantBuffer::pop()
         return (ret);
     }
 }
+
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
+{
+    auto a = _buffer.begin();
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator > ret(a, a);
+    if(_buffer.empty() || (*a)->rid!=chrom || stop < (*a)->pos )
+    {
+        return(ret);
+    }
+
+    while(ret.second!=_buffer.end() && chrom==(*ret.second)->rid && stop>=(*ret.second)->pos)
+    {
+        ret.second++;
+    }
+    return(ret);
+}
+
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_up_to(bcf1_t * record)
+{
+    auto a = _buffer.begin();
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> ret(a, a);
+    if(_buffer.empty() || bcf1_greater_than(*a,record) )
+    {
+        return(ret);
+    }
+    while(ret.second!=_buffer.end() && bcf1_leq(*ret.second,record))
+    {
+        ret.second++;
+    }
+    return(ret);
+}

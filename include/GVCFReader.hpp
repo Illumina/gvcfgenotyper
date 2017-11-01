@@ -78,8 +78,8 @@ public:
     int flush_buffer(int rid, int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
     int flush_buffer(bcf1_t *record);
-    vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);//gets all variants in interval start<=x<=stop
-    vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);//gets all variants in interval start<=x<=stop
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> get_all_variants_in_interval(int chrom,int stop);//gets all variants in interval start<=x<=stop
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> get_all_variants_up_to(bcf1_t *record);//gets all variants in interval start<=x<=stop
 
     bool has_variant(bcf1_t *v);//does the buffer already have v?
     bcf1_t *front(); //return pointer to current vcf record
@@ -166,8 +166,8 @@ public:
     int flush_buffer(int chrom, int pos);//empty buffer containing rows before and including chrom/pos
     int flush_buffer(bcf1_t *record);
 
-    vector<bcf1_t *> get_all_variants_up_to(bcf1_t *record);
-    vector<bcf1_t *> get_all_variants_in_interval(int chrom,int stop);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> get_all_variants_up_to(bcf1_t *record);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> get_all_variants_in_interval(int chrom,int stop);
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
     int read_lines(int num_lines); //read at most num_lines
