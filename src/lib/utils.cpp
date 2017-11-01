@@ -76,12 +76,13 @@ vector<int> match(const vector<string> &x, const vector<string> &y)
     return (ret);
 }
 
-//returns the ##contig=<ID=chr19,length=59128983> lines from a bcf/vcf. 
+//returns the ##contig=<ID=chr19,length=59128983> lines from a bcf/vcf.
 int copy_contigs(const bcf_hdr_t *src, bcf_hdr_t *dst)
 {
     vector<string> parseme;
-    char *splitme = bcf_hdr_fmt_text(src, 1, nullptr);
-    strsplit(splitme, '\n', parseme);
+    kstring_t splitme = {0,0,nullptr};
+    bcf_hdr_format(src,1,&splitme);
+    strsplit(splitme.s, '\n', parseme);
     string contigs = "";
     for (int i = 0; i < parseme.size(); i++)
     {
@@ -90,7 +91,7 @@ int copy_contigs(const bcf_hdr_t *src, bcf_hdr_t *dst)
             bcf_hdr_append(dst, parseme[i].c_str());
         }
     }
-    free(splitme);
+    free(splitme.s);
     return (0);
 }
 
