@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 #include "GVCFReader.hpp"
 #include "common.hpp"
-#include "test_utils.h"
+#include "test_helpers.h"
 
 TEST(Normaliser, mnp_split1)
 {

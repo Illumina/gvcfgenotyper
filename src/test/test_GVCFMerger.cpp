@@ -2,7 +2,7 @@
 #include "GVCFMerger.hpp"
 #include "common.hpp"
 #include "StringUtil.hpp"
-#include "test_utils.h"
+#include "test_helpers.h"
 #include <dirent.h>
 
 TEST(multiAllele,test1)
