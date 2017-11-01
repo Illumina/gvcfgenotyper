@@ -24,23 +24,23 @@ else()
 endif()
 
 add_custom_command(
-	OUTPUT  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a
+	OUTPUT  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a
 	COMMAND make -j4 libhts.a
-    	WORKING_DIRECTORY  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/
+    	WORKING_DIRECTORY  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/
 )
 
 add_custom_target(
     libhts.a
-    DEPENDS  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a
+    DEPENDS  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a
 )
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
-include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.5/")
+include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.6/")
 
 file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/lib/*.c" "${PROJECT_SOURCE_DIR}/src/lib/tools/*.cpp")
 add_executable(gvcfgenotyper src/gvcfgenotyper.cpp ${SRC} src/lib/multiAllele.cpp)
 
-target_link_libraries(gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a)
+target_link_libraries(gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(gvcfgenotyper libhts.a)
 
 
@@ -50,7 +50,7 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 file(GLOB TEST_SRC "${PROJECT_SOURCE_DIR}/src/test/*.cpp")
 add_executable(test_gvcfgenotyper src/test_gvcfgenotyper.cpp ${SRC} ${TEST_SRC} src/lib/multiAllele.cpp)
-target_link_libraries(test_gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.5/libhts.a)
+target_link_libraries(test_gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(test_gvcfgenotyper libhts.a)
 target_link_libraries(test_gvcfgenotyper gtest gtest_main)
 
