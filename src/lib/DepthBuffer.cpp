@@ -49,12 +49,12 @@ void DepthBuffer::push_back(DepthBlock db)
 int DepthBuffer::flush_buffer(int rid, int pos)
 {
     int num_flushed = 0;
-    while (_buffer.size() > 0 && _buffer.front()._rid < rid)
+    while (!_buffer.empty() && _buffer.front()._rid < rid)
     {
         _buffer.pop_front();
         num_flushed++;
     }
-    while (_buffer.size() > 0 && _buffer.front()._end < pos && _buffer.front()._rid == rid)
+    while (!_buffer.empty() && _buffer.front()._end < pos && _buffer.front()._rid == rid)
     {
         _buffer.pop_front();
         num_flushed++;
@@ -64,7 +64,9 @@ int DepthBuffer::flush_buffer(int rid, int pos)
 
 int DepthBuffer::flush_buffer()
 {
-    return (flush_buffer(_buffer.back()._rid, _buffer.back()._end));
+    int num_flushed=_buffer.size();
+    _buffer.clear();
+    return num_flushed;
 }
 
 DepthBlock *DepthBuffer::back()

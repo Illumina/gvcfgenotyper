@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "GVCFReader.hpp"
 #include "StringUtil.hpp"
 //#define DEBUG
@@ -57,8 +58,9 @@ void remove_info(bcf1_t *line)
     line->n_info = 0;
 }
 
-int GVCFReader::flush_buffer(const bcf1_t *record)
+int GVCFReader::flush_buffer(bcf1_t *record)
 {
+    assert(record!=nullptr);
     _depth_buffer.flush_buffer(record->rid, record->pos - 1);
     int num_flushed = _variant_buffer.flush_buffer(record);
     fill_buffer();
@@ -110,13 +112,16 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
 
     // flush variant buffer to get rid of variants overlapping 
     // the interval start
-    string chr;
-    int64_t start, end = 0;
-    stringutil::parsePos(region, chr, start, end);
-    if (!region.empty())
+    if(region.find(":")!=std::string::npos)
     {
-        int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
-        flush_buffer(rid, start);
+        string chr;
+        int64_t start, end = 0;
+        stringutil::parsePos(region, chr, start, end);
+        if (!region.empty())
+        {
+            int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
+            flush_buffer(rid, start);
+        }
     }
 }
 
@@ -189,17 +194,17 @@ int GVCFReader::read_lines(int num_lines)
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
         _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
-        if (_bcf_record->n_allele > 1)//is this line a variant?
+        if(is_variant(_bcf_record))
         {
             int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
             bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             remove_info(_bcf_record);
-            vector<bcf1_t *> atomised_variants = _normaliser->atomise(_bcf_record);
-            for (size_t i = 0; i < atomised_variants.size(); i++)
+            vector<bcf1_t *> atomised_variants = _normaliser->unarise(_bcf_record);
+            for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
-                _variant_buffer.push_back(atomised_variants[i]);
+                _variant_buffer.push_back(*v);
             }
             num_read++;
         }
@@ -213,8 +218,8 @@ int GVCFReader::read_lines(int num_lines)
             int32_t dp, dpf, gq, end;
             dp = *value_pointer;
             end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
-            //if it is a SNP use GQ else use GQX (this is a illumina GVCF quirk)
-            if (_bcf_record->n_allele > 1)
+            //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
+            if (is_variant(_bcf_record))
             {
                 bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
             }
@@ -287,3 +292,15 @@ size_t GVCFReader::get_num_depth()
 {
     return (_depth_buffer.size());
 }
+
+//gets all variants in interval start<=x<=stop
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
+{
+    return(_variant_buffer.get_all_variants_in_interval(chrom,stop));
+}
+
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator>  GVCFReader::get_all_variants_up_to(bcf1_t *record)
+{
+    return(_variant_buffer.get_all_variants_up_to(record));
+}
+

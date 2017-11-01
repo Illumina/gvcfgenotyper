@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "utils.hpp"
 #include "common.hpp"
-
+#include "test_helpers.h"
 
 TEST(UtilTest, comparators)
 {
@@ -9,26 +9,92 @@ TEST(UtilTest, comparators)
 
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
 
-    bcf1_t *record1 = bcf_init1();
-    record1->rid = 2;
-    record1->pos = 92;
-    bcf_update_alleles_str(hdr, record1, "TATTAAGATTG,AAGGTTT");
-    bcf1_t *record2 = bcf_init1();
-    record2->rid = 2;
-    record2->pos = 2022;
-    bcf_update_alleles_str(hdr, record2, "G,C");
+    bcf1_t *record1 = generate_record(hdr, 2,92, "TATTAAGATTG,AAGGTTT");
+    bcf1_t *record2 = generate_record(hdr,2,2022,"G,C");
 
+
+    ASSERT_TRUE(is_snp(record2));
     ASSERT_FALSE(bcf1_less_than(record1, record1));
     ASSERT_TRUE(bcf1_less_than(record1, record2));
     ASSERT_FALSE(bcf1_equal(record1, record2));
     ASSERT_TRUE(bcf1_less_than(record1, record2));
     ASSERT_FALSE(bcf1_greater_than(record1, record2));
+    ASSERT_TRUE(bcf1_leq(record2,record2));
 
-    record2->pos = record1->pos = 2399;
-    bcf_update_alleles_str(hdr, record1, "C,CTTTTTT");
-    bcf_update_alleles_str(hdr, record2, "CTTTTT,C");
+
+    update_record(hdr,2,2400,"C,CTTTTTT",record1);
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_snp(record1));
+
+    update_record(hdr,2,2400,"CTTTTTT,C",record2);
+    ASSERT_TRUE(is_deletion(record2));
+    ASSERT_FALSE(is_insertion(record2));
+    ASSERT_FALSE(is_snp(record2));
+
     ASSERT_TRUE(bcf1_less_than(record1, record2));
     ASSERT_FALSE(bcf1_less_than(record2, record1));
+
+    update_record(hdr,2,2400,"C,G",record1);
+    update_record(hdr,2,2400,"CTTTTT,C",record2);
+    ASSERT_TRUE(bcf1_less_than(record1, record2));
+    ASSERT_FALSE(bcf1_less_than(record2, record1));
+
+    print_variant(hdr,record1);
+    std::cerr << bcf_get_variant_type(record1,1)<<std::endl;
+    ASSERT_TRUE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+
+    update_record(hdr,2,2400,"C,CGGGG",record1);
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_FALSE(is_complex(record1));
+
+    update_record(hdr,2,2400,"CTTTTTT,C",record1);
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_TRUE(is_deletion(record1));
+    ASSERT_FALSE(is_complex(record1));
+
+    update_record(hdr,2,2400,"CTTTTTT,G",record1);
+    ASSERT_FALSE(is_snp(record1));
+    ASSERT_FALSE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+    ASSERT_TRUE(is_complex(record1));
+
+    update_record(hdr,2,2400,"T,C",record1);
+    update_record(hdr,2,2400,"T,C,X",record2);
+    ASSERT_TRUE(bcf1_leq(record1,record2));
+
+    update_record(hdr,2,2400,"C,CA",record1);
+    ASSERT_TRUE(is_insertion(record1));
+    ASSERT_FALSE(is_deletion(record1));
+
+    update_record(hdr,2,2400,"CAAAAAAA,CA,C,CAA",record2);
+    ASSERT_TRUE(is_deletion(record2));
+    ASSERT_FALSE(is_insertion(record2));
+    ASSERT_TRUE(bcf1_leq(record1,record2));
+
+    update_record(hdr,2,2400,"G,GGTGTGT",record1);
+    update_record(hdr,2,2400,"GGGGTGTGTGT,GGT,G",record2);
+    ASSERT_EQ(get_variant_rank(record1),1);
+    ASSERT_EQ(get_variant_rank(record2),2);
+
+    ASSERT_TRUE(bcf1_greater_than(record2,record1));
+    ASSERT_TRUE(bcf1_less_than(record1,record2));
+    ASSERT_TRUE(is_insertion(record1));
+    print_variant(record1);
+    print_variant(record2);
+
+    update_record(hdr,0,11017,"C,T",record1);
+    update_record(hdr,1,10000,"T,A",record2);
+    ASSERT_FALSE(bcf1_equal(record2,record1));
+    ASSERT_FALSE(bcf1_less_than(record2,record1));
+    ASSERT_TRUE(bcf1_greater_than(record2,record1));
+    bcf_destroy(record1);
+    bcf_destroy(record2);
 }
 
 TEST(UtilTest, GenotypeIndex)

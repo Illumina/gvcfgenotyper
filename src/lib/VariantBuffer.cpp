@@ -51,10 +51,11 @@ int VariantBuffer::push_back(bcf1_t *rec)
     return (1);
 }
 
-int VariantBuffer::flush_buffer(const bcf1_t *record)
+int VariantBuffer::flush_buffer(bcf1_t *record)
 {
+    assert(record!=nullptr);
     int num_flushed = 0;
-    while (_buffer.size() > 0 && bcf1_leq(_buffer.front(), record))
+    while (!_buffer.empty() && bcf1_leq(_buffer.front(), record))
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
@@ -66,13 +67,13 @@ int VariantBuffer::flush_buffer(const bcf1_t *record)
 int VariantBuffer::flush_buffer(int chrom, int pos)
 {
     int num_flushed = 0;
-    while (_buffer.size() > 0 && _buffer.front()->rid < chrom)
+    while (!_buffer.empty() && _buffer.front()->rid < chrom)
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
         num_flushed++;
     }
-    while (_buffer.size() > 0 && _buffer.front()->pos < pos && _buffer.front()->rid == chrom)
+    while (!_buffer.empty() && _buffer.front()->pos < pos && _buffer.front()->rid == chrom)
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
@@ -83,7 +84,7 @@ int VariantBuffer::flush_buffer(int chrom, int pos)
 
 int VariantBuffer::flush_buffer()
 {
-    if (_buffer.size() > 0)
+    if (!_buffer.empty())
     {
         int ret = flush_buffer(_buffer.back()->rid, _buffer.back()->pos);
         return (ret);
@@ -148,4 +149,35 @@ bcf1_t *VariantBuffer::pop()
         _buffer.pop_front();
         return (ret);
     }
+}
+
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
+{
+    auto a = _buffer.begin();
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator > ret(a, a);
+    if(_buffer.empty() || (*a)->rid!=chrom || stop < (*a)->pos )
+    {
+        return(ret);
+    }
+
+    while(ret.second!=_buffer.end() && chrom==(*ret.second)->rid && stop>=(*ret.second)->pos)
+    {
+        ret.second++;
+    }
+    return(ret);
+}
+
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_up_to(bcf1_t * record)
+{
+    auto a = _buffer.begin();
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> ret(a, a);
+    if(_buffer.empty() || bcf1_greater_than(*a,record) )
+    {
+        return(ret);
+    }
+    while(ret.second!=_buffer.end() && bcf1_leq(*ret.second,record))
+    {
+        ret.second++;
+    }
+    return(ret);
 }

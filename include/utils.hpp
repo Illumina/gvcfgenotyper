@@ -24,6 +24,27 @@ extern "C" {
 #include <htslib/synced_bcf_reader.h>
 }
 
+static void print_variant(bcf_hdr_t const *header, bcf1_t *record)
+{
+    bcf_unpack(record, BCF_UN_ALL);
+    std::cerr << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
+    for (int i = 1; i < record->n_allele; i++)
+    {
+        std::cerr << ":" << record->d.allele[i];
+    }
+    std::cerr << std::endl;
+}
+
+static void print_variant(bcf1_t *record)
+{
+    std::cerr << record->rid << ":" << record->pos + 1 << ":" << record->d.allele[0];
+    for (int i = 1; i < record->n_allele; i++)
+    {
+        std::cerr << ":" << record->d.allele[i];
+    }
+    std::cerr << std::endl;
+}
+
 int *zeros(int n);
 
 bool fileexists(const string &fname);
@@ -50,12 +71,56 @@ int copy_contigs(const bcf_hdr_t *src, bcf_hdr_t *dst);
 //simple dumps text from fname into output
 int read_text_file(const string &fname, vector<string> &output);
 
+static bool is_variant(bcf1_t const *record)
+{
+    return(record->n_allele>1);
+}
 
 static bool is_snp(bcf1_t *record)
 {
-    return (record->n_allele == 2 && strlen(record->d.allele[0]) == 1 && strlen(record->d.allele[1]) == 1);
+    assert(record->n_allele>1);
+    bcf_unpack(record,BCF_UN_ALL);
+    return(bcf_get_variant_type(record,1)&VCF_SNP);
 }
 
+static bool is_deletion(bcf1_t *record)
+{
+    bcf_unpack(record,BCF_UN_ALL);
+    int l1 = strlen(record->d.allele[0]);
+    int l2 = strlen(record->d.allele[1]);
+    return (bcf_get_variant_type(record,1) == VCF_INDEL && l2<l1);
+}
+
+static bool is_insertion(bcf1_t *record)
+{
+    bcf_unpack(record,BCF_UN_ALL);
+    int l1 = strlen(record->d.allele[0]);
+    int l2 = strlen(record->d.allele[1]);
+    return (bcf_get_variant_type(record,1) == VCF_INDEL && l2>l1);
+}
+
+static bool is_complex(bcf1_t *record)
+{
+    return(!is_snp(record) && !is_deletion(record) && !is_insertion(record));
+}
+
+static int get_variant_rank(bcf1_t *record)
+{
+    if(is_complex(record)||is_snp(record))
+    {
+        return(0);
+    }
+    if(is_insertion(record))
+    {
+        return(1);
+    }
+    if(is_deletion(record))
+    {
+        return(2);
+    }
+    die("bad variant");
+    return(-1);
+}
 static int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
 {
     int ret;
@@ -78,9 +143,11 @@ static int get_end_of_variant(bcf1_t *record)
     return (record->pos + strlen(record->d.allele[0]) - 1);
 }
 
-static bool bcf1_equal(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_equal(bcf1_t *a, bcf1_t *b)
 {
-    if (a == NULL || b == NULL)
+    bcf_unpack(a,BCF_UN_ALL);
+    bcf_unpack(b,BCF_UN_ALL);
+    if (a == nullptr || b == nullptr)
     {
         die("bcf1_equal: tried to compare NULL bcf1_t");
     }
@@ -92,13 +159,9 @@ static bool bcf1_equal(const bcf1_t *a, const bcf1_t *b)
     {
         return (false);
     }
-    else if (a->n_allele != b->n_allele)
-    {
-        return (false);
-    }
     else
     {
-        for (int i = 0; i < a->n_allele; i++)
+        for (int i = 0; i < min(a->n_allele,b->n_allele); i++)
         {
             if (strcmp(a->d.allele[i], b->d.allele[i]))
             {
@@ -110,8 +173,9 @@ static bool bcf1_equal(const bcf1_t *a, const bcf1_t *b)
 }
 
 
-static bool bcf1_less_than(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
 {
+
     if (a == NULL || b == NULL)
     {
         die("bcf1_less_than: tried to compare NULL bcf1_t");
@@ -121,6 +185,10 @@ static bool bcf1_less_than(const bcf1_t *a, const bcf1_t *b)
     {
         return (true);
     }
+    if (a->rid > b->rid)
+    {
+        return (false);
+    }
 
     if (a->pos < b->pos)
     {
@@ -129,13 +197,9 @@ static bool bcf1_less_than(const bcf1_t *a, const bcf1_t *b)
 
     if (a->pos == b->pos)
     {
-        if (a->n_allele < b->n_allele)
+        if(get_variant_rank(a)==get_variant_rank(b))
         {
-            return (true);
-        }
-        else
-        {
-            for (int i = 0; i < a->n_allele; i++)
+            for (int i = 0; i < min(a->n_allele, b->n_allele); i++)
             {
                 int val = strcmp(a->d.allele[i], b->d.allele[i]);
                 if (val < 0)
@@ -148,40 +212,34 @@ static bool bcf1_less_than(const bcf1_t *a, const bcf1_t *b)
                 }
             }
         }
+        else
+        {
+            return(get_variant_rank(a)<get_variant_rank(b));
+        }
     }
     return (false);
 }
 
-static bool bcf1_greater_than(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_greater_than(bcf1_t *a, bcf1_t *b)
 {
     return (!bcf1_equal(a, b) && !bcf1_less_than(a, b));
 }
 
-static bool bcf1_leq(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_leq(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_greater_than(a, b)));
 }
 
-static bool bcf1_geq(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_geq(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_less_than(a, b)));
 }
 
-static bool bcf1_not_equal(const bcf1_t *a, const bcf1_t *b)
+static bool bcf1_not_equal(bcf1_t *a, bcf1_t *b)
 {
     return (!(bcf1_equal(a, b)));
 }
 
-static void print_variant(bcf_hdr_t *header, bcf1_t *record)
-{
-    bcf_unpack(record, BCF_UN_ALL);
-    std::cerr << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
-    for (int i = 1; i < record->n_allele; i++)
-    {
-        std::cerr << ":" << record->d.allele[i];
-    }
-    std::cerr << std::endl;
-}
 
 static size_t get_number_of_likelihoods(int ploidy, int num_allele)
 {
