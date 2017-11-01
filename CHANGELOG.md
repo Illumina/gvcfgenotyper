@@ -5,8 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased] - 2016-11-01
--updated to htslib-1.6
--first version that produces multi-allelic output
+- updated to htslib-1.6
+- first version that produces multi-allelic output
 
 ## [Unreleased] - 2016-10-27
 - heavily modified mnp_split function such that it will correctly handle (all?) multi-allelic MNPs
