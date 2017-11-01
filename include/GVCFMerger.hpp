@@ -4,7 +4,7 @@
 #include "utils.hpp"
 #include "GVCFReader.hpp"
 #include <list>
-
+#include <stdexcept>
 
 extern "C" {
 #include <htslib/hts.h>
