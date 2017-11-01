@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2016-11-01
+-updated to htslib-1.6
+-first version that produces multi-allelic output
+
+## [Unreleased] - 2016-10-27
 - heavily modified mnp_split function such that it will correctly handle (all?) multi-allelic MNPs
 - introduced the Genotype class which stores and manipulates our canonical FORMAT fields (currently GQ,DP,DPF,AD,PL)
 - buffers now store a fixed number of base pairs, not  number of variants
