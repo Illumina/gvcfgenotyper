@@ -22,6 +22,11 @@ ref=/illumina/development/Isis/Genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGeno
 time ./gvcfgenotyper -f $ref -l gvcfs.txt -Ob -o pg.ns6.bcf
 ```
 
+or with some trivial parallelism:
+
+```
+for i in {1..22} X;do echo -f $ref -l gvcfs.txt -Ob -o pg.ns6.chr${i}.bcf;done | xargs -l -P 23
+```
 
 
 ### debug:
