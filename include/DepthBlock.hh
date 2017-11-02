@@ -19,6 +19,16 @@ public:
 
     DepthBlock(int rid, int start, int end, int dp, int dpf, int gq);
 
+    inline bool operator == (const DepthBlock& db) const {
+        return (_rid==db._rid &&
+                _start==db._start &&
+                _end==db._end &&
+                _dp==db._dp &&
+                _dpf==db._dpf &&
+                _gq==db._gq
+               );
+    }
+
     DepthBlock intersect(const DepthBlock &db);
 
     DepthBlock intersect(int rid, int start, int end);
