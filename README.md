@@ -1,27 +1,17 @@
 # gvcfgenotyper
 merging and genotyping tool for illumina gvcfs
 
-## building
 
-### debug:
-
-```
-mkdir debug
-cd debug/
-cmake ../  -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc`
-make
-```
-
-### release:
+### build:
 
 ```
 mkdir release
 cd release/
-cmake ../ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc`
+cmake ../
 make
 ```
 
-## Running:
+### Running:
 
 This takes about 30 minutes:
 
@@ -32,7 +22,17 @@ time ./gvcfgenotyper -f $ref -l gvcfs.txt -Ob -o pg.ns6.bcf
 ```
 
 
-## run tests:
+
+### debug:
+
+```
+mkdir debug
+cd debug/
+cmake ../  -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_C_COMPILER=`which gcc`
+make
+```
+
+### run tests:
 
 ```
 ##run all tests

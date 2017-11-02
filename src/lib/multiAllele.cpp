@@ -1,7 +1,7 @@
 //
 // Created by joconnell on 10/19/17.
 //
-#include <GVCFMerger.hpp>
+#include <GVCFMerger.hh>
 #include <htslib/vcf.h>
 
 inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)

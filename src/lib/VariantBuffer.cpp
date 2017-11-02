@@ -1,4 +1,4 @@
-#include "GVCFReader.hpp"
+#include "VariantBuffer.hh"
 
 VariantBuffer::VariantBuffer()
 {

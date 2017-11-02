@@ -1,7 +1,6 @@
-#include "gtest/gtest.h"
-#include "utils.hpp"
-#include "common.hpp"
-#include "test_helpers.h"
+#include "test_helpers.hh"
+
+#include "utils.hh"
 
 TEST(UtilTest, comparators)
 {

@@ -2051,7 +2051,7 @@ int main_vcfnorm(int argc, char *argv[])
     return 0;
 }
 
-args_t *init_vcfnorm(bcf_hdr_t *hdr, const char *ref)
+args_t *init_vcfnorm(bcf_hdr_t *hdr,  char *ref)
 {
     args_t *args = (args_t *) calloc(1, sizeof(args_t));
     args->files = NULL;

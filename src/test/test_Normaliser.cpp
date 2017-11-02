@@ -2,10 +2,8 @@
 // Created by O'Connell, Jared on 10/16/17.
 //
 
-#include "gtest/gtest.h"
-#include "GVCFReader.hpp"
-#include "common.hpp"
-#include "test_helpers.h"
+#include "test_helpers.hh"
+#include "GVCFReader.hh"
 
 TEST(Normaliser, mnp_split1)
 {
@@ -252,7 +250,6 @@ TEST(Normaliser, unarise4)
 //regression test checking that QUAL is correctly propagated by Normaliser::unarise
 TEST(Normaliser, unarise5)
 {
-    int rid = 20, pos = 83250;
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
 

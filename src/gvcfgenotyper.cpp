@@ -1,4 +1,4 @@
-#include "GVCFMerger.hpp"
+#include "GVCFMerger.hh"
 #include <getopt.h>
 
 static void usage()

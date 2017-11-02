@@ -1,9 +1,8 @@
-#include "gtest/gtest.h"
-#include "GVCFMerger.hpp"
-#include "common.hpp"
-#include "StringUtil.hpp"
-#include "test_helpers.h"
-#include <dirent.h>
+#include "test_helpers.hh"
+
+#include "GVCFMerger.hh"
+#include "StringUtil.hh"
+
 
 TEST(multiAllele,test1)
 {
