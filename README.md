@@ -45,7 +45,7 @@ make
 make test
 
 ##run google tests
-./test_gvcfmerge
+./test_gvcfgenotyper
 
 ##run smoke tests
 bash -e bash/smoke_tests.sh
