@@ -3,16 +3,17 @@
 #define __STDC_LIMIT_MACROS
 
 #include <stdint.h>
-#include <limits>
-
 #include "math.h"
+#include <stdlib.h>
+
+#include <limits>
 #include <set>
 #include <vector>
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <iostream>
-#include <stdlib.h>
+#include <algorithm>
 
 using namespace std;
 
