@@ -3,6 +3,7 @@
 #include<iostream>
 
 DepthBlock::DepthBlock()
+    : _rid(0),_start(0),_end(0)
 {
     set_missing();
 }
@@ -29,6 +30,9 @@ void DepthBlock::zero()
     _dp = _gq = _dpf = 0;
 }
 
+// OST: I am a bit confused by this method:
+// so if the current DepthBlock has dp, dpf and gp set to missing, then it is just overwritten by db, even if the coordinates are not the same?
+// else if the db just follows right afterwards, both blocks are joined... Is this the intended behaviour?
 void DepthBlock::add(const DepthBlock &db)
 {
     if (_dp == bcf_int32_missing || _dpf == bcf_int32_missing || _gq == bcf_int32_missing)

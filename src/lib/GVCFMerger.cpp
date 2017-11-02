@@ -30,7 +30,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" << std::endl;
-    for (int i = 0; i < _num_gvcfs; i++)
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         std::cerr << input_files[i] << std::endl;
         _readers.emplace_back(input_files[i], reference_genome, buffer_size, region, is_file);
@@ -61,8 +61,8 @@ int GVCFMerger::get_next_variant()
     assert(_readers.size() == _num_gvcfs);
     assert(!all_readers_empty());
     bcf1_t *min_rec = nullptr;
-    int min_index = -1;
-    for (int i = 0; i < _num_gvcfs; i++)
+    //int min_index = -1;
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         bcf1_t *rec = _readers[i].front();
         if (rec != nullptr)
@@ -70,7 +70,7 @@ int GVCFMerger::get_next_variant()
             if (min_rec == nullptr || bcf1_less_than(rec, min_rec))
             {
                 min_rec = rec;
-                min_index = i;
+               // min_index = i;
             }
         }
     }
@@ -94,7 +94,7 @@ int GVCFMerger::get_next_variant()
 
 bool GVCFMerger::all_readers_empty()
 {
-    for (int i = 0; i < _num_gvcfs; i++)
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         if (!_readers[i].empty())
         {
@@ -154,7 +154,7 @@ bcf1_t *GVCFMerger::next()
 
     // count the number of written PS tags
     unsigned nps_written(0);
-    for (int i = 0; i < _num_gvcfs; i++)
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
@@ -230,7 +230,7 @@ bcf1_t *GVCFMerger::next()
     _num_variants++;
 #ifdef DEBUG
     std::cerr << "BUFFER SIZES:";
-    for (int i = 0; i < _num_gvcfs; i++)
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         std::cerr << " (" << _readers[i].get_num_variants() << "," << _readers[i].get_num_depth() << ")";
     }
@@ -279,7 +279,7 @@ void GVCFMerger::build_header()
     _output_header = bcf_hdr_init("w");
     bool force_samples = false;
     int repeat_count = 0;
-    for (int i = 0; i < _num_gvcfs; i++)
+    for (size_t i = 0; i < _num_gvcfs; i++)
     {
         const bcf_hdr_t *hr = _readers[i].get_header();
         for (int j = 0; j < bcf_hdr_nsamples(hr); j++)
