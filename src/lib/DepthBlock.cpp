@@ -1,4 +1,4 @@
-#include "GVCFReader.hpp"
+#include "DepthBlock.hh"
 
 #include<iostream>
 

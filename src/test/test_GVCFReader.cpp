@@ -1,7 +1,13 @@
-#include "gtest/gtest.h"
-#include "GVCFReader.hpp"
-#include "common.hpp"
 #include "test_helpers.h"
+
+extern "C"
+{
+#include <htslib/vcf.h>
+}
+
+#include "GVCFReader.hpp"
+
+
 
 TEST(DepthBlock, intersects)
 {
@@ -128,10 +134,9 @@ TEST(GVCFReader, readAGVCF)
                 ASSERT_EQ(db._dp, *dp);
             }
         }
-        if(is_variant(line))
+        if(line->n_allele>1)
         {
             float gq;
-            float *ptr;
             int ngq=0;
             if(bcf_get_format_int32(reader.get_header(),line,"GQ",&gq,&ngq)==1)
             {

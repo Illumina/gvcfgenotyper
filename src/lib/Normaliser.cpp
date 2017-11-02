@@ -1,10 +1,10 @@
-#include <htslib/vcf.h>
-#include "GVCFReader.hpp"
+#include "Normaliser.hh"
+
 
 Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
 {
     _hdr = hdr;
-    _norm_args = init_vcfnorm(_hdr, ref_fname.c_str());
+    _norm_args = init_vcfnorm(_hdr, (char *)ref_fname.c_str());
     _symbolic_allele[0]='X';
     _symbolic_allele[1]='\0';
 }
@@ -40,7 +40,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
             new_alleles[i][1] = '\0';
         }
         Genotype old_genotype(header, record_to_split);
-        int ploidy = old_genotype._ploidy;
+
         int num_new_snps = 0;
         for (int i = 0; i < ref_len; i++)
         {
@@ -72,7 +72,6 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
                 new_var->pos += i;
                 bcf_update_alleles(header, new_var, (const char **) new_alleles, num_new_allele);
                 //the number of alleles changed so we have to reformat the FORMAT fields
-                int *ptr= nullptr,nptr=0;
                 if (num_new_allele != num_allele)
                 {
                     //creates a mapping from old alleles -> new alleles
@@ -183,9 +182,9 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
                     die("vcf record did not match the reference");
                 }
                 //now add the symbolic allele
-                new_alleles[0] =  new_record->d.allele[0];
-                new_alleles[1] =  new_record->d.allele[1];
-                new_alleles[2] =  _symbolic_allele;
+                new_alleles[reference_allele] =  new_record->d.allele[0];
+                new_alleles[primary_allele] =  new_record->d.allele[1];
+                new_alleles[symbolic_allele] =  _symbolic_allele;
                 bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
 
                 Genotype new_genotype = old_genotype.marginalise(i);

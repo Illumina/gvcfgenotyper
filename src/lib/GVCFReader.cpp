@@ -4,40 +4,8 @@
 //#define DEBUG
 
 
-static void remove_hdr_lines(bcf_hdr_t *hdr, int type)
-{
-    int i = 0, nrm = 0;
-    while (i < hdr->nhrec)
-    {
-        if (hdr->hrec[i]->type != type)
-        {
-            i++;
-            continue;
-        }
-        bcf_hrec_t *hrec = hdr->hrec[i];
-        if (type == BCF_HL_FMT)
-        {
-            // everything except FORMAT/GT
-            int id = bcf_hrec_find_key(hrec, "ID");
-            if (id >= 0 && !strcmp(hrec->vals[id], "GT"))
-            {
-                i++;
-                continue;
-            }
-        }
-        nrm++;
-        hdr->nhrec--;
-        if (i < hdr->nhrec)
-        {
-            memmove(&hdr->hrec[i], &hdr->hrec[i + 1], (hdr->nhrec - i) * sizeof(bcf_hrec_t *));
-        }
-        bcf_hrec_destroy(hrec);
-    }
-    if (nrm)
-    { bcf_hdr_sync(hdr); }
-}
 
-void remove_info(bcf1_t *line)
+static void remove_info(bcf1_t *line)
 {
     // remove all INFO fields
     if (!(line->unpacked & BCF_UN_INFO))
@@ -194,7 +162,7 @@ int GVCFReader::read_lines(int num_lines)
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
         _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
-        if(is_variant(_bcf_record))
+        if(_bcf_record->n_allele>1)
         {
             int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
             bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
@@ -219,7 +187,7 @@ int GVCFReader::read_lines(int num_lines)
             dp = *value_pointer;
             end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
             //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
-            if (is_variant(_bcf_record))
+            if (_bcf_record->n_allele>1)
             {
                 bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
             }

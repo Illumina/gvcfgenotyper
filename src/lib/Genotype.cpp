@@ -1,4 +1,4 @@
-#include "GVCFReader.hpp"
+#include "Genotype.hh"
 
 #include <stdexcept>
 
@@ -242,7 +242,6 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
     if(bcf_hdr_id2type(header,BCF_HL_FMT,bcf_hdr_id2int(header,BCF_DT_ID,"GQ"))==BCF_HT_REAL)
     {
         float tmpgq =(float) _gq[0];
-        float *tmpptr = &tmpgq;
         int tmpnval = 1;
         assert(bcf_update_format_float(header, record, "GQ", &tmpgq, tmpnval)==0);
     }
