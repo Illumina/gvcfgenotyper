@@ -5,7 +5,7 @@ merging and genotyping tool for illumina gvcfs
 ### build:
 
 ```
-git@git.illumina.com:Bioinformatics/gvcfgenotyper.git
+git clone git@git.illumina.com:Bioinformatics/gvcfgenotyper.git
 mkdir release
 cd release/
 cmake ../
