@@ -9,7 +9,7 @@ extern "C" {
 #include <htslib/vcf.h>
 }
 
-#include "utils.hpp"
+#include "utils.hh"
 
 
 class Genotype

@@ -1,7 +1,7 @@
 //
 // Created by O'Connell, Jared on 11/1/17.
 //
-#include "test_helpers.h"
+#include "test_helpers.hh"
 
 bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles)
 {

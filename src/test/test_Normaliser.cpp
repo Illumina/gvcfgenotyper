@@ -2,8 +2,8 @@
 // Created by O'Connell, Jared on 10/16/17.
 //
 
-#include "test_helpers.h"
-#include "GVCFReader.hpp"
+#include "test_helpers.hh"
+#include "GVCFReader.hh"
 
 TEST(Normaliser, mnp_split1)
 {

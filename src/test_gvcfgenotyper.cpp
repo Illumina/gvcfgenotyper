@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "common.hpp"
+#include "common.hh"
 #include <libgen.h>
 
 #ifndef PATH_MAX

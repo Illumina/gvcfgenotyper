@@ -1,4 +1,4 @@
-#include "GVCFReader.hpp"
+#include "GVCFReader.hh"
 
 //interpolates depth for a given interval a<=x<b
 //returns 0 on success and -1 if the buffer didnt contain the interval

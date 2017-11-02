@@ -1,5 +1,5 @@
-#include "GVCFMerger.hpp"
-#include "utils.hpp"
+#include "GVCFMerger.hh"
+#include "utils.hh"
 #include <htslib/vcf.h>
 
 //#define DEBUG

@@ -10,7 +10,7 @@ extern "C" {
 #include "vcfnorm.h"
 }
 
-#include "utils.hpp"
+#include "utils.hh"
 #include "Genotype.hh"
 
 //vcfnorm stuff

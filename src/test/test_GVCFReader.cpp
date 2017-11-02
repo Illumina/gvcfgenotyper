@@ -1,11 +1,11 @@
-#include "test_helpers.h"
+#include "test_helpers.hh"
 
 extern "C"
 {
 #include <htslib/vcf.h>
 }
 
-#include "GVCFReader.hpp"
+#include "GVCFReader.hh"
 
 
 

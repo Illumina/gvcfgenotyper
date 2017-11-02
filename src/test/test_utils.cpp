@@ -1,6 +1,6 @@
-#include "test_helpers.h"
+#include "test_helpers.hh"
 
-#include "utils.hpp"
+#include "utils.hh"
 
 TEST(UtilTest, comparators)
 {

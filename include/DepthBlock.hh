@@ -9,7 +9,7 @@ extern "C" {
 #include <htslib/vcf.h>
 }
 
-#include "utils.hpp"
+#include "utils.hh"
 
 //simple class that stores the pertinent values from a GVCF homref block
 class DepthBlock

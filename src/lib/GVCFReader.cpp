@@ -1,6 +1,6 @@
 #include <htslib/vcf.h>
-#include "GVCFReader.hpp"
-#include "StringUtil.hpp"
+#include "GVCFReader.hh"
+#include "StringUtil.hh"
 //#define DEBUG
 
 
