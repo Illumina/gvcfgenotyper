@@ -84,15 +84,14 @@ int VariantBuffer::flush_buffer(int chrom, int pos)
 
 int VariantBuffer::flush_buffer()
 {
-    if (!_buffer.empty())
+    int num_flushed = 0;
+    while (!_buffer.empty())
     {
-        int ret = flush_buffer(_buffer.back()->rid, _buffer.back()->pos);
-        return (ret);
+        bcf_destroy(_buffer.front());
+        _buffer.pop_front();
+        num_flushed++;
     }
-    else
-    {
-        return (0);
-    }
+    return num_flushed;
 }
 
 size_t VariantBuffer::size()

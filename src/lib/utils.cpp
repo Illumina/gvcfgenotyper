@@ -49,7 +49,7 @@ int strsplit(const string &input, const char split, vector<string> &out)
 string join(const vector<string> &input, const string &delim)
 {
     string ret = input[0];
-    for (int i = 1; i < input.size(); i++)
+    for (size_t i = 1; i < input.size(); i++)
     {
         ret += ",";
         ret += input[i];
@@ -60,9 +60,9 @@ string join(const vector<string> &input, const string &delim)
 vector<int> match(const vector<string> &x, const vector<string> &y)
 {
     vector<int> ret;
-    for (int i = 0; i < y.size(); i++)
+    for (size_t i = 0; i < y.size(); i++)
     {
-        int j = 0;
+        size_t j = 0;
         while (x[j] != y[i])
         {
             j++;
@@ -84,7 +84,7 @@ int copy_contigs(const bcf_hdr_t *src, bcf_hdr_t *dst)
     bcf_hdr_format(src,1,&splitme);
     strsplit(splitme.s, '\n', parseme);
     string contigs = "";
-    for (int i = 0; i < parseme.size(); i++)
+    for (size_t i = 0; i < parseme.size(); i++)
     {
         if (parseme[i].find("contig") < parseme[i].size())
         {
@@ -198,7 +198,7 @@ bool bcf1_equal(bcf1_t *a, bcf1_t *b)
     }
     else
     {
-        for (int i = 0; i < min(a->n_allele,b->n_allele); i++)
+        for (size_t i = 0; i < min(a->n_allele,b->n_allele); i++)
         {
             if (strcmp(a->d.allele[i], b->d.allele[i]))
             {
@@ -236,7 +236,7 @@ bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
     {
         if(get_variant_rank(a)==get_variant_rank(b))
         {
-            for (int i = 0; i < min(a->n_allele, b->n_allele); i++)
+            for (size_t i = 0; i < min(a->n_allele, b->n_allele); i++)
             {
                 int val = strcmp(a->d.allele[i], b->d.allele[i]);
                 if (val < 0)

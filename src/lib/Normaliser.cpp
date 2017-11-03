@@ -19,7 +19,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
 {
     int num_allele = record_to_split->n_allele;
     char **alleles = record_to_split->d.allele;
-    int ref_len = strlen(alleles[0]);
+    size_t ref_len = strlen(alleles[0]);
     bool is_mnp = ref_len > 1;
     for (int i = 0; i < num_allele; i++)
     {
@@ -42,7 +42,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
         Genotype old_genotype(header, record_to_split);
 
         int num_new_snps = 0;
-        for (int i = 0; i < ref_len; i++)
+        for (size_t i = 0; i < ref_len; i++)
         {
             //figures out the set of SNPs that are present at position i in the MNP (might be 0)
             int num_new_allele = 1;
