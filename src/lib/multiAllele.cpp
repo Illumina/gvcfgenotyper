@@ -114,7 +114,7 @@ void multiAllele::collapse(bcf1_t *output)
     output->pos = _pos;
     output->rid = _rid;
 
-    int num_alleles = (int)_records.size()+1;
+    size_t num_alleles = _records.size()+1;
     char **new_alleles = (char **)malloc(sizeof(char*) * num_alleles);
     char *ptr_to_longest= nullptr;
     size_t max_ref_len = 0;

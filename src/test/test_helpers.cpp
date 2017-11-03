@@ -7,7 +7,7 @@ bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & allel
 {
     bcf1_t *ret = bcf_init1();
     kstring_t str = {0,0,nullptr};
-    int comma = alleles.find(",");
+    size_t comma = alleles.find(",");
     assert(comma<alleles.size());
     std::string ref = alleles.substr(0,comma);
     std::string alt = alleles.substr(comma+1,alleles.size());
@@ -40,7 +40,7 @@ void update_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles,bc
 {
     bcf_clear1(record);
     kstring_t str = {0,0,nullptr};
-    int comma = alleles.find(",");
+    size_t comma = alleles.find(",");
     assert(comma<alleles.size());
     std::string ref = alleles.substr(0,comma);
     std::string alt = alleles.substr(comma+1,alleles.size());

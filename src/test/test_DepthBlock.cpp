@@ -8,7 +8,6 @@
 TEST(DepthBlock, DepthBlock_def_constr)
 {
     DepthBlock db;
-    // nt _rid, _start, _end, _dp, _gq, _dpf;
     ASSERT_EQ(db._rid,0);
     ASSERT_EQ(db._start,0);
     ASSERT_EQ(db._end,0);
