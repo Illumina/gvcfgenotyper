@@ -51,7 +51,7 @@ string join(const vector<string> &input, const string &delim)
     string ret = input[0];
     for (size_t i = 1; i < input.size(); i++)
     {
-        ret += ",";
+        ret += delim;
         ret += input[i];
     }
     return (ret);
@@ -100,7 +100,7 @@ int read_text_file(const string &fname, vector<string> &output)
     ifstream ifile(fname.c_str());
     if (!ifile)
     {
-        die("problem opening" + ((string) fname));
+        die("problem opening " + ((string) fname));
     }
     string tmp;
     output.clear();
