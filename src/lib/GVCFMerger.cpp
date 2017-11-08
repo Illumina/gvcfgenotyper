@@ -108,7 +108,7 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 {
     _format_ad = (int32_t *) realloc(_format_ad, num_alleles * _num_gvcfs * sizeof(int32_t));
     std::fill(_format_gt, _format_gt + 2 * _num_gvcfs, bcf_gt_missing);
-    std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, bcf_int32_missing);
+    std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, 0);
     std::fill(_format_dp, _format_dp + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_dpf, _format_dpf + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_gq, _format_gq + _num_gvcfs, bcf_int32_missing);
@@ -212,8 +212,7 @@ bcf1_t *GVCFMerger::next()
             _format_dp[i] = homref_block._dp;
             _format_dpf[i] = homref_block._dpf;
             _format_gq[i] = homref_block._gq;
-            _format_ad[i * 2] = homref_block._dp;
-            _format_ad[i * 2 + 1] = 0;
+            _format_ad[i * _output_record->n_allele] = homref_block._dp;
             if (homref_block._dp > 0)
             {
                 _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);

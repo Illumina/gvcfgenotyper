@@ -10,8 +10,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -Werror")
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall -Wextra -Werror")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
