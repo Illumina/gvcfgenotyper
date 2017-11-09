@@ -44,13 +44,14 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
         die("problem opening output file: " + output_filename);
     }
 
+    _format_pl = nullptr;
     _format_gt = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
     _format_ad = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
     _format_dp = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_gq = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_ps = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_dpf = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-
+    _num_pl=_num_variants=0;
     build_header();
     _record_collapser.init(_output_header);
     _output_record = bcf_init1();
@@ -106,9 +107,13 @@ bool GVCFMerger::all_readers_empty()
 
 void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 {
+    int ploidy = 2;
+    _num_pl = get_number_of_likelihoods(ploidy,num_alleles)* _num_gvcfs;
+    _format_pl = (int32_t *) realloc(_format_pl, _num_pl * sizeof(int32_t));
+    std::fill(_format_pl, _format_pl + _num_pl, bcf_int32_missing);
     _format_ad = (int32_t *) realloc(_format_ad, num_alleles * _num_gvcfs * sizeof(int32_t));
     std::fill(_format_gt, _format_gt + 2 * _num_gvcfs, bcf_gt_missing);
-    std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, bcf_int32_missing);
+    std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, 0);
     std::fill(_format_dp, _format_dp + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_dpf, _format_dpf + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_gq, _format_gq + _num_gvcfs, bcf_int32_missing);
@@ -212,8 +217,7 @@ bcf1_t *GVCFMerger::next()
             _format_dp[i] = homref_block._dp;
             _format_dpf[i] = homref_block._dpf;
             _format_gq[i] = homref_block._gq;
-            _format_ad[i * 2] = homref_block._dp;
-            _format_ad[i * 2 + 1] = 0;
+            _format_ad[i * _output_record->n_allele] = homref_block._dp;
             if (homref_block._dp > 0)
             {
                 _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
@@ -246,6 +250,8 @@ bcf1_t *GVCFMerger::next()
     bcf_update_format_int32(_output_header, _output_record, "DP", _format_dp, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "DPF", _format_dpf, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * _output_record->n_allele);
+    bcf_update_format_int32(_output_header, _output_record, "PL", _format_pl, _num_pl);
+
     return (_output_record);
 }
 

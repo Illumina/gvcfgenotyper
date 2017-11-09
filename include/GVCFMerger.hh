@@ -37,7 +37,8 @@ private:
     bcf1_t *_output_record;
     htsFile *_output_file;
     bcf_hdr_t *_output_header;
-    int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps;//, *format_pl;
+    int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps,*_format_pl;
+    int _num_pl;
     int _num_variants;
 };
 
