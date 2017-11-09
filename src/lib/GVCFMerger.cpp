@@ -43,6 +43,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     {
         die("problem opening output file: " + output_filename);
     }
+
     _format_pl = nullptr;
     _format_gt = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
     _format_ad = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
@@ -50,7 +51,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _format_gq = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_ps = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_dpf = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-
+    _num_pl=_num_variants=0;
     build_header();
     _record_collapser.init(_output_header);
     _output_record = bcf_init1();
