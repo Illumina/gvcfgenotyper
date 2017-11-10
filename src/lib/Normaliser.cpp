@@ -9,13 +9,14 @@ Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
     _symbolic_allele[1]='\0';
 }
 
+// delete/free of symbolic alleles/_hdr
 Normaliser::~Normaliser()
 {
     destroy_data(_norm_args);
     free(_norm_args);
 }
 
-int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &output)
+int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & output)
 {
     int num_allele = record_to_split->n_allele;
     char **alleles = record_to_split->d.allele;
@@ -134,9 +135,9 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &outp
 }
 
 
-vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
+void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
-    vector<bcf1_t *> atomised_variants; //return value
+    //vector<bcf1_t *> atomised_variants; //return value
 
     //bi-allelic snp. just copy the variant into the buffer.
     if(is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
@@ -156,7 +157,7 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     vector<bcf1_t *> decomposed_variants;
     mnp_split(bcf_record_to_marginalise, _hdr, decomposed_variants);
 
-    for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); it++)
+    for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); ++it)
     {
         bcf1_t *decomposed_record = *it;
         if(decomposed_record->n_allele==2)//bi-alleic. no further decomposition needed.
@@ -196,5 +197,5 @@ vector<bcf1_t *> Normaliser::unarise(bcf1_t *bcf_record_to_marginalise)
     }
     delete[] new_alleles;
 
-    return (atomised_variants);
+    //return (atomised_variants);
 }

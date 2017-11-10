@@ -2,7 +2,7 @@
 
 //interpolates depth for a given interval a<=x<b
 //returns 0 on success and -1 if the buffer didnt contain the interval
-int DepthBuffer::interpolate(int rid, int start, int stop, DepthBlock &db)
+int DepthBuffer::interpolate(const int rid, const int start, const int stop, DepthBlock &db)
 {
     db.set_missing();
     auto dp_ptr = _buffer.begin();
@@ -26,7 +26,7 @@ int DepthBuffer::interpolate(int rid, int start, int stop, DepthBlock &db)
     return (0);
 }
 
-void DepthBuffer::push_back(DepthBlock db)
+void DepthBuffer::push_back(const DepthBlock& db)
 {
     //sanity check on value being pushed
     if (!(_buffer.empty() || db._rid != _buffer.back()._rid || db._start == (1 + _buffer.back()._end) ||
@@ -42,11 +42,11 @@ void DepthBuffer::push_back(DepthBlock db)
 
     if (_buffer.empty() || db._rid > _buffer.back()._rid || db._start > _buffer.back()._end)
     {
-        _buffer.push_back(db);
+        _buffer.push_back(std::move(db));
     }
 }
 
-int DepthBuffer::flush_buffer(int rid, int pos)
+int DepthBuffer::flush_buffer(const int rid, const int pos)
 {
     int num_flushed = 0;
     while (!_buffer.empty() && _buffer.front()._rid < rid)

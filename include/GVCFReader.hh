@@ -37,7 +37,7 @@ public:
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> get_all_variants_in_interval(int chrom,int stop);
     bcf1_t *front(); //return pointer to current vcf record
     bcf1_t *pop(); //return pointer to current vcf record and remove it from buffer
-    int read_lines(int num_lines); //read at most num_lines
+    int read_lines(const unsigned num_lines); //read at most num_lines
     size_t fill_buffer();
 
     void

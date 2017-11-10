@@ -104,5 +104,5 @@ DepthBlock DepthBlock::intersect(int rid, int start, int end)
         die("DepthBlock: bad coordinates.");
     }
 
-    return (DepthBlock(_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq));
+    return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq};
 }

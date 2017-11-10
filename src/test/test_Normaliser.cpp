@@ -142,7 +142,8 @@ TEST(Normaliser, unarise1)
     //print_variant(hdr, record1);
 
 
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -177,7 +178,8 @@ TEST(Normaliser, unarise2)
     bcf_update_genotypes(hdr, record1, gt, 2);
     //print_variant(hdr, record1);
 
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer; 
+    norm.unarise(record1,buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -212,7 +214,8 @@ TEST(Normaliser, unarise3)
     //print_variant(hdr, record1);
 
 
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -241,7 +244,8 @@ TEST(Normaliser, unarise4)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         print_variant(hdr,*it);
@@ -257,7 +261,8 @@ TEST(Normaliser, unarise5)
 
     auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:AD:PL\t1/2:49:2,15,16:429,123,50,137,0,295");
 
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     auto record2 = generate_record(hdr,"chr1\t5418\t.\tTACAAAA\tT,X\t423\tPASS\t.\tGT\t2/1");
     auto record3 = generate_record(hdr,"chr1	5420	.	CAAAAAA	C,X	423	PASS	.	GT	1/2");
 
@@ -290,7 +295,8 @@ TEST(Normaliser, qual)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
     //print_variant(hdr, record1);
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ASSERT_FLOAT_EQ((*it)->qual,221);

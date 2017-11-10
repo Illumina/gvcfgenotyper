@@ -182,7 +182,8 @@ TEST(Genotype,format)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
 //    print_variant(hdr, record1);
-    vector<bcf1_t *> buffer = norm.unarise(record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
 //        print_variant(hdr,*it);
