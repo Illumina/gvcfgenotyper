@@ -25,6 +25,8 @@ extern "C" {
 
 int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &output);
 
+// This class is problematic, with several members that are pointers to other
+// classes it should define copy ctor and assignment operator as well. Ideally std::unique_ptr as well.
 //this basically wraps bcftools norm in a class.
 //TODO: investigate replacing this with invariant components
 class Normaliser
@@ -34,7 +36,7 @@ public:
 
     ~Normaliser();
 
-    std::vector<bcf1_t *> unarise(bcf1_t *rec);
+    void unarise(bcf1_t *rec, std::vector<bcf1_t *>& atomised_variants);
 
 private:
     char _symbolic_allele[2];

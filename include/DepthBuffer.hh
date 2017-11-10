@@ -20,7 +20,9 @@ public:
     ~DepthBuffer()
     {};
 
-    void push_back(DepthBlock db);
+    // performs additional check on db, if passed moves db into internal buffer
+    // which invalidates db
+    void push_back(const DepthBlock& db);
 
     DepthBlock *pop();
 
@@ -32,9 +34,9 @@ public:
 
     int flush_buffer();
 
-    int flush_buffer(int rid, int pos);
+    int flush_buffer(const int rid, const int pos);
 
-    int interpolate(int rid, int start, int end, DepthBlock &db);//interpolates depth for an interval a<=x<
+    int interpolate(const int rid, const int start, const int end, DepthBlock &db);//interpolates depth for an interval a<=x<
     size_t size();
 
 private:

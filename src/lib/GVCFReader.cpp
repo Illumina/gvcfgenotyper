@@ -150,14 +150,14 @@ int GVCFReader::read_until(int rid, int pos)
     return (num_read);
 }
 
-int GVCFReader::read_lines(int num_lines)
+int GVCFReader::read_lines(const unsigned num_lines)
 {
-    if (num_lines <= 0)
+    if (num_lines == 0)
     {
         return (0);
     }
 
-    int num_read = 0;
+    unsigned num_read = 0;
 
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
@@ -169,7 +169,8 @@ int GVCFReader::read_lines(int num_lines)
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             remove_info(_bcf_record);
-            vector<bcf1_t *> atomised_variants = _normaliser->unarise(_bcf_record);
+            vector<bcf1_t *> atomised_variants; 
+            _normaliser->unarise(_bcf_record,atomised_variants);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
                 _variant_buffer.push_back(*v);
