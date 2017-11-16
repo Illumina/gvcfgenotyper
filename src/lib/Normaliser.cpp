@@ -1,5 +1,26 @@
 #include "Normaliser.hh"
 
+// remove all INFO fields
+/*static void remove_info(bcf1_t *line)
+{
+    if (!(line->unpacked & BCF_UN_INFO))
+    { 
+        bcf_unpack(line, BCF_UN_INFO); 
+    }
+    
+    for (int i = 0; i < line->n_info; i++)
+    {
+        bcf_info_t *inf = &line->d.info[i];
+        if (inf->vptr_free)
+        {
+            free(inf->vptr - inf->vptr_off);
+            inf->vptr_free = 0;
+        }
+        line->d.shared_dirty |= BCF1_DIRTY_INF;
+        inf->vptr = nullptr;
+    }
+    line->n_info = 0;
+}*/
 
 Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
 {
@@ -137,12 +158,11 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & out
 
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
-    //vector<bcf1_t *> atomised_variants; //return value
-
-    //bi-allelic snp. just copy the variant into the buffer.
+    //bi-allelic snp. Nothing to do, just copy the variant into the buffer.
     if(is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
     {
         atomised_variants.push_back(bcf_dup(bcf_record_to_marginalise));
+        return;
     }
 
     const int reference_allele = 0;
@@ -196,6 +216,4 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         }
     }
     delete[] new_alleles;
-
-    //return (atomised_variants);
 }

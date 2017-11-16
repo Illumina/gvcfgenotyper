@@ -1,6 +1,11 @@
 #include "GVCFMerger.hh"
 #include "utils.hh"
+#include <htslib/hts.h>
 #include <htslib/vcf.h>
+
+extern "C" {
+      size_t hts_realloc_or_die(unsigned long, unsigned long, unsigned long, unsigned long, int, void**, char const*);
+}
 
 //#define DEBUG
 
@@ -15,6 +20,11 @@ GVCFMerger::~GVCFMerger()
     free(_format_gq);
     free(_format_dpf);
     free(_format_ps);
+    free(_format_adf);
+    free(_format_adr);
+    free(_info_adf);
+    free(_info_adr);
+    free(_format_gqx);
     bcf_destroy(_output_record);
 }
 
@@ -47,8 +57,16 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _format_pl = nullptr;
     _format_gt = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
     _format_ad = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
+
+    _format_adf = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
+    _format_adr = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
+
+    _info_adf = (int32_t *) malloc(2 * sizeof(int32_t));
+    _info_adr = (int32_t *) malloc(2 * sizeof(int32_t));
+
     _format_dp = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_gq = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
+    _format_gqx = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_ps = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_dpf = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _num_pl=_num_variants=0;
@@ -112,11 +130,26 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
     _format_pl = (int32_t *) realloc(_format_pl, _num_pl * sizeof(int32_t));
     std::fill(_format_pl, _format_pl + _num_pl, bcf_int32_missing);
     _format_ad = (int32_t *) realloc(_format_ad, num_alleles * _num_gvcfs * sizeof(int32_t));
+
+    _format_adf = (int32_t *) realloc(_format_adf, num_alleles * _num_gvcfs * sizeof(int32_t));
+    _format_adr = (int32_t *) realloc(_format_adr, num_alleles * _num_gvcfs * sizeof(int32_t));
+
+    _info_adf = (int32_t *) realloc(_info_adf, num_alleles * sizeof(int32_t));
+    _info_adr = (int32_t *) realloc(_info_adr, num_alleles * sizeof(int32_t));
+
     std::fill(_format_gt, _format_gt + 2 * _num_gvcfs, bcf_gt_missing);
     std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, 0);
+
+    std::fill(_format_adf, _format_adf + num_alleles * _num_gvcfs, 0);
+    std::fill(_format_adr, _format_adr + num_alleles * _num_gvcfs, 0);
+
+    std::fill(_info_adf, _info_adf + num_alleles, 0);
+    std::fill(_info_adr, _info_adr + num_alleles, 0);
+
     std::fill(_format_dp, _format_dp + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_dpf, _format_dpf + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_gq, _format_gq + _num_gvcfs, bcf_int32_missing);
+    std::fill(_format_gqx, _format_gqx + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_ps, _format_ps + _num_gvcfs, bcf_int32_missing);
 }
 
@@ -159,6 +192,8 @@ bcf1_t *GVCFMerger::next()
 
     // count the number of written PS tags
     unsigned nps_written(0);
+    int32_t mean_mq = 0;
+    int32_t num_mq = 0;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
         auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
@@ -200,14 +235,29 @@ bcf1_t *GVCFMerger::next()
                         }
                     }
                     _format_gq[i] = g.get_gq();
+                    _format_gqx[i] = g.get_gqx();
                     if(g.is_dp_missing())
                     {
                         g.setDepthFromAD();
                     }
                     _format_dp[i] = g.get_dp();
                     _format_dpf[i] = g.get_dpf();
+                    // AD
                     _format_ad[i*_output_record->n_allele] = g.get_ad(0);
                     _format_ad[i*_output_record->n_allele+allele] = g.get_ad(1);
+                    // ADF
+                    _format_adf[i*_output_record->n_allele] = g.get_adf(0);
+                    _format_adf[i*_output_record->n_allele+allele] = g.get_adf(1);
+                    // ADR
+                    _format_adr[i*_output_record->n_allele] = g.get_adr(0);
+                    _format_adr[i*_output_record->n_allele+allele] = g.get_adr(1);
+                }
+                int32_t sample_mq = 0;
+                int nval=1;
+                int32_t* ptr = &sample_mq;
+                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0) {
+                    mean_mq += sample_mq;
+                    ++num_mq;
                 }
             }
         }
@@ -217,6 +267,7 @@ bcf1_t *GVCFMerger::next()
             _format_dp[i] = homref_block._dp;
             _format_dpf[i] = homref_block._dpf;
             _format_gq[i] = homref_block._gq;
+            // GQX is missing for HOM REF
             _format_ad[i * _output_record->n_allele] = homref_block._dp;
             if (homref_block._dp > 0)
             {
@@ -243,6 +294,8 @@ bcf1_t *GVCFMerger::next()
 
     assert(bcf_update_genotypes(_output_header, _output_record, _format_gt, _num_gvcfs * 2)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQ", _format_gq, _num_gvcfs)==0);
+    //int ret1 = bcf_update_format_int32(_output_header, _output_record, "GQX", _format_gqx, _num_gvcfs);
+    assert(bcf_update_format_int32(_output_header, _output_record, "GQX", _format_gqx, _num_gvcfs)==0);
     if (nps_written > 0)
     {
 //        bcf_update_format_int32(_output_header, _output_record, "PS", _format_ps, _num_gvcfs);
@@ -250,7 +303,39 @@ bcf1_t *GVCFMerger::next()
     bcf_update_format_int32(_output_header, _output_record, "DP", _format_dp, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "DPF", _format_dpf, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * _output_record->n_allele);
+    bcf_update_format_int32(_output_header, _output_record, "ADF", _format_adf, _num_gvcfs * _output_record->n_allele);
+    bcf_update_format_int32(_output_header, _output_record, "ADR", _format_adr, _num_gvcfs * _output_record->n_allele);
     bcf_update_format_int32(_output_header, _output_record, "PL", _format_pl, _num_pl);
+
+    // Write INFO/MQ
+    if (num_mq>0) {
+        mean_mq /= num_mq;
+        bcf_update_info_int32(_output_header,_output_record,"MQ",&mean_mq,1);
+    }
+
+    // Calculate AC/AN using htslib standard functions
+    int *arr = nullptr, marr=0;
+    hts_expand(int,_output_record->n_allele,marr,arr);
+    int ret = bcf_calc_ac(_output_header,_output_record,arr,BCF_UN_FMT);
+    if (ret)
+    {
+        int an = 0;
+        for (int i=0; i<_output_record->n_allele; i++) {
+            an += arr[i];
+        }
+        bcf_update_info_int32(_output_header, _output_record, "AN", &an, 1);
+        bcf_update_info_int32(_output_header, _output_record, "AC", arr+1, _output_record->n_allele-1);
+    } 
+
+    // Calculate INFO/ADF + INFO/ADR
+    for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele) {
+        for (size_t j=0;j<_output_record->n_allele;++j) { 
+            _info_adf[j] += _format_adf[i+j];
+            _info_adr[j] += _format_adr[i+j];
+        }
+    }
+    bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
+    bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
 
     return (_output_record);
 }
@@ -312,12 +397,17 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AD,Number=R,Type=Integer,Description=\"sum of allele depths for ALL individuals\">");
     bcf_hdr_append(_output_header,
+                   "##INFO=<ID=ADF,Number=R,Type=Integer,Description=\"Sum of allelic depth on forward strand for ALL individuals\">");
+    bcf_hdr_append(_output_header,
+                   "##INFO=<ID=ADR,Number=R,Type=Integer,Description=\"Sum of allelic depth on reverse strand for ALL individuals\">");
+    bcf_hdr_append(_output_header,
                    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"sum of depth  across all samples\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=DPF,Number=1,Type=Integer,Description=\"sum of basecalls filtered from input prior to site genotyping\">");
     bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">");
+    bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Filtered basecall depth used for site genotyping\">");
@@ -325,12 +415,16 @@ void GVCFMerger::build_header()
                    "##FORMAT=<ID=DPF,Number=1,Type=Integer,Description=\"Basecalls filtered from input prior to site genotyping\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed.\">");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADF,Number=.,Type=Integer,Description=\"Allelic depths on the forward strand\"");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADR,Number=.,Type=Integer,Description=\"Allelic depths on the reverse strand\"");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=FT,Number=A,Type=Integer,Description=\"variant was PASS filter in original sample gvcf\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification.\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
+
 
     copy_contigs(_readers[0].get_header(), _output_header);
     bcf_hdr_write(_output_file, _output_header);
