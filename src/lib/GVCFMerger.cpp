@@ -23,6 +23,7 @@ GVCFMerger::~GVCFMerger()
     free(_format_ps);
     free(_format_adf);
     free(_format_adr);
+    free(_format_pl);
     free(_info_adf);
     free(_info_adr);
     free(_info_ac);
