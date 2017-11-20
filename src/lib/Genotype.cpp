@@ -8,6 +8,11 @@ int Genotype::get_gq()
     return(*_gq);
 }
 
+int Genotype::get_gqx()
+{
+    return(*_gqx);
+}
+
 int Genotype::get_dp()
 {
     if(_num_dp>0)
@@ -24,6 +29,18 @@ int Genotype::get_ad(int index)
 {
     assert(index<_num_ad);
     return(_ad[index]);
+}
+
+int Genotype::get_adf(int index)
+{
+    assert(index<_num_adf);
+    return(_adf[index]);
+}
+
+int Genotype::get_adr(int index)
+{
+    assert(index<_num_adr);
+    return(_adr[index]);
 }
 
 int Genotype::get_dpf()
@@ -58,16 +75,24 @@ Genotype::Genotype(int ploidy, int num_allele)
     _num_gt = _ploidy;
     _num_pl = _ploidy == 1 ? _ploidy : _num_allele * (1 + _num_allele) / 2;
     _num_ad = _num_allele;
+    _num_adf = _num_allele;
+    _num_adr = _num_allele;
     _num_gq = 1;
+    _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
     _gt = zeros(_num_gt);
     _pl = zeros(_num_pl);
     _ad = zeros(_num_ad);
+    _adf = zeros(_num_ad);
+    _adr = zeros(_num_ad);
     _gq = zeros(_num_gq);
+    _gqx = zeros(_num_gqx);
     _dp = zeros(_num_dp);
     _dpf = zeros(_num_dpf);
     _gl.assign(_num_pl, 0.);
+    _adf_found=false;
+    _adr_found=false;
 }
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
@@ -79,12 +104,12 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     //this chunk of codes reads our canonical FORMAT fields (PL,GQ,DP,DPF,AD)
     _gt = (int *)malloc(2*sizeof(int));//force gt to be of length 2.
     _gt[1] = bcf_int32_vector_end;
-    _ad = _gq = _dpf = _dp = _pl = nullptr;
+    _ad = _adf = _adr = _gq = _gqx = _dpf = _dp = _pl = nullptr;
     _num_gt = 2;
     _ploidy = bcf_get_genotypes(header, record, &_gt, &_num_gt);
     assert(_ploidy >= 0 && _ploidy <= 2);
     _num_pl = _num_gl = _ploidy == 1 ? _num_allele : _num_allele * (1 + _num_allele) / 2;
-    _num_ad = 0, _num_gq = 0, _num_dpf = 0,  _num_dp = 0;
+    _num_ad = 0, _num_adf = 0, _num_adr = 0, _num_gq = 0, _num_gqx = 0, _num_dpf = 0,  _num_dp = 0;
 
     _pl = (int32_t *)malloc(sizeof(int32_t)*_num_gl);
     int ret;
@@ -107,6 +132,18 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         throw std::runtime_error("incorrect number of values in  FORMAT/PL");
     }
     assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
+    if(bcf_get_format_int32(header, record, "ADF", &_adf, &_num_adf) == _num_allele) {
+        _adf_found=true;
+    } else {
+        std::cerr << "WARNING: gvcf without ADF supplied." << "\n";
+        _adf_found=false;
+    }
+    if(bcf_get_format_int32(header, record, "ADR", &_adr, &_num_adr) == _num_allele) {
+        _adr_found=true;
+    } else {
+        std::cerr << "WARNING: gvcf without ADR supplied." << "\n";
+        _adr_found=false;
+    }
     ret = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
     if(ret!=1)
     {
@@ -120,6 +157,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         }
     }
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
+    bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
     //FIXME: GQ is should be an integer but is sometimes set as float. we need to catch and handle this.
     if (bcf_get_format_int32(header, record, "GQ", &_gq, &_num_gq) == -2)
     {
@@ -181,16 +219,35 @@ Genotype Genotype::marginalise(int index)
     }
 
     memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);
+    memcpy(ret._gqx, _gqx, sizeof(int32_t) * _num_gqx);
 
     //marginalises FORMAT/AD
     ret._ad[reference_allele] = _ad[reference_allele];
     ret._ad[primary_allele] = _ad[index];
     ret._ad[symbolic_allele] = 0;
+
+    if (_adf_found) {
+        ret._adf[reference_allele] = _adf[reference_allele];
+        ret._adf[primary_allele] = _adf[index];
+        ret._adf[symbolic_allele] = 0;
+    }
+
+    if (_adr_found) {
+        ret._adr[reference_allele] = _adr[reference_allele];
+        ret._adr[primary_allele] = _adr[index];
+        ret._adr[symbolic_allele] = 0;
+    }
     for (int j = 1; j < _num_allele; j++)
     {
         if (index != j)//j is an alternate allele that is not i
         {
             ret._ad[symbolic_allele] += _ad[j];
+            if (_adf_found) {
+                ret._adf[symbolic_allele] += _adf[j];
+            }
+            if (_adr_found) {
+                ret._adr[symbolic_allele] += _adr[j];
+            }
         }
     }
     //FIXME: dummy values for the time being because PLs are complicated.
@@ -222,7 +279,10 @@ Genotype::~Genotype()
 {
     free(_gt);
     free(_ad);
+    free(_adf);
+    free(_adr);
     free(_gq);
+    free(_gqx);
     free(_dpf);
     free(_pl);
     free(_dp);
@@ -250,6 +310,8 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
         assert(bcf_update_format_int32(header, record, "GQ", _gq, _num_gq)==0);
     }
 
+    assert(bcf_update_format_int32(header, record, "GQX", _gqx, _num_gqx)==0);
+
     if(_num_dp>0)
     {
         assert(_num_dpf>0);
@@ -263,6 +325,8 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
         bcf_update_format_int32(header, record, "DPF", NULL,0);
     }
     bcf_update_format_int32(header, record, "AD", _ad, _num_ad);
+    bcf_update_format_int32(header, record, "ADR", _adr, _num_adr);
+    bcf_update_format_int32(header, record, "ADF", _adf, _num_adf);
     bcf_update_format_int32(header, record, "PL", _pl, _num_pl);
 
     return (0);

@@ -3,29 +3,6 @@
 #include "StringUtil.hh"
 //#define DEBUG
 
-
-
-static void remove_info(bcf1_t *line)
-{
-    // remove all INFO fields
-    if (!(line->unpacked & BCF_UN_INFO))
-    { bcf_unpack(line, BCF_UN_INFO); }
-
-    int i;
-    for (i = 0; i < line->n_info; i++)
-    {
-        bcf_info_t *inf = &line->d.info[i];
-        if (inf->vptr_free)
-        {
-            free(inf->vptr - inf->vptr_off);
-            inf->vptr_free = 0;
-        }
-        line->d.shared_dirty |= BCF1_DIRTY_INF;
-        inf->vptr = nullptr;
-    }
-    line->n_info = 0;
-}
-
 int GVCFReader::flush_buffer(bcf1_t *record)
 {
     assert(record!=nullptr);
@@ -168,7 +145,6 @@ int GVCFReader::read_lines(const unsigned num_lines)
             bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
-            remove_info(_bcf_record);
             vector<bcf1_t *> atomised_variants; 
             _normaliser->unarise(_bcf_record,atomised_variants);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
