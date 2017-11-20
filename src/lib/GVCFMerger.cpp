@@ -18,13 +18,14 @@ GVCFMerger::~GVCFMerger()
     free(_format_ad);
     free(_format_dp);
     free(_format_gq);
+    free(_format_gqx);
     free(_format_dpf);
     free(_format_ps);
     free(_format_adf);
     free(_format_adr);
     free(_info_adf);
     free(_info_adr);
-    free(_format_gqx);
+    free(_info_ac);
     bcf_destroy(_output_record);
 }
 
@@ -54,15 +55,17 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
         die("problem opening output file: " + output_filename);
     }
 
+    size_t n_allele = 2;
     _format_pl = nullptr;
     _format_gt = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
-    _format_ad = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
+    _format_ad = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
 
-    _format_adf = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
-    _format_adr = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
+    _format_adf = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
+    _format_adr = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
 
-    _info_adf = (int32_t *) malloc(2 * sizeof(int32_t));
-    _info_adr = (int32_t *) malloc(2 * sizeof(int32_t));
+    _info_adf = (int32_t *) malloc(n_allele * sizeof(int32_t));
+    _info_adr = (int32_t *) malloc(n_allele * sizeof(int32_t));
+    _info_ac = (int32_t *) malloc(n_allele * sizeof(int32_t));
 
     _format_dp = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
     _format_gq = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
@@ -136,6 +139,7 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 
     _info_adf = (int32_t *) realloc(_info_adf, num_alleles * sizeof(int32_t));
     _info_adr = (int32_t *) realloc(_info_adr, num_alleles * sizeof(int32_t));
+    _info_ac = (int32_t *) realloc(_info_ac, num_alleles * sizeof(int32_t));
 
     std::fill(_format_gt, _format_gt + 2 * _num_gvcfs, bcf_gt_missing);
     std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, 0);
@@ -145,6 +149,7 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 
     std::fill(_info_adf, _info_adf + num_alleles, 0);
     std::fill(_info_adr, _info_adr + num_alleles, 0);
+    std::fill(_info_ac, _info_ac + num_alleles, 0);
 
     std::fill(_format_dp, _format_dp + _num_gvcfs, bcf_int32_missing);
     std::fill(_format_dpf, _format_dpf + _num_gvcfs, bcf_int32_missing);
@@ -314,17 +319,16 @@ bcf1_t *GVCFMerger::next()
     }
 
     // Calculate AC/AN using htslib standard functions
-    int *arr = nullptr, marr=0;
-    hts_expand(int,_output_record->n_allele,marr,arr);
-    int ret = bcf_calc_ac(_output_header,_output_record,arr,BCF_UN_FMT);
+    int ret = bcf_calc_ac(_output_header,_output_record,_info_ac,BCF_UN_FMT);
     if (ret)
     {
+        // sum over all allele counts to get AN
         int an = 0;
         for (int i=0; i<_output_record->n_allele; i++) {
-            an += arr[i];
+            an += _info_ac[i];
         }
         bcf_update_info_int32(_output_header, _output_record, "AN", &an, 1);
-        bcf_update_info_int32(_output_header, _output_record, "AC", arr+1, _output_record->n_allele-1);
+        bcf_update_info_int32(_output_header, _output_record, "AC", _info_ac+1, _output_record->n_allele-1);
     } 
 
     // Calculate INFO/ADF + INFO/ADR
@@ -407,7 +411,6 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">");
-    bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Filtered basecall depth used for site genotyping\">");
