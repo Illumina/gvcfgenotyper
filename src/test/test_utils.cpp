@@ -115,3 +115,15 @@ TEST(UtilTest, phred)
     ASSERT_FLOAT_EQ(.001, unphred(30));
 }
 
+
+TEST(UtilTest,getploidy)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\t.\tGT:GQ:DP:DPF:AD:PL\t1/3:50:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285");
+
+    ASSERT_EQ(2,get_ploidy(hdr,record1));
+
+    auto record2 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\t.\tGT:GQ:DP:DPF:AD\t1:50:16:0:0,12,0,4");
+    ASSERT_EQ(1,get_ploidy(hdr,record2));
+}
+

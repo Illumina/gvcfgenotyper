@@ -53,7 +53,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
 
     if (!_output_file)
     {
-        die("problem opening output file: " + output_filename);
+        ggutils::die("problem opening output file: " + output_filename);
     }
 
     size_t n_allele = 2;
@@ -90,7 +90,8 @@ int GVCFMerger::get_next_variant()
         bcf1_t *rec = _readers[i].front();
         if (rec != nullptr)
         {
-            if (min_rec == nullptr || bcf1_less_than(rec, min_rec))
+            if (min_rec == nullptr || ggutils::bcf1_less_than(rec, min_rec))
+            if (min_rec == nullptr || ggutils::bcf1_less_than(rec, min_rec))
             {
                 min_rec = rec;
                // min_index = i;
@@ -105,7 +106,7 @@ int GVCFMerger::get_next_variant()
         auto variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
         for (auto rec = variants.first; rec != variants.second; rec++)
         {
-            if(get_variant_rank(*rec) == get_variant_rank(min_rec))
+            if(ggutils::get_variant_rank(*rec) == ggutils::get_variant_rank(min_rec))
             {
                 _record_collapser.allele(*rec);
             }
@@ -129,8 +130,8 @@ bool GVCFMerger::all_readers_empty()
 
 void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 {
-    int ploidy = 2;
-    _num_pl = get_number_of_likelihoods(ploidy,num_alleles)* _num_gvcfs;
+    int ploidy = 2;//ploidy can never be >2 so this is a good upper bound
+    _num_pl = ggutils::get_number_of_likelihoods(ploidy,num_alleles)* _num_gvcfs;
     _format_pl = (int32_t *) realloc(_format_pl, _num_pl * sizeof(int32_t));
     std::fill(_format_pl, _format_pl + _num_pl, bcf_int32_missing);
     _format_ad = (int32_t *) realloc(_format_ad, num_alleles * _num_gvcfs * sizeof(int32_t));
@@ -181,15 +182,15 @@ bcf1_t *GVCFMerger::next()
     _output_record->qual = 0;
 #ifdef DEBUG
     std::cerr << "GVCFMerger::next()" << std::endl;
-    print_variant(_output_header, _output_record);
+    ggutils::print_variant(_output_header, _output_record);
     if(prev_rec!=nullptr && !bcf1_greater_than(_output_record,prev_rec))//DEBUG
     {
-        print_variant(prev_rec);
-        print_variant(_output_record);
+        ggutils::print_variant(prev_rec);
+        ggutils::print_variant(_output_record);
         std::cerr<<bcf1_greater_than(_output_record,prev_rec)<<std::endl;
         std::cerr<<bcf1_equal(_output_record,prev_rec)<<std::endl;
-        std::cerr<<bcf1_less_than(_output_record,prev_rec)<<std::endl;
-        std::cerr<<get_variant_rank(_output_record)<< " "<<get_variant_rank(prev_rec) <<std::endl;
+        std::cerr<<ggutils::bcf1_less_than(_output_record,prev_rec)<<std::endl;
+        std::cerr<<ggutils::get_variant_rank(_output_record)<< " "<<ggutils::get_variant_rank(prev_rec) <<std::endl;
         throw std::runtime_error("incorrect variant order detected");
     }
 #endif
@@ -200,8 +201,10 @@ bcf1_t *GVCFMerger::next()
     unsigned nps_written(0);
     int32_t mean_mq = 0;
     int32_t num_mq = 0;
+    int *pl_ptr = _format_pl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
+        int ploidy_for_this_sample = 0;
         auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
         if (sample_variants.first!=sample_variants.second)
@@ -231,7 +234,7 @@ bcf1_t *GVCFMerger::next()
                             if(dst_genotype_count>=2)
                             {
                                 std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(i)+" due to conflicting genotype calls" <<std::endl;
-                                print_variant(sample_header,sample_record);
+                                ggutils::print_variant(sample_header,sample_record);
                             }
                             else
                             {
@@ -240,36 +243,24 @@ bcf1_t *GVCFMerger::next()
                             }
                         }
                     }
-                    _format_gq[i] = g.get_gq();
-                    _format_gqx[i] = g.get_gqx();
-                    if(g.is_dp_missing())
-                    {
-                        g.setDepthFromAD();
-                    }
-                    _format_dp[i] = g.get_dp();
-                    _format_dpf[i] = g.get_dpf();
-                    // AD
-                    _format_ad[i*_output_record->n_allele] = g.get_ad(0);
-                    _format_ad[i*_output_record->n_allele+allele] = g.get_ad(1);
-                    // ADF
-                    _format_adf[i*_output_record->n_allele] = g.get_adf(0);
-                    _format_adf[i*_output_record->n_allele+allele] = g.get_adf(1);
-                    // ADR
-                    _format_adr[i*_output_record->n_allele] = g.get_adr(0);
-                    _format_adr[i*_output_record->n_allele+allele] = g.get_adr(1);
+                    g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+i,_format_gqx+i,_format_dp+i,_format_dpf+i,_format_ad+i*_output_record->n_allele,_format_adf+i*_output_record->n_allele,_format_adr+i*_output_record->n_allele,pl_ptr);
                 }
                 int32_t sample_mq = 0;
                 int nval=1;
                 int32_t* ptr = &sample_mq;
-                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0) {
+                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0)
+                {
                     mean_mq += sample_mq;
                     ++num_mq;
                 }
+                ploidy_for_this_sample = max(ploidy_for_this_sample,g.get_ploidy());//should really stay the same.
             }
+            assert(ploidy_for_this_sample==1 || ploidy_for_this_sample==2);
+            pl_ptr += ggutils::get_number_of_likelihoods(ploidy_for_this_sample,_output_record->n_allele);
         }
         else    //this sample does not have the variant, reconstruct the format fields from homref blocks
         {
-            _readers[i].get_depth(_output_record->rid, _output_record->pos, get_end_of_variant(_output_record), homref_block);
+            _readers[i].get_depth(_output_record->rid, _output_record->pos, ggutils::get_end_of_variant(_output_record), homref_block);
             _format_dp[i] = homref_block._dp;
             _format_dpf[i] = homref_block._dpf;
             _format_gq[i] = homref_block._gq;
@@ -277,15 +268,25 @@ bcf1_t *GVCFMerger::next()
             _format_ad[i * _output_record->n_allele] = homref_block._dp;
             if (homref_block._dp > 0)
             {
-                _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
+                if(homref_block.get_ploidy()==2)
+                {
+                    _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
+                }
+                else
+                {
+                    _format_gt[2 * i] = 0;
+                    _format_gt[2 * i + 1] = bcf_int32_vector_end;
+                }
             }
+            pl_ptr += ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele); //FIXME: do something about ploidy!
         }
+
         _readers[i].flush_buffer(_record_collapser.get_max());
         if((_format_gt[2*i]==bcf_gt_missing) != (_format_gt[2*i+1]==bcf_gt_missing))
         {
-//            print_variant(_output_header,_output_record);
+//            ggutils::print_variant(_output_header,_output_record);
 //            std::cerr << i << " " <<  bcf_gt_allele(_format_gt[2*i]) << "/" << bcf_gt_allele(_format_gt[2*i+1]) << std::endl;
-         //   die("bad genotypes");
+         //   ggutils::die("bad genotypes");
         }
     }
     _num_variants++;
@@ -357,7 +358,7 @@ void GVCFMerger::write_vcf()
             std::cerr << bcf_hdr_int2id(_output_header, BCF_DT_CTG, _output_record->rid) << ":"
                       << _output_record->pos + 1 << std::endl;
             std::cerr << bcf_hdr_int2id(_output_header, BCF_DT_CTG, last_rid) << ":" << last_pos + 1 << std::endl;
-            print_variant(_output_header, _output_record);
+            ggutils::print_variant(_output_header, _output_record);
             throw std::runtime_error("GVCFMerger::write_vcf variants out of order");
         }
 
@@ -390,7 +391,7 @@ void GVCFMerger::build_header()
                     cerr << " -> " << sample_name << endl;
                 } else
                 {
-                    die("duplicate sample names. use --force-samples if you want to merge anyway");
+                    ggutils::die("duplicate sample names. use --force-samples if you want to merge anyway");
                 }
             }
             bcf_hdr_add_sample(_output_header, sample_name.c_str());
@@ -430,6 +431,6 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
 
 
-    copy_contigs(_readers[0].get_header(), _output_header);
+    ggutils::copy_contigs(_readers[0].get_header(), _output_header);
     bcf_hdr_write(_output_file, _output_header);
 }

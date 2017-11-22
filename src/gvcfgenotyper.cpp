@@ -66,33 +66,33 @@ int main(int argc, char **argv)
                 break;
             default:
                 if (optarg != NULL)
-                { die("Unknown argument:" + (string) optarg + "\n"); }
+                { ggutils::die("Unknown argument:" + (string) optarg + "\n"); }
                 else
-                { die("unrecognised argument"); }
+                { ggutils::die("unrecognised argument"); }
         }
     }
 
     if (gvcf_list.empty())
     {
-        die("--list is required");
+        ggutils::die("--list is required");
     }
 
     if (reference_genome.empty())
     {
-        die("--fasta-ref is required");
+        ggutils::die("--fasta-ref is required");
     }
     if (output_type != "b" && output_type != "z" && output_type != "v" && output_type != "u")
     {
-        die("invalid output type: " + output_type);
+        ggutils::die("invalid output type: " + output_type);
     }
     if (n_threads != 0)
     {
-        die("-@ is not implemented");
+        ggutils::die("-@ is not implemented");
     }
 
     int buffer_size = 5000;
     std::vector<std::string> input_files;
-    read_text_file(gvcf_list, input_files);
+    ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
     GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file);
 

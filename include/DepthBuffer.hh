@@ -35,7 +35,7 @@ public:
     int flush_buffer();
 
     int flush_buffer(const int rid, const int pos);
-
+    int get_ploidy(const int rid, const int start, const int end);
     int interpolate(const int rid, const int start, const int end, DepthBlock &db);//interpolates depth for an interval a<=x<
     size_t size();
 

@@ -37,7 +37,7 @@ void DepthBuffer::push_back(const DepthBlock& db)
             std::cerr << db._rid << ":" << db._start + 1 << "-" << db._end + 1 << "   ->   " << _buffer.back()._rid
                       << ":" << _buffer.back()._start + 1 << "-" << _buffer.back()._end + 1 << std::endl;
         }
-        die("DepthBuffer: bad homref block");
+        ggutils::die("DepthBuffer: bad homref block");
     }
 
     if (_buffer.empty() || db._rid > _buffer.back()._rid || db._start > _buffer.back()._end)

@@ -354,7 +354,7 @@ void Genotype::PLfromGL()
     for (int i = 0; i < _num_pl; i++)
     {
         _pl[i] = _gl[i] > 0 ? phred(_gl[i] / max_gl) : 255;
-//        _pl[i] = _pl[i] > 255 ? 255 : _pl[i];
+        _pl[i] = _pl[i] > 255 ? 255 : _pl[i];
     }
 }
 
@@ -401,4 +401,55 @@ int Genotype::get_pl(int g0,int g1)
 {
     assert(g1<_num_allele && g0<_num_allele);
     return _pl[get_gl_index(g0,g1)];
+}
+
+int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl)
+{
+    *gq = get_gq();
+    *gqx = get_gqx();
+    if(is_dp_missing())
+    {
+        setDepthFromAD();
+    }
+    *dp = get_dp();
+    *dpf = get_dpf();
+    // AD
+    ad[0] = get_ad(0);
+    ad[allele_index] = get_ad(1);
+    // ADF
+    adf[0] = get_adf(0);
+    adf[allele_index] = get_adf(1);
+    // ADR
+    adr[0] = get_adr(0);
+    adr[allele_index] = get_adr(1);
+
+    //when haploid, the PL field has the same structure as AD hence the mapping is trivial
+    if(_ploidy==1)
+    {
+        pl[0]=_pl[0];
+        pl[allele_index]=_pl[1];
+    }
+    else if (_ploidy==2)//when diploid. things are hard.
+    {
+        pl[get_gl_index(0,0)] = _pl[get_gl_index(0,0)];//special case. always need a homref value.
+        for(int i=0;i<num_allele;i++)
+        {
+            int src_index = get_gl_index( (i==0||i==allele_index) ? i : 2,1);
+            int dst_index = get_gl_index(i,allele_index);
+            if(pl[dst_index]==bcf_int32_missing)
+            {
+                pl[dst_index] = _pl[src_index];
+            }
+            else
+            {
+                pl[dst_index] = phred( unphred(_pl[src_index]) * unphred(pl[dst_index]) );
+            }
+        }
+    }
+    else
+    {
+        throw std::runtime_error("invalid ploidy");
+    }
+
+    return(1);
 }

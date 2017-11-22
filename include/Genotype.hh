@@ -22,10 +22,12 @@ public:
     void setDepthFromAD();
     void print();//prints information to stderr. mainly for debugging.
     int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
+    int propagate_format_fields(int allele_index,int num_allele,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl);
     int get_gq();
     int get_gqx();
     int get_dp();
     int get_dpf();
+    int get_ploidy() {return _ploidy;};
     int get_ad(int index);
     int get_adr(int index);
     int get_adf(int index);

@@ -163,10 +163,11 @@ int GVCFReader::read_lines(const unsigned num_lines)
             int32_t dp, dpf, gq, end;
             dp = *value_pointer;
             end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
+            //int ploidy = get_ploidy(_bcf_header, _bcf_record);
             //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
             if (_bcf_record->n_allele>1)
             {
-                bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
+                bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);//FIXME: we need code to handle float/int here. this is a general problem that we should consider using templating to solve
             }
             else
             {
@@ -249,3 +250,7 @@ pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator>  GVCFReader:
     return(_variant_buffer.get_all_variants_up_to(record));
 }
 
+int GVCFReader::get_ploidy(int rid, int start, int end)
+{
+    return(_depth_buffer.get_ploidy
+}
