@@ -133,8 +133,8 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & out
                     {
                         for (int j = i; j < num_allele; j++)
                         {
-                            new_genotype._gl[get_gl_index(allele_remap[i],
-                                                          allele_remap[j])] += old_genotype._gl[get_gl_index(i, j)];
+                            new_genotype._gl[ggutils::get_gl_index(allele_remap[i],
+                                                          allele_remap[j])] += old_genotype._gl[ggutils::get_gl_index(i, j)];
                         }
                     }
                     new_genotype._dp[0] = old_genotype._dp[0];
@@ -159,7 +159,7 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & out
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
     //bi-allelic snp. Nothing to do, just copy the variant into the buffer.
-    if(is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
+    if(ggutils::is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
     {
         atomised_variants.push_back(bcf_dup(bcf_record_to_marginalise));
         return;
@@ -184,7 +184,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         {
             if (realign(_norm_args, decomposed_record) != ERR_OK)
             {
-                die("vcf record did not match the reference");
+                ggutils::die("vcf record did not match the reference");
             }
             atomised_variants.push_back(decomposed_record);
         }
@@ -200,7 +200,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
                 bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
                 if (realign(_norm_args, new_record) != ERR_OK)
                 {
-                    die("vcf record did not match the reference");
+                    ggutils::die("vcf record did not match the reference");
                 }
                 //now add the symbolic allele
                 new_alleles[reference_allele] =  new_record->d.allele[0];

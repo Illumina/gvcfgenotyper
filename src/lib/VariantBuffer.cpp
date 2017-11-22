@@ -19,7 +19,7 @@ bool VariantBuffer::has_variant(bcf1_t *v)
     int i = _buffer.size() - 1;
     while (i >= 0 && _buffer[i]->pos >= v->pos)
     {
-        if (bcf1_equal(v, _buffer[i]))
+        if (ggutils::bcf1_equal(v, _buffer[i]))
         {
             return (true);
         }
@@ -41,7 +41,7 @@ int VariantBuffer::push_back(bcf1_t *rec)
     _buffer.push_back(rec);
     //moves the new record back through the buffer until buffer is sorted ie. one iteration of insert-sort
     int i = _buffer.size() - 1;
-    while (i > 0 && bcf1_less_than(_buffer[i], _buffer[i - 1]))
+    while (i > 0 && ggutils::bcf1_less_than(_buffer[i], _buffer[i - 1]))
     {
         bcf1_t *tmp = _buffer[i - 1];
         _buffer[i - 1] = _buffer[i];
@@ -55,7 +55,7 @@ int VariantBuffer::flush_buffer(bcf1_t *record)
 {
     assert(record!=nullptr);
     int num_flushed = 0;
-    while (!_buffer.empty() && bcf1_leq(_buffer.front(), record))
+    while (!_buffer.empty() &&  ggutils::bcf1_leq(_buffer.front(), record))
     {
         bcf_destroy(_buffer.front());
         _buffer.pop_front();
@@ -170,11 +170,11 @@ pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffe
 {
     auto a = _buffer.begin();
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> ret(a, a);
-    if(_buffer.empty() || bcf1_greater_than(*a,record) )
+    if(_buffer.empty() ||  ggutils::bcf1_greater_than(*a,record) )
     {
         return(ret);
     }
-    while(ret.second!=_buffer.end() && bcf1_leq(*ret.second,record))
+    while(ret.second!=_buffer.end() &&  ggutils::bcf1_leq(*ret.second,record))
     {
         ret.second++;
     }

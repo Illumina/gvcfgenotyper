@@ -11,26 +11,26 @@ extern "C"
 
 TEST(DepthBlock, intersects)
 {
-    DepthBlock db1(0, 100, 199, 20, 1, 30);
-    DepthBlock db2(0, 100, 100, 20, 1, 30);
+    DepthBlock db1(0, 100, 199, 20, 1, 30,2);
+    DepthBlock db2(0, 100, 100, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db2), 1);
     ASSERT_EQ(db1.intersect_size(db2), db2.intersect_size(db1));
 
-    DepthBlock db3(0, 300, 401, 20, 1, 30);
+    DepthBlock db3(0, 300, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db3), 0);
 
-    DepthBlock db4(1, 300, 401, 20, 1, 30);
+    DepthBlock db4(1, 300, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db4), 0);
 
-    DepthBlock db5(0, 190, 401, 20, 1, 30);
+    DepthBlock db5(0, 190, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db5), 10);
 
-    DepthBlock db6(0, 100, 100, 20, 1, 30);
-    DepthBlock db7(0, 100, 100, 20, 1, 30);
+    DepthBlock db6(0, 100, 100, 20, 1, 30,2);
+    DepthBlock db7(0, 100, 100, 20, 1, 30,2);
     ASSERT_EQ(db6.intersect_size(db7), 1);
 
-    DepthBlock db8(1, 10000, 10000, 20, 1, 30);
-    DepthBlock db9(1, 10000, 10000, 20, 1, 30);
+    DepthBlock db8(1, 10000, 10000, 20, 1, 30,2);
+    DepthBlock db9(1, 10000, 10000, 20, 1, 30,2);
     ASSERT_EQ(db8.intersect_size(db9), 1);
 
 }
@@ -38,9 +38,9 @@ TEST(DepthBlock, intersects)
 TEST(DepthBuffer, interpolate)
 {
     DepthBuffer buf;
-    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30));
-    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30));
-    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30));
+    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30,2));
+    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30,2));
+    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30,2));
     DepthBlock db;
     buf.interpolate(0, 90, 95, db);
     ASSERT_EQ(db._dp, 20);
@@ -90,7 +90,7 @@ TEST(GVCFReader, readMNP)
     int32_t *dp = nullptr, nval = 0;
     while (line != nullptr)
     {
-        if (is_snp(line))
+        if (ggutils::is_snp(line))
         {
             ASSERT_EQ(bcf_get_format_int32(hdr, line, "DP", &dp, &nval),-3);
         }
@@ -124,9 +124,9 @@ TEST(GVCFReader, readAGVCF)
     DepthBlock db;
     while (line != nullptr)
     {
-//        print_variant(hdr,line);
+//        ggutils::print_variant(hdr,line);
         ofs << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos + 1 << ":" << line->d.allele[0] << ":" << line->d.allele[1] << std::endl;
-        if (is_snp(line))
+        if (ggutils::is_snp(line))
         {
             reader.get_depth(line->rid, line->pos, line->pos, db);
             if (bcf_get_format_int32(hdr, line, "DP", &dp, &nval) == 1)
@@ -181,12 +181,12 @@ TEST(Genotype,format)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
-//    print_variant(hdr, record1);
+//    ggutils::print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
     norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-//        print_variant(hdr,*it);
+//        ggutils::print_variant(hdr,*it);
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);
     }

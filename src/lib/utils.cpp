@@ -183,13 +183,13 @@ namespace ggutils
         return (record->pos + strlen(record->d.allele[0]) - 1);
     }
 
-    bool bcf1_equal(bcf1_t *a, bcf1_t *b)
+    bool  bcf1_equal(bcf1_t *a, bcf1_t *b)
     {
         bcf_unpack(a, BCF_UN_ALL);
         bcf_unpack(b, BCF_UN_ALL);
         if (a == nullptr || b == nullptr)
         {
-            die("bcf1_equal: tried to compare NULL bcf1_t");
+            die(" (bcf1_equal: tried to compare NULL bcf1_t");
         }
         if (a->rid != b->rid)
         {
@@ -213,12 +213,12 @@ namespace ggutils
     }
 
 
-    bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    bool  bcf1_less_than(bcf1_t *a, bcf1_t *b)
     {
 
         if (a == NULL || b == NULL)
         {
-            die("bcf1_less_than: tried to compare NULL bcf1_t");
+            die(" (bcf1_less_than: tried to compare NULL bcf1_t");
         }
 
         if (a->rid < b->rid)
@@ -260,12 +260,12 @@ namespace ggutils
         return (false);
     }
 
-    bool bcf1_greater_than(bcf1_t *a, bcf1_t *b)
+    bool  bcf1_greater_than(bcf1_t *a, bcf1_t *b)
     {
         return (!bcf1_equal(a, b) && !bcf1_less_than(a, b));
     }
 
-    bool bcf1_leq(bcf1_t *a, bcf1_t *b)
+    bool  bcf1_leq(bcf1_t *a, bcf1_t *b)
     {
         return (!(bcf1_greater_than(a, b)));
     }
@@ -284,7 +284,7 @@ namespace ggutils
     size_t get_number_of_likelihoods(int ploidy, int num_allele)
     {
         assert(ploidy == 1 || ploidy == 2);
-        return (ploidy == 1 ? ploidy : (num_allele) * (1 + num_allele) / 2);
+        return (ploidy == 1 ? num_allele : (num_allele) * (1 + num_allele) / 2);
     }
 
     int phred(float l)
@@ -353,7 +353,7 @@ namespace ggutils
     int get_ploidy(bcf_hdr_t *header, bcf1_t *record)
     {
         int *gt = NULL, ngt = 0;
-        int ploidy = bcf_get_genotypes(header, record, gt, ngt);
+        int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
         free(gt);
         return (ploidy);
     }

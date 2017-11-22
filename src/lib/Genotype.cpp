@@ -81,15 +81,15 @@ Genotype::Genotype(int ploidy, int num_allele)
     _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
-    _gt = zeros(_num_gt);
-    _pl = zeros(_num_pl);
-    _ad = zeros(_num_ad);
-    _adf = zeros(_num_ad);
-    _adr = zeros(_num_ad);
-    _gq = zeros(_num_gq);
-    _gqx = zeros(_num_gqx);
-    _dp = zeros(_num_dp);
-    _dpf = zeros(_num_dpf);
+    _gt = ggutils::zeros(_num_gt);
+    _pl = ggutils::zeros(_num_pl);
+    _ad = ggutils::zeros(_num_ad);
+    _adf = ggutils::zeros(_num_ad);
+    _adr = ggutils::zeros(_num_ad);
+    _gq = ggutils::zeros(_num_gq);
+    _gqx = ggutils::zeros(_num_gqx);
+    _dp = ggutils::zeros(_num_dp);
+    _dpf = ggutils::zeros(_num_dpf);
     _gl.assign(_num_pl, 0.);
     _adf_found=false;
     _adr_found=false;
@@ -129,7 +129,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 
     if(ret != _num_gl)
     {
-        print_variant((bcf_hdr_t *)header,record);
+        ggutils::print_variant((bcf_hdr_t *)header,record);
         std::cerr << "Got " << ret << " values instead of " << _num_gl << " ploidy="<<_ploidy<<" num_allele="<<_num_allele<<std::endl;
         throw std::runtime_error("incorrect number of values in  FORMAT/PL");
     }
@@ -181,7 +181,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _gl.assign(_num_gl, 1.);
     for (int i = 0; i < _num_pl; i++)
     {
-        _gl[i] = unphred(_pl[i]);
+        _gl[i] = ggutils::unphred(_pl[i]);
     }
 }
 
@@ -257,18 +257,18 @@ Genotype Genotype::marginalise(const int index)
     //marginalisation of genotype likelihoods
     //likelihood values involving index and reference stay the same but may change location in the PL array
     ret._gl.assign(ret._num_pl,0.);
-    ret._gl[get_gl_index(reference_allele,reference_allele)] = _gl[get_gl_index(reference_allele,reference_allele)]; // 0/0
-    ret._gl[get_gl_index(reference_allele,primary_allele)]   = _gl[get_gl_index(reference_allele,index)]; // 0/1
-    ret._gl[get_gl_index(primary_allele  ,primary_allele)]   = _gl[get_gl_index(index, index)]; // 1/1
+    ret._gl[ggutils::get_gl_index(reference_allele,reference_allele)] = _gl[ggutils::get_gl_index(reference_allele,reference_allele)]; // 0/0
+    ret._gl[ggutils::get_gl_index(reference_allele,primary_allele)]   = _gl[ggutils::get_gl_index(reference_allele,index)]; // 0/1
+    ret._gl[ggutils::get_gl_index(primary_allele  ,primary_allele)]   = _gl[ggutils::get_gl_index(index, index)]; // 1/1
 
     //we collapse all remaining likelihoods into our X allele corresponding to GTs 0/2 1/2 2/2
     for(int i=1;i<_num_allele;i++)
     {
         if(i!=index)
         {
-            ret._gl[get_gl_index(reference_allele,symbolic_allele)] += _gl[get_gl_index(reference_allele,i)]; //  GT:0/2
-            ret._gl[get_gl_index(primary_allele,symbolic_allele)]   += _gl[get_gl_index(index,i)]; //  GT:1/2
-            ret._gl[get_gl_index(symbolic_allele,symbolic_allele)]  += _gl[get_gl_index(i,i)];     //  GT:2/2
+            ret._gl[ggutils::get_gl_index(reference_allele,symbolic_allele)] += _gl[ggutils::get_gl_index(reference_allele,i)]; //  GT:0/2
+            ret._gl[ggutils::get_gl_index(primary_allele,symbolic_allele)]   += _gl[ggutils::get_gl_index(index,i)]; //  GT:1/2
+            ret._gl[ggutils::get_gl_index(symbolic_allele,symbolic_allele)]  += _gl[ggutils::get_gl_index(i,i)];     //  GT:2/2
         }
     }
     ret.PLfromGL();
@@ -353,8 +353,8 @@ void Genotype::PLfromGL()
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
     {
-        _pl[i] = _gl[i] > 0 ? phred(_gl[i] / max_gl) : 255;
-        _pl[i] = _pl[i] > 255 ? 255 : _pl[i];
+        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : 255;
+//        _pl[i] = _pl[i] > 255 ? 255 : _pl[i]; //sets a minimum of 255 on PL
     }
 }
 
@@ -400,7 +400,7 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
 int Genotype::get_pl(int g0,int g1)
 {
     assert(g1<_num_allele && g0<_num_allele);
-    return _pl[get_gl_index(g0,g1)];
+    return _pl[ggutils::get_gl_index(g0,g1)];
 }
 
 int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl)
@@ -431,18 +431,31 @@ int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,in
     }
     else if (_ploidy==2)//when diploid. things are hard.
     {
-        pl[get_gl_index(0,0)] = _pl[get_gl_index(0,0)];//special case. always need a homref value.
+        pl[ggutils::get_gl_index(0,0)] = _pl[ggutils::get_gl_index(0,0)];//special case. always need a homref value.
         for(int i=0;i<num_allele;i++)
         {
-            int src_index = get_gl_index( (i==0||i==allele_index) ? i : 2,1);
-            int dst_index = get_gl_index(i,allele_index);
-            if(pl[dst_index]==bcf_int32_missing)
+            //if this variant has no symbolic allele AND we are copying to a non-ref and non-primay allele. we cant do anything, leave it missing.
+            if(_num_allele==3 || i==0 || allele_index==i)
             {
-                pl[dst_index] = _pl[src_index];
-            }
-            else
-            {
-                pl[dst_index] = phred( unphred(_pl[src_index]) * unphred(pl[dst_index]) );
+                int src_index = ggutils::get_gl_index(1, 2);
+                if (i == 0)
+                {
+                    src_index = ggutils::get_gl_index(0, 1);
+                }
+                if (i == allele_index)
+                {
+                    src_index = ggutils::get_gl_index(1, 1);
+                }
+                assert(src_index<_num_pl);
+                int dst_index = ggutils::get_gl_index(i, allele_index);
+                if (pl[dst_index] == bcf_int32_missing)
+                {
+                    pl[dst_index] = _pl[src_index];
+                }
+                else
+                {
+                    pl[dst_index] = ggutils::phred(ggutils::unphred(_pl[src_index]) * ggutils::unphred(pl[dst_index]));
+                }
             }
         }
     }

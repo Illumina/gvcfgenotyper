@@ -91,7 +91,6 @@ int GVCFMerger::get_next_variant()
         if (rec != nullptr)
         {
             if (min_rec == nullptr || ggutils::bcf1_less_than(rec, min_rec))
-            if (min_rec == nullptr || ggutils::bcf1_less_than(rec, min_rec))
             {
                 min_rec = rec;
                // min_index = i;
@@ -183,13 +182,13 @@ bcf1_t *GVCFMerger::next()
 #ifdef DEBUG
     std::cerr << "GVCFMerger::next()" << std::endl;
     ggutils::print_variant(_output_header, _output_record);
-    if(prev_rec!=nullptr && !bcf1_greater_than(_output_record,prev_rec))//DEBUG
+    if(prev_rec!=nullptr && ! (ggutils::bcf1_greater_than(_output_record,prev_rec))//DEBUG
     {
         ggutils::print_variant(prev_rec);
         ggutils::print_variant(_output_record);
-        std::cerr<<bcf1_greater_than(_output_record,prev_rec)<<std::endl;
-        std::cerr<<bcf1_equal(_output_record,prev_rec)<<std::endl;
-        std::cerr<<ggutils::bcf1_less_than(_output_record,prev_rec)<<std::endl;
+        std::cerr<< (ggutils::bcf1_greater_than(_output_record,prev_rec)<<std::endl;
+        std::cerr<< (ggutils::bcf1_equal(_output_record,prev_rec)<<std::endl;
+        std::cerr<<ggutils:: (ggutils::bcf1_less_than(_output_record,prev_rec)<<std::endl;
         std::cerr<<ggutils::get_variant_rank(_output_record)<< " "<<ggutils::get_variant_rank(prev_rec) <<std::endl;
         throw std::runtime_error("incorrect variant order detected");
     }
@@ -204,7 +203,9 @@ bcf1_t *GVCFMerger::next()
     int *pl_ptr = _format_pl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
+     //   std::cerr<< (int)(pl_ptr-_format_pl)<<std::endl;//debug
         int ploidy_for_this_sample = 0;
+        size_t num_gl_in_this_sample = 0;
         auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
         const bcf_hdr_t *sample_header = _readers[i].get_header();
         if (sample_variants.first!=sample_variants.second)
@@ -243,7 +244,9 @@ bcf1_t *GVCFMerger::next()
                             }
                         }
                     }
-                    g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+i,_format_gqx+i,_format_dp+i,_format_dpf+i,_format_ad+i*_output_record->n_allele,_format_adf+i*_output_record->n_allele,_format_adr+i*_output_record->n_allele,pl_ptr);
+                    g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+i,_format_gqx+i,_format_dp+i,_format_dpf+i,
+                                              _format_ad+i*_output_record->n_allele,_format_adf+i*_output_record->n_allele,
+                                              _format_adr+i*_output_record->n_allele,pl_ptr);
                 }
                 int32_t sample_mq = 0;
                 int nval=1;
@@ -256,7 +259,7 @@ bcf1_t *GVCFMerger::next()
                 ploidy_for_this_sample = max(ploidy_for_this_sample,g.get_ploidy());//should really stay the same.
             }
             assert(ploidy_for_this_sample==1 || ploidy_for_this_sample==2);
-            pl_ptr += ggutils::get_number_of_likelihoods(ploidy_for_this_sample,_output_record->n_allele);
+            num_gl_in_this_sample=ggutils::get_number_of_likelihoods(   ploidy_for_this_sample,_output_record->n_allele);
         }
         else    //this sample does not have the variant, reconstruct the format fields from homref blocks
         {
@@ -274,11 +277,30 @@ bcf1_t *GVCFMerger::next()
                 }
                 else
                 {
-                    _format_gt[2 * i] = 0;
+                    _format_gt[2 * i] = bcf_gt_unphased(0);
                     _format_gt[2 * i + 1] = bcf_int32_vector_end;
                 }
             }
-            pl_ptr += ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele); //FIXME: do something about ploidy!
+            num_gl_in_this_sample=ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
+            pl_ptr[0] = 0;//FIXME: dummy value for homref size.
+        }
+
+        //FIXME: this pads the missing PLs with 255. we will fill this in with some more formal model soon
+        for(size_t pl_index=0;pl_index<num_gl_in_this_sample;pl_index++)
+        {
+            if(*pl_ptr==bcf_int32_missing)
+            {
+                *pl_ptr=255;
+            }
+            pl_ptr++;
+        }
+        //whilst the number of PLs varies with ploidy, the array must have a fixed number of values per sample in FORMAT fields
+        //one simply pads with bcf_int32_vector_end
+        size_t num_gl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
+        for(size_t pl_index=0;pl_index<(num_gl_per_sample-num_gl_in_this_sample);pl_index++)
+        {
+            *pl_ptr=bcf_int32_vector_end;
+            pl_ptr++;
         }
 
         _readers[i].flush_buffer(_record_collapser.get_max());
@@ -307,6 +329,7 @@ bcf1_t *GVCFMerger::next()
     {
 //        bcf_update_format_int32(_output_header, _output_record, "PS", _format_ps, _num_gvcfs);
     }
+
     bcf_update_format_int32(_output_header, _output_record, "DP", _format_dp, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "DPF", _format_dpf, _num_gvcfs);
     bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * _output_record->n_allele);
