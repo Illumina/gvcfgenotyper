@@ -96,6 +96,7 @@ TEST(UtilTest, comparators)
     bcf_destroy(record2);
 }
 
+// 0/0 0/1 1/1 0/2 1/2 2/2
 TEST(UtilTest, GenotypeIndex)
 {
     ASSERT_EQ(0, get_gl_index(0, 0));

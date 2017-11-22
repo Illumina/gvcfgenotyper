@@ -192,4 +192,34 @@ TEST(Genotype,format)
     }
 }
 
+//tests marginalisation and propagation of likelihoods in our genotype class.
+TEST(Genotype,likelihood1)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T\t100\tPASS\t.\tGT:GQ:DP:DPF:AD:PL\t1/2:50:25:0:1,13,11:526,230,276,214,0,266");
+    Genotype g(hdr, record1);
+    g.print();
+    Genotype g1 = g.marginalise(1);
+    g1.print();
+    Genotype g2 = g.marginalise(2);
+    g2.print();
+    ASSERT_EQ(0,g1.get_pl(1,2));
+    ASSERT_EQ(0,g2.get_pl(1,2));
+}
 
+TEST(Genotype,likelihood2)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr,"chr1\t5420\t.\tC\tA,T,G\t100\tPASS\t.\tGT:GQ:DP:DPF:AD:PL\t1/3:50:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285");
+    Genotype g(hdr,record1);
+    g.print();
+    Genotype g1 = g.marginalise(1);
+    g1.print();
+    Genotype g2 = g.marginalise(2);
+    g2.print();
+    Genotype g3 = g.marginalise(3);
+    g3.print();
+    ASSERT_EQ(0,g1.get_pl(1,2));
+    ASSERT_EQ(0,g2.get_pl(2,2));
+    ASSERT_EQ(0,g3.get_pl(1,2));
+}

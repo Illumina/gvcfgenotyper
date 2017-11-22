@@ -114,6 +114,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _pl = (int32_t *)malloc(sizeof(int32_t)*_num_gl);
     int ret;
     ret = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
+
+    //PL is either not present (-3) or a single value (missing)
     if(ret==1 || ret==-3)
     {
         //std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
@@ -183,7 +185,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
 }
 
-Genotype Genotype::marginalise(int index)
+Genotype Genotype::marginalise(const int index)
 {
     const int reference_allele = 0;
     const int primary_allele = 1;
@@ -250,11 +252,26 @@ Genotype Genotype::marginalise(int index)
             }
         }
     }
-    //FIXME: dummy values for the time being because PLs are complicated.
-    for (int j = 0; j < ret._num_pl; j++)
+
+    // 0/0 0/1 1/1 0/2 1/2 2/2 //order
+    //marginalisation of genotype likelihoods
+    //likelihood values involving index and reference stay the same but may change location in the PL array
+    ret._gl.assign(ret._num_pl,0.);
+    ret._gl[get_gl_index(reference_allele,reference_allele)] = _gl[get_gl_index(reference_allele,reference_allele)]; // 0/0
+    ret._gl[get_gl_index(reference_allele,primary_allele)]   = _gl[get_gl_index(reference_allele,index)]; // 0/1
+    ret._gl[get_gl_index(primary_allele  ,primary_allele)]   = _gl[get_gl_index(index, index)]; // 1/1
+
+    //we collapse all remaining likelihoods into our X allele corresponding to GTs 0/2 1/2 2/2
+    for(int i=1;i<_num_allele;i++)
     {
-        ret._pl[j] = phred(ret._gl[j]);
+        if(i!=index)
+        {
+            ret._gl[get_gl_index(reference_allele,symbolic_allele)] += _gl[get_gl_index(reference_allele,i)]; //  GT:0/2
+            ret._gl[get_gl_index(primary_allele,symbolic_allele)]   += _gl[get_gl_index(index,i)]; //  GT:1/2
+            ret._gl[get_gl_index(symbolic_allele,symbolic_allele)]  += _gl[get_gl_index(i,i)];     //  GT:2/2
+        }
     }
+    ret.PLfromGL();
 
     return (ret);
 }
@@ -288,14 +305,62 @@ Genotype::~Genotype()
     free(_dp);
 }
 
-int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
+void Genotype::print()
+{
+    std::cerr <<"GT:";
+    for(int i=0;i<_ploidy;i++)
+    {
+        if(i>0)
+        {
+            std::cerr<<"/";
+        }
+        std::cerr << bcf_gt_allele(_gt[i]);
+    }
+    std::cerr<<" GQ:"<<_gq[0]<<" DP:"<<_dp[0]<<" DPF:"<<_dpf[0]<<" AD:";
+    for(int i=0;i<_num_allele;i++)
+    {
+        if(i>0)
+        {
+            std::cerr<<",";
+        }
+        std::cerr << _ad[i];
+    }
+    std::cerr<<" PL:";
+    for(int i=0;i<_num_pl;i++)
+    {
+        if(i>0)
+        {
+            std::cerr<<",";
+        }
+        std::cerr << (int)_pl[i];
+    }
+    std::cerr<<" GL:";
+    for(int i=0;i<_num_pl;i++)
+    {
+        if(i>0)
+        {
+            std::cerr<<",";
+        }
+        std::cerr << _gl[i];
+    }
+
+    std::cerr<<std::endl;
+}
+
+
+void Genotype::PLfromGL()
 {
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
     {
         _pl[i] = _gl[i] > 0 ? phred(_gl[i] / max_gl) : 255;
+//        _pl[i] = _pl[i] > 255 ? 255 : _pl[i];
     }
+}
 
+int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
+{
+    PLfromGL();
     assert(bcf_update_genotypes(header, record, _gt, _num_gt)==0);
 
     //FIXME: hacking to resolve the float/int GQ issue
@@ -330,4 +395,10 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
     bcf_update_format_int32(header, record, "PL", _pl, _num_pl);
 
     return (0);
+}
+
+int Genotype::get_pl(int g0,int g1)
+{
+    assert(g1<_num_allele && g0<_num_allele);
+    return _pl[get_gl_index(g0,g1)];
 }
