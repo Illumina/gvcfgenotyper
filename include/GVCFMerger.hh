@@ -26,6 +26,7 @@ public:
     int get_next_variant();
 
 private:
+    void genotype_sample(int sample_index);
     void build_header();
     void set_output_buffers_to_missing(int num_alleles);
     vector<GVCFReader> _readers;
@@ -39,8 +40,9 @@ private:
     bcf_hdr_t *_output_header;
     int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps,*_format_pl,*_format_adf,*_format_adr,*_format_gqx;
     int32_t *_info_adf, *_info_adr, *_info_ac;
-    int _num_pl;
-    int _num_variants;
+    int _num_pl, _num_variants;
+    int32_t _mean_mq,_num_mq;
+
 };
 
 #endif

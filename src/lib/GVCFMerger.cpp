@@ -159,6 +159,119 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
     std::fill(_format_ps, _format_ps + _num_gvcfs, bcf_int32_missing);
 }
 
+void GVCFMerger::genotype_sample(int sample_index)
+{
+    //   std::cerr<< (int)(pl_ptr-_format_pl)<<std::endl;//debug
+    DepthBlock homref_block;//working structure to store homref info.
+    int ploidy_for_this_sample = 0;
+    size_t num_gl_in_this_sample = 0;
+    auto sample_variants = _readers[sample_index].get_all_variants_up_to(_record_collapser.get_max());
+    const bcf_hdr_t *sample_header = _readers[sample_index].get_header();
+    int *pl_ptr=_format_pl + (sample_index * ggutils::get_number_of_likelihoods(2,_output_record->n_allele));
+    if (sample_variants.first!=sample_variants.second)
+    {//this sample has variants at this position, we need to populate its FORMAT field
+        int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
+        for (auto it = sample_variants.first; it != sample_variants.second; it++)
+        {
+            bcf1_t *sample_record = *it;
+            if(!bcf_float_is_missing(sample_record->qual))
+            {
+                _output_record->qual += sample_record->qual;
+            }
+            Genotype g(_readers[sample_index].get_header(), sample_record);
+            int allele = _record_collapser.allele(sample_record);
+            for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
+            {
+                if ((sample_variants.second - sample_variants.first)== 1)//there is only one variant at this position in this sample. simple copy.
+                {
+                    assert(dst_genotype_count<=2);
+                    _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
+                    dst_genotype_count++;
+                }
+                else //there are multiple variants at this position. we need to do some careful genotype counting.
+                {
+                    if(bcf_gt_allele(g._gt[genotype_index]) == 1)
+                    {
+                        if(dst_genotype_count>=2)
+                        {
+                            std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(sample_index)+" due to conflicting genotype calls" <<std::endl;
+                            ggutils::print_variant(sample_header,sample_record);
+                        }
+                        else
+                        {
+                            _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_unphased(allele);
+                            dst_genotype_count++;
+                        }
+                    }
+                }
+                g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+sample_index,_format_gqx+sample_index,_format_dp+sample_index,_format_dpf+sample_index,
+                                          _format_ad+sample_index*_output_record->n_allele,_format_adf+sample_index*_output_record->n_allele,
+                                          _format_adr+sample_index*_output_record->n_allele,pl_ptr);
+            }
+            int32_t sample_mq = 0;
+            int nval=1;
+            int32_t* ptr = &sample_mq;
+            if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0)
+            {
+                _mean_mq += sample_mq;
+                ++_num_mq;
+            }
+            ploidy_for_this_sample = max(ploidy_for_this_sample,g.get_ploidy());//should not change but there might be some edge cases.
+        }
+        assert(ploidy_for_this_sample==1 || ploidy_for_this_sample==2);
+        num_gl_in_this_sample=ggutils::get_number_of_likelihoods(   ploidy_for_this_sample,_output_record->n_allele);
+    }
+    else    //this sample does not have the variant, reconstruct the format fields from homref blocks
+    {
+        _readers[sample_index].get_depth(_output_record->rid, _output_record->pos, ggutils::get_end_of_variant(_output_record), homref_block);
+        _format_dp[sample_index] = homref_block._dp;
+        _format_dpf[sample_index] = homref_block._dpf;
+        _format_gq[sample_index] = homref_block._gq;
+        // GQX is missing for HOM REF
+        _format_ad[sample_index * _output_record->n_allele] = homref_block._dp;
+        if (homref_block._dp > 0)
+        {
+            if(homref_block.get_ploidy()==2)
+            {
+                _format_gt[2 * sample_index] = _format_gt[2 * sample_index + 1] = bcf_gt_unphased(0);
+            }
+            else
+            {
+                _format_gt[2 * sample_index] = bcf_gt_unphased(0);
+                _format_gt[2 * sample_index + 1] = bcf_int32_vector_end;
+            }
+        }
+        num_gl_in_this_sample=ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
+        pl_ptr[0] = 0;//FIXME: dummy value for homref size.
+    }
+
+    //FIXME: this pads the missing PLs with 255. we will fill this in with some more formal model soon
+    for(size_t pl_index=0;pl_index<num_gl_in_this_sample;pl_index++)
+    {
+        if(*pl_ptr==bcf_int32_missing)
+        {
+            *pl_ptr=255;
+        }
+        pl_ptr++;
+    }
+    //whilst the number of PLs varies with ploidy, the array must have a fixed number of values per sample in FORMAT fields
+    //one simply pads with bcf_int32_vector_end
+    size_t num_gl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
+    for(size_t pl_index=0;pl_index<(num_gl_per_sample-num_gl_in_this_sample);pl_index++)
+    {
+        *pl_ptr=bcf_int32_vector_end;
+        pl_ptr++;
+    }
+
+    if((_format_gt[2*sample_index]==bcf_gt_missing) != (_format_gt[2*sample_index+1]==bcf_gt_missing))
+    {
+//            ggutils::print_variant(_output_header,_output_record);
+//            std::cerr << i << " " <<  bcf_gt_allele(_format_gt[2*i]) << "/" << bcf_gt_allele(_format_gt[2*i+1]) << std::endl;
+        //   ggutils::die("bad genotypes");
+    }
+
+}
+
 bcf1_t *GVCFMerger::next()
 {
     if (all_readers_empty())
@@ -174,7 +287,6 @@ bcf1_t *GVCFMerger::next()
     }
 #endif
     bcf_clear(_output_record);
-    DepthBlock homref_block;//working structure to store homref info.
     get_next_variant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
     _record_collapser.collapse(_output_record);
@@ -198,118 +310,13 @@ bcf1_t *GVCFMerger::next()
 
     // count the number of written PS tags
     unsigned nps_written(0);
-    int32_t mean_mq = 0;
-    int32_t num_mq = 0;
-    int *pl_ptr = _format_pl;
+    _mean_mq = 0;
+    _num_mq = 0;
+
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-     //   std::cerr<< (int)(pl_ptr-_format_pl)<<std::endl;//debug
-        int ploidy_for_this_sample = 0;
-        size_t num_gl_in_this_sample = 0;
-        auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
-        const bcf_hdr_t *sample_header = _readers[i].get_header();
-        if (sample_variants.first!=sample_variants.second)
-        {//this sample has variants at this position, we need to populate its FORMAT field
-            int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
-            for (auto it = sample_variants.first; it != sample_variants.second; it++)
-            {
-                bcf1_t *sample_record = *it;
-                if(!bcf_float_is_missing(sample_record->qual))
-                {
-                    _output_record->qual += sample_record->qual;
-                }
-                Genotype g(_readers[i].get_header(), sample_record);
-                int allele = _record_collapser.allele(sample_record);
-                for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
-                {
-                    if ((sample_variants.second - sample_variants.first)== 1)//there is only one variant at this position in this sample. simple copy.
-                    {
-                       assert(dst_genotype_count<=2);
-                        _format_gt[2 * i + dst_genotype_count] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
-                        dst_genotype_count++;
-                    }
-                    else //there are multiple variants at this position. we need to do some careful genotype counting.
-                    {
-                        if(bcf_gt_allele(g._gt[genotype_index]) == 1)
-                        {
-                            if(dst_genotype_count>=2)
-                            {
-                                std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(i)+" due to conflicting genotype calls" <<std::endl;
-                                ggutils::print_variant(sample_header,sample_record);
-                            }
-                            else
-                            {
-                                _format_gt[2 * i + dst_genotype_count] = bcf_gt_unphased(allele);
-                                dst_genotype_count++;
-                            }
-                        }
-                    }
-                    g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+i,_format_gqx+i,_format_dp+i,_format_dpf+i,
-                                              _format_ad+i*_output_record->n_allele,_format_adf+i*_output_record->n_allele,
-                                              _format_adr+i*_output_record->n_allele,pl_ptr);
-                }
-                int32_t sample_mq = 0;
-                int nval=1;
-                int32_t* ptr = &sample_mq;
-                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0)
-                {
-                    mean_mq += sample_mq;
-                    ++num_mq;
-                }
-                ploidy_for_this_sample = max(ploidy_for_this_sample,g.get_ploidy());//should really stay the same.
-            }
-            assert(ploidy_for_this_sample==1 || ploidy_for_this_sample==2);
-            num_gl_in_this_sample=ggutils::get_number_of_likelihoods(   ploidy_for_this_sample,_output_record->n_allele);
-        }
-        else    //this sample does not have the variant, reconstruct the format fields from homref blocks
-        {
-            _readers[i].get_depth(_output_record->rid, _output_record->pos, ggutils::get_end_of_variant(_output_record), homref_block);
-            _format_dp[i] = homref_block._dp;
-            _format_dpf[i] = homref_block._dpf;
-            _format_gq[i] = homref_block._gq;
-            // GQX is missing for HOM REF
-            _format_ad[i * _output_record->n_allele] = homref_block._dp;
-            if (homref_block._dp > 0)
-            {
-                if(homref_block.get_ploidy()==2)
-                {
-                    _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
-                }
-                else
-                {
-                    _format_gt[2 * i] = bcf_gt_unphased(0);
-                    _format_gt[2 * i + 1] = bcf_int32_vector_end;
-                }
-            }
-            num_gl_in_this_sample=ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
-            pl_ptr[0] = 0;//FIXME: dummy value for homref size.
-        }
-
-        //FIXME: this pads the missing PLs with 255. we will fill this in with some more formal model soon
-        for(size_t pl_index=0;pl_index<num_gl_in_this_sample;pl_index++)
-        {
-            if(*pl_ptr==bcf_int32_missing)
-            {
-                *pl_ptr=255;
-            }
-            pl_ptr++;
-        }
-        //whilst the number of PLs varies with ploidy, the array must have a fixed number of values per sample in FORMAT fields
-        //one simply pads with bcf_int32_vector_end
-        size_t num_gl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
-        for(size_t pl_index=0;pl_index<(num_gl_per_sample-num_gl_in_this_sample);pl_index++)
-        {
-            *pl_ptr=bcf_int32_vector_end;
-            pl_ptr++;
-        }
-
+        genotype_sample(i);
         _readers[i].flush_buffer(_record_collapser.get_max());
-        if((_format_gt[2*i]==bcf_gt_missing) != (_format_gt[2*i+1]==bcf_gt_missing))
-        {
-//            ggutils::print_variant(_output_header,_output_record);
-//            std::cerr << i << " " <<  bcf_gt_allele(_format_gt[2*i]) << "/" << bcf_gt_allele(_format_gt[2*i+1]) << std::endl;
-         //   ggutils::die("bad genotypes");
-        }
     }
     _num_variants++;
 #ifdef DEBUG
@@ -338,9 +345,9 @@ bcf1_t *GVCFMerger::next()
     bcf_update_format_int32(_output_header, _output_record, "PL", _format_pl, _num_pl);
 
     // Write INFO/MQ
-    if (num_mq>0) {
-        mean_mq /= num_mq;
-        bcf_update_info_int32(_output_header,_output_record,"MQ",&mean_mq,1);
+    if (_num_mq>0) {
+        _mean_mq /= _num_mq;
+        bcf_update_info_int32(_output_header,_output_record,"MQ",&_mean_mq,1);
     }
 
     // Calculate AC/AN using htslib standard functions

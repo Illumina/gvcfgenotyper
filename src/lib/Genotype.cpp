@@ -434,7 +434,7 @@ int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,in
         pl[ggutils::get_gl_index(0,0)] = _pl[ggutils::get_gl_index(0,0)];//special case. always need a homref value.
         for(int i=0;i<num_allele;i++)
         {
-            //if this variant has no symbolic allele AND we are copying to a non-ref and non-primay allele. we cant do anything, leave it missing.
+            //if this variant has no symbolic allele AND we are copying to a non-ref and non-primary allele. we cant do anything, leave it missing.
             if(_num_allele==3 || i==0 || allele_index==i)
             {
                 int src_index = ggutils::get_gl_index(1, 2);
