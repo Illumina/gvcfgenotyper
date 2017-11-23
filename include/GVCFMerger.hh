@@ -26,6 +26,8 @@ public:
     int get_next_variant();
 
 private:
+    void genotype_homref_variant(int sample_index,DepthBlock & depth);
+    void genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
     void genotype_sample(int sample_index);
     void build_header();
     void set_output_buffers_to_missing(int num_alleles);
