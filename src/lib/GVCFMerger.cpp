@@ -193,7 +193,7 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
     int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);;
     int *pl_ptr = _format_pl + sample_index*num_pl_per_sample;
     int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
-    const bcf_hdr_t *sample_header = _readers[sample_index].get_header();
+    bcf_hdr_t *sample_header = _readers[sample_index].get_header();
 
     int ploidy=0;
     for (auto it = sample_variants.first; it != sample_variants.second; it++)
@@ -210,7 +210,14 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
             if ((sample_variants.second - sample_variants.first)== 1)//there is only one variant at this position in this sample. simple copy.
             {
                 assert(dst_genotype_count<=2);
-                _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_allele(g._gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
+                if(bcf_gt_allele(g.get_gt(genotype_index))==0)
+                {
+                    _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_unphased(0);
+                }
+                if(bcf_gt_allele(g.get_gt(genotype_index))==1)
+                {
+                    _format_gt[2 * sample_index + dst_genotype_count] =  bcf_gt_unphased(allele);
+                }
                 dst_genotype_count++;
             }
             else //there are multiple variants at this position. we need to do some careful genotype counting.

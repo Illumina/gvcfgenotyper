@@ -363,7 +363,7 @@ namespace ggutils
         bcf_unpack(record,BCF_UN_INFO);
         float val;
         float *ptr=&val;
-        int nval;
+        int nval=1;
         assert(bcf_get_info_float(header,record,tag,&ptr,&nval)==1);
         return(val);
     }
@@ -373,7 +373,7 @@ namespace ggutils
         bcf_unpack(record, BCF_UN_FMT);
         float val;
         float *ptr=&val;
-        int nval;
+        int nval=1;
         assert(bcf_get_format_float(header,record,tag,&ptr,&nval)==1);
         return(val);
     }
@@ -383,7 +383,7 @@ namespace ggutils
         bcf_unpack(record, BCF_UN_INFO);
         int32_t val;
         int32_t *ptr=&val;
-        int nval;
+        int nval=1;
         assert(bcf_get_info_int32(header,record,tag,&ptr,&nval)==1);
         return(val);
     }
@@ -393,7 +393,7 @@ namespace ggutils
         bcf_unpack(record, BCF_UN_FMT);
         int32_t val;
         int32_t *ptr=&val;
-        int nval;
+        int nval=1;
         assert(bcf_get_format_int32(header,record,tag,&ptr,&nval)==1);
         return(val);
     }

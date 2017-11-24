@@ -100,7 +100,7 @@ void Genotype::allocate(int ploidy, int num_allele)
     _adr_found=false;
 }
 
-Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
+Genotype::Genotype(bcf_hdr_t *header, bcf1_t *record)
 {
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
@@ -163,6 +163,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
             throw std::runtime_error("problem extracting FORMAT/DP");
         }
     }
+    _mq = ggutils::bcf1_get_one_info_int(header,record,"MQ");
+    _qual = record->qual;
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
     bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
     //FIXME: GQ is should be an integer but is sometimes set as float. we need to catch and handle this.
@@ -408,108 +410,162 @@ int Genotype::get_pl(int g0,int g1)
     return _pl[ggutils::get_gl_index(g0,g1)];
 }
 
-int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl)
+int Genotype::propagate_format_fields(int sample_index,int ploidy,int num_allele,int *gt,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl)
 {
-    *gq = get_gq();
-    *gqx = get_gqx();
-    if(is_dp_missing())
-    {
-        setDepthFromAD();
-    }
-    *dp = get_dp();
-    *dpf = get_dpf();
-    // AD
-    ad[0] = get_ad(0);
-    ad[allele_index] = get_ad(1);
-    // ADF
-    adf[0] = get_adf(0);
-    adf[allele_index] = get_adf(1);
-    // ADR
-    adr[0] = get_adr(0);
-    adr[allele_index] = get_adr(1);
+    assert(_num_allele==num_allele);
+    //update scalars
+    gq[sample_index] = get_gq();
+    gqx[sample_index] = get_gqx();
 
-    //when haploid, the PL field has the same structure as AD hence the mapping is trivial
-    if(_ploidy==1)
+    if(is_dp_missing()) setDepthFromAD();
+
+    dp[sample_index] = get_dp();
+    dpf[sample_index] = get_dpf();
+
+    //update Number=R (eg FORMAT/AD)
+    for(int i=0;i<num_allele;i++)
     {
-        pl[0]=_pl[0];
-        pl[allele_index]=_pl[1];
+        ad[sample_index * num_allele + i] = get_ad(i);
+        adf[sample_index * num_allele + i] = get_adf(i);
+        adr[sample_index * num_allele + i] = get_adr(i);
     }
-    else if (_ploidy==2)//when diploid. things are hard.
+    gt[sample_index*ploidy] = get_gt(0);
+
+    //update GT
+    if(_ploidy==1)  gt[sample_index*ploidy+1] = bcf_int32_vector_end;
+    else  gt[sample_index*ploidy+1] = get_gt(1);
+
+    //update PL
+    int num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,num_allele);
+    int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(_ploidy,num_allele);
+    std::memcpy(pl+num_pl_per_sample*sample_index,_pl,num_pl_in_this_sample);
+    std::fill(pl + num_pl_per_sample*sample_index + num_pl_in_this_sample,pl + num_pl_per_sample*(sample_index+1),bcf_int32_vector_end);
+    return(1);
+}
+
+Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map)
+{
+    int ploidy=0;
+    for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
+
+    allocate(ploidy,alleles_to_map.num_alleles());
+    size_t num_sample_variants = (sample_variants.second - sample_variants.first);
+    int dst_genotype_count=0;
+    _qual = 0;
+    for (auto it = sample_variants.first; it != sample_variants.second; it++)
     {
-        pl[ggutils::get_gl_index(0,0)] = _pl[ggutils::get_gl_index(0,0)];//special case. always need a homref value.
-        for(int i=0;i<num_allele;i++)
+        Genotype g(sample_header, *it);
+        int dst_allele_index = alleles_to_map.allele(*it);
+
+        _qual = max(_qual,g.get_qual()); //FIXME: QUAL should be estimated from PL
+
+        //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case.
+        _mq = g.get_mq();
+        *_dp  = g.get_dp();
+        *_gq  = g.get_gq();
+        *_gqx = g.get_gqx();
+        *_dpf = g.get_dpf();
+        _ad[dst_allele_index] = g.get_ad(1);
+        _adf[dst_allele_index] = g.get_ad(1);
+        _adr[dst_allele_index] = g.get_ad(1);
+        _ad[0] = g.get_ad(0);
+        _adf[0] = g.get_ad(0);
+        _adr[0] = g.get_ad(0);
+
+        for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
         {
-            //if this variant has no symbolic allele AND we are copying to a non-ref and non-primary allele. we cant do anything, leave it missing.
-            if(_num_allele==3 || i==0 || allele_index==i)
+            assert(dst_genotype_count <= _ploidy);
+            if(num_sample_variants==1)
             {
-                int src_index = ggutils::get_gl_index(1, 2);
-                if (i == 0)
+                if (bcf_gt_allele(g.get_gt(genotype_index)) == 0)
                 {
-                    src_index = ggutils::get_gl_index(0, 1);
+                    _gt[dst_genotype_count] = bcf_gt_unphased(0);
                 }
-                if (i == allele_index)
+                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
                 {
-                    src_index = ggutils::get_gl_index(1, 1);
+                    _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
                 }
-                assert(src_index<_num_pl);
-                int dst_index = ggutils::get_gl_index(i, allele_index);
-                if (pl[dst_index] == bcf_int32_missing)
+                dst_genotype_count++;
+            }
+            else //there are multiple variants at this position. we need to do some careful genotype counting.
+            {
+                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
                 {
-                    pl[dst_index] = _pl[src_index];
-                }
-                else
-                {
-                    pl[dst_index] = ggutils::phred(ggutils::unphred(_pl[src_index]) * ggutils::unphred(pl[dst_index]));
+                    if (dst_genotype_count >= 2)
+                    {
+                        std::cerr << "WARNING: had to drop an allele due to conflicting genotype calls" << std::endl;
+                        ggutils::print_variant(sample_header,*it);
+                    }
+                    else
+                    {
+                        _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
+                        dst_genotype_count++;
+                    }
                 }
             }
         }
     }
-    else
-    {
-        throw std::runtime_error("invalid ploidy");
-    }
 
-    return(1);
+    _gl.assign(_num_pl,1.0);//FIXME: do something meaningful with GLs!
+    PLfromGL();
 }
 
-//Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map)
-//{
-//    int ploidy=0;
-//    for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
-//
-//    allocate(ploidy,alleles_to_map.num_alleles());
-//    size_t num_sample_variants = (sample_variants.second - sample_variants.first);
-//    int dst_genotype_count=0;
-//    _qual = 0;
-//    for (auto it = sample_variants.first; it != sample_variants.second; it++)
+int Genotype::get_ploidy() {return _ploidy;};
+
+int Genotype::get_gt(int index)
+{
+    assert(index<_ploidy);
+    return(_gt[index]);
+};
+
+float Genotype::get_qual()
+{
+    return(_qual);
+}
+
+int Genotype::get_mq()
+{
+    return(_mq);
+}
+
+
+//    //when haploid, the PL field has the same structure as AD hence the mapping is trivial
+//    if(_ploidy==1)
 //    {
-//        bcf1_t *sample_record = *it;
-//        _qual = max(_qual,sample_record->qual); //FIXME: QUAL should be estimated from PL
-//        int allele = alleles_to_map.allele(sample_record);
-//        for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
+//        pl[0]=_pl[0];
+//        pl[allele_index]=_pl[1];
+//    }
+//    else if (_ploidy==2)//when diploid. things are hard.
+//    {
+//        pl[ggutils::get_gl_index(0,0)] = _pl[ggutils::get_gl_index(0,0)];//special case. always need a homref value.
+//        for(int i=0;i<num_allele;i++)
 //        {
-//            assert(dst_genotype_count <= _ploidy);
-//            if ((sample_variants.second - sample_variants.first) == 1)//there is only one variant at this position in this sample. simple copy.
+//            //if this variant has no symbolic allele AND we are copying to a non-ref and non-primary allele. we cant do anything, leave it missing.
+//            if(_num_allele==3 || i==0 || allele_index==i)
 //            {
-//                _gt[dst_genotype_count] = bcf_gt_allele(_gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
-//                dst_genotype_count++;
-//            }
-//            else //there are multiple variants at this position. we need to do some careful genotype counting.
-//            {
-//                if (bcf_gt_allele(_gt[genotype_index]) == 1)
+//                int src_index = ggutils::get_gl_index(1, 2);
+//                if (i == 0)
 //                {
-//                    if (dst_genotype_count >= 2)
-//                    {
-//                        std::cerr << "WARNING: had to drop an allele due to conflicting genotype calls" << std::endl;
-//                        ggutils::print_variant(sample_header,sample_record);
-//                    }
-//                    else
-//                    {
-//                        _gt[dst_genotype_count] = bcf_gt_unphased(allele);
-//                        dst_genotype_count++;
-//                    }
+//                    src_index = ggutils::get_gl_index(0, 1);
+//                }
+//                if (i == allele_index)
+//                {
+//                    src_index = ggutils::get_gl_index(1, 1);
+//                }
+//                assert(src_index<_num_pl);
+//                int dst_index = ggutils::get_gl_index(i, allele_index);
+//                if (pl[dst_index] == bcf_int32_missing)
+//                {
+//                    pl[dst_index] = _pl[src_index];
+//                }
+//                else
+//                {
+//                    pl[dst_index] = ggutils::phred(ggutils::unphred(_pl[src_index]) * ggutils::unphred(pl[dst_index]));
 //                }
 //            }
 //        }
 //    }
-//}
+//    else
+//    {
+//        throw std::runtime_error("invalid ploidy");
+//    }
