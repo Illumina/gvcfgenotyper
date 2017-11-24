@@ -25,7 +25,7 @@ public:
     void setDepthFromAD();
     void print();//prints information to stderr. mainly for debugging.
     int update_bcf1_t(int sample_index, bcf_hdr_t *header, bcf1_t *record);
-    int propagate_format_fields(int sample_index,int allele_index,int ploidy,int num_allele,int *gt,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl);
+    int propagate_format_fields(int sample_index,int ploidy,int *gt,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl);
     int get_gq();
     int get_gqx();
     int get_dp();

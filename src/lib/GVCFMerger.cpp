@@ -196,78 +196,10 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
     bcf_hdr_t *sample_header = _readers[sample_index].get_header();
 
     int ploidy=0;
-    for (auto it = sample_variants.first; it != sample_variants.second; it++)
-    {
-        bcf1_t *sample_record = *it;
-        if(!bcf_float_is_missing(sample_record->qual))
-        {
-            _output_record->qual += sample_record->qual;
-        }
-        Genotype g(sample_header, sample_record);
-        int allele = _record_collapser.allele(sample_record);
-        for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
-        {
-            if ((sample_variants.second - sample_variants.first)== 1)//there is only one variant at this position in this sample. simple copy.
-            {
-                assert(dst_genotype_count<=2);
-                if(bcf_gt_allele(g.get_gt(genotype_index))==0)
-                {
-                    _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_unphased(0);
-                }
-                if(bcf_gt_allele(g.get_gt(genotype_index))==1)
-                {
-                    _format_gt[2 * sample_index + dst_genotype_count] =  bcf_gt_unphased(allele);
-                }
-                dst_genotype_count++;
-            }
-            else //there are multiple variants at this position. we need to do some careful genotype counting.
-            {
-                if(bcf_gt_allele(g._gt[genotype_index]) == 1)
-                {
-                    if(dst_genotype_count>=2)
-                    {
-                        std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(sample_index)+" due to conflicting genotype calls" <<std::endl;
-                        ggutils::print_variant(sample_header,sample_record);
-                    }
-                    else
-                    {
-                        _format_gt[2 * sample_index + dst_genotype_count] = bcf_gt_unphased(allele);
-                        dst_genotype_count++;
-                    }
-                }
-            }
-            g.propagate_format_fields(allele,_output_record->n_allele,_format_gq+sample_index,_format_gqx+sample_index,_format_dp+sample_index,_format_dpf+sample_index,
-                                      _format_ad+sample_index*_output_record->n_allele,_format_adf+sample_index*_output_record->n_allele,
-                                      _format_adr+sample_index*_output_record->n_allele,pl_ptr);
-        }
-        int32_t sample_mq = 0;
-        int nval=1;
-        int32_t* ptr = &sample_mq;
-        if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0)
-        {
-            _mean_mq += sample_mq;
-            ++_num_mq;
-        }
-        ploidy=max(ploidy,g.get_ploidy());//this should really be constant across all the variants, but just in case we take the max.
-    }
-    int num_gl_in_this_sample = ggutils::get_number_of_likelihoods(ploidy,_output_record->n_allele);
-
-    //FIXME: this pads the missing PLs with 255. we will fill this in with some more formal model soon
-    for(int pl_index=0;pl_index<num_gl_in_this_sample;pl_index++)
-    {
-        if(*pl_ptr==bcf_int32_missing) *pl_ptr=255;
-        pl_ptr++;
-    }
-    //whilst the number of PLs varies with ploidy, the array must have a fixed number of values per sample in FORMAT fields
-    //one simply pads with bcf_int32_vector_end
-    int num_gl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
-    for(int i=0;i<(num_gl_per_sample-num_gl_in_this_sample);i++)
-    {
-        *pl_ptr=bcf_int32_vector_end;
-        pl_ptr++;
-    }
+    Genotype g(sample_header, sample_variants,_record_collapser);
+    g.propagate_format_fields(sample_index,2,_format_gt,_format_gq,_format_gqx,_format_dp,_format_dpf,_format_ad,_format_adf,_format_adr,_format_pl);
+    _mean_mq = g.get_mq();
 }
-
 
 void GVCFMerger::genotype_sample(int sample_index)
 {
