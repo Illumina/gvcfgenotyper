@@ -111,7 +111,7 @@ int GVCFReader::read_until(int rid, int pos)
         db = _depth_buffer.back();
     }
 
-    while (db != nullptr && bcf_sr_has_line(_bcf_reader, 0) && (db->_rid < rid || (db->_rid == rid && db->_end < pos)))
+    while (db != nullptr && bcf_sr_has_line(_bcf_reader, 0) && (db->rid() < rid || (db->rid() == rid && db->end() < pos)))
     {
         if (read_lines(1) < 1)
         {

@@ -6,7 +6,7 @@ int DepthBuffer::interpolate(const int rid, const int start, const int stop, Dep
 {
     db.set_missing();
     auto dp_ptr = _buffer.begin();
-    while (dp_ptr != _buffer.end() && (dp_ptr->_end < start || dp_ptr->_rid < rid))
+    while (dp_ptr != _buffer.end() && (dp_ptr->end() < start || dp_ptr->rid() < rid))
     {
         dp_ptr++;
     }
@@ -29,18 +29,18 @@ int DepthBuffer::interpolate(const int rid, const int start, const int stop, Dep
 void DepthBuffer::push_back(const DepthBlock& db)
 {
     //sanity check on value being pushed
-    if (!(_buffer.empty() || db._rid != _buffer.back()._rid || db._start == (1 + _buffer.back()._end) ||
-          db._start == _buffer.back()._end))
+    if (!(_buffer.empty() || db.rid() != _buffer.back().rid() || db.start() == (1 + _buffer.back().end()) ||
+          db.start() == _buffer.back().end()))
     {
         if (!_buffer.empty())
         {
-            std::cerr << db._rid << ":" << db._start + 1 << "-" << db._end + 1 << "   ->   " << _buffer.back()._rid
-                      << ":" << _buffer.back()._start + 1 << "-" << _buffer.back()._end + 1 << std::endl;
+            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << "   ->   " << _buffer.back().rid()
+                      << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << std::endl;
         }
         die("DepthBuffer: bad homref block");
     }
 
-    if (_buffer.empty() || db._rid > _buffer.back()._rid || db._start > _buffer.back()._end)
+    if (_buffer.empty() || db.rid() > _buffer.back().rid() || db.start() > _buffer.back().end())
     {
         _buffer.push_back(std::move(db));
     }
@@ -49,12 +49,12 @@ void DepthBuffer::push_back(const DepthBlock& db)
 int DepthBuffer::flush_buffer(const int rid, const int pos)
 {
     int num_flushed = 0;
-    while (!_buffer.empty() && _buffer.front()._rid < rid)
+    while (!_buffer.empty() && _buffer.front().rid() < rid)
     {
         _buffer.pop_front();
         num_flushed++;
     }
-    while (!_buffer.empty() && _buffer.front()._end < pos && _buffer.front()._rid == rid)
+    while (!_buffer.empty() && _buffer.front().end() < pos && _buffer.front().rid() == rid)
     {
         _buffer.pop_front();
         num_flushed++;
