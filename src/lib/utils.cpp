@@ -141,6 +141,19 @@ bool is_complex(bcf1_t *record)
     return(!is_snp(record) && !is_deletion(record) && !is_insertion(record));
 }
 
+bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record) {
+    int *gt = nullptr, ngt = 0;
+    bool is_hom_ref = false;
+    if(bcf_get_genotypes(header, record, &gt, &ngt)<=0) {
+        // A vcf record without GT cannot be hom ref
+        return is_hom_ref;
+    }
+    // check for 0/0
+    is_hom_ref = (bcf_gt_allele(gt[0]) == 0) && (bcf_gt_allele(gt[1]) == 0);
+    free(gt);
+    return is_hom_ref;
+}
+
 int get_variant_rank(bcf1_t *record)
 {
     if(is_complex(record)||is_snp(record))
@@ -179,6 +192,8 @@ int get_end_of_variant(bcf1_t *record)
 {
     return (record->pos + strlen(record->d.allele[0]) - 1);
 }
+
+
 
 bool bcf1_equal(bcf1_t *a, bcf1_t *b)
 {

@@ -57,7 +57,6 @@ int read_text_file(const string &fname, vector<string> &output);
 
 bool is_variant(bcf1_t const *record);
 
-
 bool is_snp(bcf1_t *record);
 
 bool is_deletion(bcf1_t *record);
@@ -65,6 +64,8 @@ bool is_deletion(bcf1_t *record);
 bool is_insertion(bcf1_t *record);
 
 bool is_complex(bcf1_t *record);
+
+bool is_hom_ref(const bcf_hdr_t* header, bcf1_t* record);
 
 int get_variant_rank(bcf1_t *record);
 

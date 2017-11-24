@@ -214,6 +214,7 @@ bcf1_t *GVCFMerger::next()
                 {
                     _output_record->qual += sample_record->qual;
                 }
+
                 Genotype g(_readers[i].get_header(), sample_record);
                 int allele = _record_collapser.allele(sample_record);
                 for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
@@ -231,7 +232,7 @@ bcf1_t *GVCFMerger::next()
                             if(dst_genotype_count>=2)
                             {
                                 std::cerr << "WARNING: had to drop an allele in sample "+std::to_string(i)+" due to conflicting genotype calls" <<std::endl;
-                                print_variant(sample_header,sample_record);
+                                print_variant(_readers[i].get_header(),sample_record);
                             }
                             else
                             {
