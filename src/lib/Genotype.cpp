@@ -163,7 +163,10 @@ Genotype::Genotype(bcf_hdr_t *header, bcf1_t *record)
             throw std::runtime_error("problem extracting FORMAT/DP");
         }
     }
-    _mq = ggutils::bcf1_get_one_info_int(header,record,"MQ");
+    try{ _mq = ggutils::bcf1_get_one_info_int(header,record,"MQ");}
+    catch(ggutils::value_not_in_header & e) {_mq=0;}
+    catch(ggutils::value_not_in_row & e) {_mq=0;}
+
     _qual = record->qual;
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
     bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
@@ -447,7 +450,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     int ploidy=0;
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
 
-    allocate(ploidy,alleles_to_map._num_alleles());
+    allocate(ploidy,alleles_to_map.num_alleles());
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
     int dst_genotype_count=0;
     _qual = 0;

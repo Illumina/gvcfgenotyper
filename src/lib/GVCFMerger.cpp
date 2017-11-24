@@ -190,13 +190,7 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
 
 void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
 {
-    int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);;
-    int *pl_ptr = _format_pl + sample_index*num_pl_per_sample;
-    int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
-    bcf_hdr_t *sample_header = _readers[sample_index].get_header();
-
-    int ploidy=0;
-    Genotype g(sample_header, sample_variants,_record_collapser);
+    Genotype g(_readers[sample_index].get_header(), sample_variants,_record_collapser);
     g.propagate_format_fields(sample_index,2,_format_gt,_format_gq,_format_gqx,_format_dp,_format_dpf,_format_ad,_format_adf,_format_adr,_format_pl);
     _mean_mq = g.get_mq();
 }

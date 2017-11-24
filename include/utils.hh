@@ -28,6 +28,24 @@ extern "C" {
 
 namespace ggutils
 {
+
+    class value_not_in_row: public exception
+    {
+        virtual const char* what() const throw()
+        {
+            return "value was not in VCF row";
+        }
+    };
+
+    class value_not_in_header: public exception
+    {
+        virtual const char* what() const throw()
+        {
+            return "value was not in VCF header";
+        }
+    };
+
+
     int read_text_file(const string &fname, vector<string> &output);
 
     void print_variant(bcf_hdr_t const *header, bcf1_t *record);

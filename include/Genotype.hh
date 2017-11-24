@@ -24,7 +24,7 @@ public:
     ~Genotype();
     void setDepthFromAD();
     void print();//prints information to stderr. mainly for debugging.
-    int update_bcf1_t(int sample_index, bcf_hdr_t *header, bcf1_t *record);
+    int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
     int propagate_format_fields(int sample_index,int ploidy,int *gt,int *gq,int *gqx,int *dp,int *dpf,int *ad,int *adf,int *adr,int *pl);
     int get_gq();
     int get_gqx();

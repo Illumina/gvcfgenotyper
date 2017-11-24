@@ -364,7 +364,13 @@ namespace ggutils
         float val;
         float *ptr=&val;
         int nval=1;
-        assert(bcf_get_info_float(header,record,tag,&ptr,&nval)==1);
+        int ret = bcf_get_info_float(header,record,tag,&ptr,&nval);
+        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret==-1) throw value_not_in_header();
+        if(ret==-2) throw std::runtime_error((string)tag+" was not a float");
+        if(ret==-3) throw value_not_in_row();
+        assert(ret==1);
+
         return(val);
     }
 
@@ -374,7 +380,12 @@ namespace ggutils
         float val;
         float *ptr=&val;
         int nval=1;
-        assert(bcf_get_format_float(header,record,tag,&ptr,&nval)==1);
+        int ret =   bcf_get_format_float(header,record,tag,&ptr,&nval);
+        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret==-1) throw value_not_in_header();
+        if(ret==-2) throw std::runtime_error((string)tag+" was not a float");
+        if(ret==-3) throw value_not_in_row();
+        assert(ret==1);
         return(val);
     }
 
@@ -384,7 +395,12 @@ namespace ggutils
         int32_t val;
         int32_t *ptr=&val;
         int nval=1;
-        assert(bcf_get_info_int32(header,record,tag,&ptr,&nval)==1);
+        int ret = bcf_get_info_int32(header,record,tag,&ptr,&nval);
+        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret==-1) throw value_not_in_header();
+        if(ret==-2) throw std::runtime_error((string)tag+" was not an integer");
+        if(ret==-3) throw value_not_in_row();
+        assert(ret==1);
         return(val);
     }
 
@@ -394,7 +410,12 @@ namespace ggutils
         int32_t val;
         int32_t *ptr=&val;
         int nval=1;
-        assert(bcf_get_format_int32(header,record,tag,&ptr,&nval)==1);
+        int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
+        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret==-1) throw value_not_in_header();
+        if(ret==-2) throw std::runtime_error((string)tag+" was not an integer");
+        if(ret==-3) throw value_not_in_row();
+        assert(ret==1);
         return(val);
     }
 }
