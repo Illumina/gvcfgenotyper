@@ -161,7 +161,9 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 
 void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_block)
 {
-    int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);;
+    int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
+    int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
+
     int *pl_ptr = _format_pl + sample_index*num_pl_per_sample;
     _format_dp[sample_index] = homref_block._dp;
     _format_dpf[sample_index] = homref_block._dpf;
@@ -180,7 +182,10 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
             _format_gt[2 * sample_index + 1] = bcf_int32_vector_end;
         }
     }
-    pl_ptr[0] = 0;//FIXME: dummy value for homref size.
+    //FIXME: dummy PL value for homref sites
+    std::fill(pl_ptr,pl_ptr+num_pl_per_sample,bcf_int32_vector_end);
+    std::fill(pl_ptr,pl_ptr+num_pl_in_this_sample,255);
+    pl_ptr[0] = 0;
 }
 
 void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
@@ -198,7 +203,7 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
         {
             _output_record->qual += sample_record->qual;
         }
-        Genotype g(_readers[sample_index].get_header(), sample_record);
+        Genotype g(sample_header, sample_record);
         int allele = _record_collapser.allele(sample_record);
         for (int genotype_index = 0; genotype_index < g._ploidy; genotype_index++)
         {
@@ -239,24 +244,21 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
         ploidy=max(ploidy,g.get_ploidy());//this should really be constant across all the variants, but just in case we take the max.
     }
     int num_gl_in_this_sample = ggutils::get_number_of_likelihoods(ploidy,_output_record->n_allele);
+
     //FIXME: this pads the missing PLs with 255. we will fill this in with some more formal model soon
     for(int pl_index=0;pl_index<num_gl_in_this_sample;pl_index++)
     {
-        if(*pl_ptr==bcf_int32_missing)
-        {
-            *pl_ptr=255;
-        }
+        if(*pl_ptr==bcf_int32_missing) *pl_ptr=255;
         pl_ptr++;
     }
     //whilst the number of PLs varies with ploidy, the array must have a fixed number of values per sample in FORMAT fields
     //one simply pads with bcf_int32_vector_end
     int num_gl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
-    for(int pl_index=0;pl_index<(num_gl_per_sample-num_gl_in_this_sample);pl_index++)
+    for(int i=0;i<(num_gl_per_sample-num_gl_in_this_sample);i++)
     {
         *pl_ptr=bcf_int32_vector_end;
         pl_ptr++;
     }
-
 }
 
 
