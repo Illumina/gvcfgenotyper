@@ -68,6 +68,11 @@ bool Genotype::is_dp_missing()
 
 Genotype::Genotype(int ploidy, int num_allele)
 {
+    allocate(ploidy,num_allele);
+}
+
+void Genotype::allocate(int ploidy, int num_allele)
+{
     _has_pl=true;
     _ploidy = ploidy;
     _num_allele = num_allele;
@@ -466,3 +471,45 @@ int Genotype::propagate_format_fields(int allele_index,int num_allele,int *gq,in
 
     return(1);
 }
+
+//Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map)
+//{
+//    int ploidy=0;
+//    for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
+//
+//    allocate(ploidy,alleles_to_map.num_alleles());
+//    size_t num_sample_variants = (sample_variants.second - sample_variants.first);
+//    int dst_genotype_count=0;
+//    _qual = 0;
+//    for (auto it = sample_variants.first; it != sample_variants.second; it++)
+//    {
+//        bcf1_t *sample_record = *it;
+//        _qual = max(_qual,sample_record->qual); //FIXME: QUAL should be estimated from PL
+//        int allele = alleles_to_map.allele(sample_record);
+//        for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
+//        {
+//            assert(dst_genotype_count <= _ploidy);
+//            if ((sample_variants.second - sample_variants.first) == 1)//there is only one variant at this position in this sample. simple copy.
+//            {
+//                _gt[dst_genotype_count] = bcf_gt_allele(_gt[genotype_index]) == 0 ? bcf_gt_unphased(0) : bcf_gt_unphased(allele);
+//                dst_genotype_count++;
+//            }
+//            else //there are multiple variants at this position. we need to do some careful genotype counting.
+//            {
+//                if (bcf_gt_allele(_gt[genotype_index]) == 1)
+//                {
+//                    if (dst_genotype_count >= 2)
+//                    {
+//                        std::cerr << "WARNING: had to drop an allele due to conflicting genotype calls" << std::endl;
+//                        ggutils::print_variant(sample_header,sample_record);
+//                    }
+//                    else
+//                    {
+//                        _gt[dst_genotype_count] = bcf_gt_unphased(allele);
+//                        dst_genotype_count++;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}

@@ -100,6 +100,12 @@ namespace ggutils
 
     int choose(int n, int k);
 
+    //these are simple htslib wrappers shortcuts to get scalar ints/floats (not appropriate for arrays)
+    float bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag);
+    float bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag);
+    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag);
+    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag);
+
     //gets the index of a genotype likelihood for ploidy == 2
     int get_gl_index(int g0, int g1);
 }

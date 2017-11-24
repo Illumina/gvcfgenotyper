@@ -357,4 +357,44 @@ namespace ggutils
         free(gt);
         return (ploidy);
     }
+
+    float bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    {
+        bcf_unpack(record,BCF_UN_INFO);
+        float val;
+        float *ptr=&val;
+        int nval;
+        assert(bcf_get_info_float(header,record,tag,&ptr,&nval)==1);
+        return(val);
+    }
+
+    float bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    {
+        bcf_unpack(record, BCF_UN_FMT);
+        float val;
+        float *ptr=&val;
+        int nval;
+        assert(bcf_get_format_float(header,record,tag,&ptr,&nval)==1);
+        return(val);
+    }
+
+    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    {
+        bcf_unpack(record, BCF_UN_INFO);
+        int32_t val;
+        int32_t *ptr=&val;
+        int nval;
+        assert(bcf_get_info_int32(header,record,tag,&ptr,&nval)==1);
+        return(val);
+    }
+
+    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    {
+        bcf_unpack(record, BCF_UN_FMT);
+        int32_t val;
+        int32_t *ptr=&val;
+        int nval;
+        assert(bcf_get_format_int32(header,record,tag,&ptr,&nval)==1);
+        return(val);
+    }
 }

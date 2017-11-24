@@ -127,3 +127,14 @@ TEST(UtilTest,getploidy)
     ASSERT_EQ(1,ggutils::get_ploidy(hdr,record2));
 }
 
+
+TEST(UtilTest,getters)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01");
+
+    ASSERT_EQ(ggutils::bcf1_get_one_info_int(hdr,record1,"MQ"),50);
+    ASSERT_EQ(ggutils::bcf1_get_one_format_int(hdr,record1,"DP"),16);
+    ASSERT_FLOAT_EQ(ggutils::bcf1_get_one_info_float(hdr,record1,"AF1000G"),.13);
+    ASSERT_FLOAT_EQ(ggutils::bcf1_get_one_format_float(hdr,record1,"SB"),1.01);
+}

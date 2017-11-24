@@ -10,7 +10,9 @@ extern "C" {
 }
 
 #include "utils.hh"
-
+#include "multiAllele.hh"
+#include  <deque>
+//#include <pair>
 
 class Genotype
 {
@@ -18,6 +20,7 @@ public:
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
     Genotype(int ploidy, int num_allele);
     Genotype marginalise(const int index);
+    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map);
     ~Genotype();
     void setDepthFromAD();
     void print();//prints information to stderr. mainly for debugging.
@@ -39,6 +42,9 @@ public:
     std::vector<float> _gl;
     bool _has_pl, _adf_found, _adr_found;
     void PLfromGL();
+private:
+    void allocate(int ploidy, int num_allele);
+    float _qual;
 };
 
 #endif //GVCFGENOTYPER_GENOTYPE_HH
