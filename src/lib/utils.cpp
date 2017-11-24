@@ -148,8 +148,10 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record) {
         // A vcf record without GT cannot be hom ref
         return is_hom_ref;
     }
+    int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
     // check for 0/0
-    is_hom_ref = (bcf_gt_allele(gt[0]) == 0) && (bcf_gt_allele(gt[1]) == 0);
+    is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
+    is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
     free(gt);
     return is_hom_ref;
 }
