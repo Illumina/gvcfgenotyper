@@ -458,7 +458,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     {
         Genotype g(sample_header, *it);
         int dst_allele_index = alleles_to_map.allele(*it);
-
+        assert(dst_allele_index<_num_ad);
         _qual = max(_qual,g.get_qual()); //FIXME: QUAL should be estimated from PL
 
         //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case.
