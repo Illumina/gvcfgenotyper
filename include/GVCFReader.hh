@@ -14,7 +14,7 @@ extern "C" {
 #include "vcfnorm.h"
 }
 
-#include "utils.hh"
+#include "ggutils.hh"
 #include "Normaliser.hh"
 #include "VariantBuffer.hh"
 #include "DepthBuffer.hh"

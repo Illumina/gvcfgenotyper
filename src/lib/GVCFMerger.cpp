@@ -1,5 +1,5 @@
 #include "GVCFMerger.hh"
-#include "utils.hh"
+#include "ggutils.hh"
 #include <htslib/hts.h>
 #include <htslib/vcf.h>
 

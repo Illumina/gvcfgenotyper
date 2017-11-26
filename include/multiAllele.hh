@@ -13,7 +13,7 @@ extern "C" {
 #include <htslib/vcf.h>
 }
 
-#include "utils.hh"
+#include "ggutils.hh"
 
 //gathers multiple alleles. kind of like a set() for bcf1_t
 class multiAllele
