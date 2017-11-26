@@ -43,17 +43,17 @@ TEST(DepthBuffer, interpolate)
     buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30));
     DepthBlock db;
     buf.interpolate(0, 90, 95, db);
-    ASSERT_EQ(db._dp, 20);
+    ASSERT_EQ(db.dp(), 20);
     buf.interpolate(0, 99, 99, db);
-    ASSERT_EQ(db._dp, 20);
+    ASSERT_EQ(db.dp(), 20);
     buf.interpolate(0, 100, 100, db);
-    ASSERT_EQ(db._dp, 30);
+    ASSERT_EQ(db.dp(), 30);
     buf.interpolate(0, 95, 104, db);
-    ASSERT_EQ(db._dp, 25);
+    ASSERT_EQ(db.dp(), 25);
     buf.interpolate(0, 95, 114, db);
-    ASSERT_EQ(db._dp, 30);
+    ASSERT_EQ(db.dp(), 30);
     buf.interpolate(0, 95, 154, db);
-    ASSERT_EQ(db._dp, 37);
+    ASSERT_EQ(db.dp(), 37);
 }
 
 TEST(VariantBuffer, test1)
@@ -131,7 +131,7 @@ TEST(GVCFReader, readAGVCF)
             reader.get_depth(line->rid, line->pos, line->pos, db);
             if (bcf_get_format_int32(hdr, line, "DP", &dp, &nval) == 1)
             {
-                ASSERT_EQ(db._dp, *dp);
+                ASSERT_EQ(db.dp(), *dp);
             }
         }
         if(line->n_allele>1)
@@ -174,21 +174,38 @@ TEST(Genotype,format)
     int qual = 786;
     record1->qual = qual;
     int32_t ad[3] = {2,24,17};
+    int32_t adf[3] = {2,12,10};
+    int32_t adr[3] = {0,12,7};
     int32_t pl[6] = {405,132,56,188,0,121};
     int32_t gt[2] = {bcf_gt_unphased(1), bcf_gt_unphased(2)};
     float gq = 58;
     bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
     bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
+    bcf_update_format_int32(hdr, record1, "ADR", &adr, 3);
+    bcf_update_format_int32(hdr, record1, "ADF", &adf, 3);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
 //    print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
     norm.unarise(record1,buffer);
+    size_t idx = 0;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-//        print_variant(hdr,*it);
+        print_variant(hdr,*it);
+        cout << "idx=" << idx << "\n";
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);
+
+        ASSERT_EQ(g.get_ad(0),ad[0]);
+        ASSERT_EQ(g.get_ad(1),ad[1+idx]);
+
+        ASSERT_EQ(g.get_adf(0),adf[0]);
+        ASSERT_EQ(g.get_adf(1),adf[1+idx]);
+
+        ASSERT_EQ(g.get_adr(0),adr[0]);
+        ASSERT_EQ(g.get_adr(1),adr[1+idx]);
+
+        ++idx;
     }
 }
 

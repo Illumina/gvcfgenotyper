@@ -45,6 +45,14 @@ public:
 
     void divide(int n);
 
+    int rid() const { return _rid; }
+    int start() const { return _start; }
+    int end() const { return _end; }
+    int dp() const { return _dp; }
+    int gq() const { return _gq; }
+    int dpf() const { return _dpf; }
+
+private:
     int _rid, _start, _end, _dp, _gq, _dpf;
 };
 

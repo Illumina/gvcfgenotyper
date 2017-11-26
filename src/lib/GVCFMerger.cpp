@@ -271,12 +271,12 @@ bcf1_t *GVCFMerger::next()
         else    //this sample does not have the variant, reconstruct the format fields from homref blocks
         {
             _readers[i].get_depth(_output_record->rid, _output_record->pos, get_end_of_variant(_output_record), homref_block);
-            _format_dp[i] = homref_block._dp;
-            _format_dpf[i] = homref_block._dpf;
-            _format_gq[i] = homref_block._gq;
+            _format_dp[i] = homref_block.dp();
+            _format_dpf[i] = homref_block.dpf();
+            _format_gq[i] = homref_block.gq();
             // GQX is missing for HOM REF
-            _format_ad[i * _output_record->n_allele] = homref_block._dp;
-            if (homref_block._dp > 0)
+            _format_ad[i * _output_record->n_allele] = homref_block.dp();
+            if (homref_block.dp() > 0)
             {
                 _format_gt[2 * i] = _format_gt[2 * i + 1] = bcf_gt_unphased(0);
             }

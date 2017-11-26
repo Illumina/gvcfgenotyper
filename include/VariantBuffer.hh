@@ -20,7 +20,9 @@ public:
     VariantBuffer();
     ~VariantBuffer();
 
-    int push_back(const bcf_hdr_t * hdr, bcf1_t *v);    //add a new variant (and sort if necessary), needs header for duplicate check
+    //add a new variant (and sort if necessary), needs header for duplicate check
+    // Warning: if the variant already occurs in the buffer, bcf_destroy is called on it
+    int push_back(const bcf_hdr_t * hdr, bcf1_t *v);  
     int flush_buffer(int rid, int pos);//flush variants up to and including rid/pos
     int flush_buffer();//empty the buffer
     int flush_buffer(bcf1_t *record);
@@ -34,9 +36,10 @@ public:
     bool empty();
 
     size_t size();
+    size_t get_num_duplicated_records() const { return _num_duplicated_records;};
 
 private:
-    int  _num_duplicated_records;
+    size_t  _num_duplicated_records;
     deque<bcf1_t *> _buffer;
     set<std::string> _seen; //list of seen variants at this position.
 };
