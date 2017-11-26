@@ -12,6 +12,7 @@ extern "C" {
 #include "utils.hh"
 #include "multiAllele.hh"
 #include  <deque>
+#include <string.h>
 //#include <pair>
 
 class Genotype
