@@ -17,7 +17,7 @@ class DepthBlock
 public:
     DepthBlock();
 
-    DepthBlock(int rid, int start, int end, int dp, int dpf, int gq,int ploidy);
+    DepthBlock(int rid, int start, int end, int dp, int dpf, int gq);
 
     inline bool operator == (const DepthBlock& db) const {
         return (_rid==db._rid &&
@@ -36,7 +36,7 @@ public:
     int intersect_size(int rid, int a, int b) const;
 
     int intersect_size(const DepthBlock &db) const;
-    int get_ploidy();
+
     int size() const;
 
     void set_missing();//set all values to bcftools missing
@@ -46,7 +46,6 @@ public:
     void divide(int n);
 
     int _rid, _start, _end, _dp, _gq, _dpf;
-    uint8_t _ploidy;
 };
 
 #endif //GVCFGENOTYPER_DEPTHBLOCK_HH

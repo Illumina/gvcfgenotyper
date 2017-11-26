@@ -40,15 +40,15 @@ public:
     int read_lines(const unsigned num_lines); //read at most num_lines
     size_t fill_buffer();
 
-    void get_depth(int rid, int start, int end, DepthBlock &db);//gets dp/dpf/gq (possibly interpolated) for a give interval
+    void
+    get_depth(int rid, int start, int end, DepthBlock &db);//gets dp/dpf/gq (possibly interpolated) for a give interval
     bool empty();
-    int get_ploidy(int rid, int start, int end);//returns ploidy at rid:start-end
 
     size_t get_num_variants();
 
     size_t get_num_depth();
 
-    bcf_hdr_t *get_header();
+    const bcf_hdr_t *get_header();
 
     int read_until(int rid, int pos);
 

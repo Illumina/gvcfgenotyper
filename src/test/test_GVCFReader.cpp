@@ -11,26 +11,26 @@ extern "C"
 
 TEST(DepthBlock, intersects)
 {
-    DepthBlock db1(0, 100, 199, 20, 1, 30,2);
-    DepthBlock db2(0, 100, 100, 20, 1, 30,2);
+    DepthBlock db1(0, 100, 199, 20, 1, 30);
+    DepthBlock db2(0, 100, 100, 20, 1, 30);
     ASSERT_EQ(db1.intersect_size(db2), 1);
     ASSERT_EQ(db1.intersect_size(db2), db2.intersect_size(db1));
 
-    DepthBlock db3(0, 300, 401, 20, 1, 30,2);
+    DepthBlock db3(0, 300, 401, 20, 1, 30);
     ASSERT_EQ(db1.intersect_size(db3), 0);
 
-    DepthBlock db4(1, 300, 401, 20, 1, 30,2);
+    DepthBlock db4(1, 300, 401, 20, 1, 30);
     ASSERT_EQ(db1.intersect_size(db4), 0);
 
-    DepthBlock db5(0, 190, 401, 20, 1, 30,2);
+    DepthBlock db5(0, 190, 401, 20, 1, 30);
     ASSERT_EQ(db1.intersect_size(db5), 10);
 
-    DepthBlock db6(0, 100, 100, 20, 1, 30,2);
-    DepthBlock db7(0, 100, 100, 20, 1, 30,2);
+    DepthBlock db6(0, 100, 100, 20, 1, 30);
+    DepthBlock db7(0, 100, 100, 20, 1, 30);
     ASSERT_EQ(db6.intersect_size(db7), 1);
 
-    DepthBlock db8(1, 10000, 10000, 20, 1, 30,2);
-    DepthBlock db9(1, 10000, 10000, 20, 1, 30,2);
+    DepthBlock db8(1, 10000, 10000, 20, 1, 30);
+    DepthBlock db9(1, 10000, 10000, 20, 1, 30);
     ASSERT_EQ(db8.intersect_size(db9), 1);
 
 }
@@ -38,9 +38,9 @@ TEST(DepthBlock, intersects)
 TEST(DepthBuffer, interpolate)
 {
     DepthBuffer buf;
-    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30,2));
-    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30,2));
-    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30,2));
+    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30));
+    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30));
+    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30));
     DepthBlock db;
     buf.interpolate(0, 90, 95, db);
     ASSERT_EQ(db._dp, 20);
@@ -124,7 +124,7 @@ TEST(GVCFReader, readAGVCF)
     DepthBlock db;
     while (line != nullptr)
     {
-//        ggutils::print_variant(hdr,line);
+//        print_variant(hdr,line);
         ofs << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos + 1 << ":" << line->d.allele[0] << ":" << line->d.allele[1] << std::endl;
         if (ggutils::is_snp(line))
         {
@@ -181,45 +181,15 @@ TEST(Genotype,format)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
-//    ggutils::print_variant(hdr, record1);
+//    print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
     norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-//        ggutils::print_variant(hdr,*it);
+//        print_variant(hdr,*it);
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);
     }
 }
 
-//tests marginalisation and propagation of likelihoods in our genotype class.
-TEST(Genotype,likelihood1)
-{
-    auto hdr = get_header();
-    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T\t100\tPASS\t.\tGT:GQ:DP:DPF:AD:PL\t1/2:50:25:0:1,13,11:526,230,276,214,0,266");
-    Genotype g(hdr, record1);
-    g.print();
-    Genotype g1 = g.marginalise(1);
-    g1.print();
-    Genotype g2 = g.marginalise(2);
-    g2.print();
-    ASSERT_EQ(0,g1.get_pl(1,2));
-    ASSERT_EQ(0,g2.get_pl(1,2));
-}
 
-TEST(Genotype,likelihood2)
-{
-    auto hdr = get_header();
-    auto record1 = generate_record(hdr,"chr1\t5420\t.\tC\tA,T,G\t100\tPASS\t.\tGT:GQ:DP:DPF:AD:PL\t1/3:50:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285");
-    Genotype g(hdr,record1);
-    g.print();
-    Genotype g1 = g.marginalise(1);
-    g1.print();
-    Genotype g2 = g.marginalise(2);
-    g2.print();
-    Genotype g3 = g.marginalise(3);
-    g3.print();
-    ASSERT_EQ(0,g1.get_pl(1,2));
-    ASSERT_EQ(0,g2.get_pl(2,2));
-    ASSERT_EQ(0,g3.get_pl(1,2));
-}

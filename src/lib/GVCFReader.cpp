@@ -163,7 +163,7 @@ int GVCFReader::read_lines(const unsigned num_lines)
             int32_t dp, dpf, gq, end;
             dp = *value_pointer;
             end = ggutils::get_end_of_gvcf_block(_bcf_header, _bcf_record);
-            int ploidy = ggutils::get_ploidy(_bcf_header, _bcf_record);
+
             //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
             if (_bcf_record->n_allele>1)
             {
@@ -176,7 +176,7 @@ int GVCFReader::read_lines(const unsigned num_lines)
             gq = *value_pointer;
             bcf_get_format_int32(_bcf_header, _bcf_record, "DPF", &value_pointer, &num_format_values);
             dpf = *value_pointer;
-            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq,ploidy));
+            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq));
             free(value_pointer);
         }
 
@@ -214,7 +214,7 @@ bool GVCFReader::empty()
     }
 }
 
-bcf_hdr_t *GVCFReader::get_header()
+const  bcf_hdr_t *GVCFReader::get_header()
 {
     return (_bcf_header);
 }
