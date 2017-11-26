@@ -3,31 +3,37 @@
 //
 #include "test_helpers.hh"
 
-bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles)
+bcf1_t *generate_record(bcf_hdr_t *hdr, kstring_t & vcfrow)
 {
     bcf1_t *ret = bcf_init1();
+    vcf_parse(&vcfrow,hdr,ret);
+    bcf_unpack(ret,BCF_UN_ALL);
+    free(vcfrow.s);
+    return(ret);
+}
+
+bcf1_t *generate_record(bcf_hdr_t *hdr,const std::string & vcfrow)
+{
+    kstring_t str = {0,0,nullptr};
+    kputs(vcfrow.c_str(),&str);
+    return generate_record(hdr,str);
+}
+
+// generates a record with a GT
+bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles, const std::string& gt)
+{
     kstring_t str = {0,0,nullptr};
     size_t comma = alleles.find(",");
     assert(comma<alleles.size());
     std::string ref = alleles.substr(0,comma);
     std::string alt = alleles.substr(comma+1,alleles.size());
-    ksprintf(&str,"%s\t%d\t.\t%s\t%s\t1691\tPASS\t.\tGT\t0/1",bcf_hdr_int2id(hdr,BCF_DT_CTG,rid),pos,ref.c_str(),alt.c_str());
-    vcf_parse(&str,hdr,ret);
-    bcf_unpack(ret,BCF_UN_ALL);
-    free(str.s);
-    return(ret);
+    ksprintf(&str,"%s\t%d\t.\t%s\t%s\t1691\tPASS\t.\tGT\t%s",bcf_hdr_int2id(hdr,BCF_DT_CTG,rid),pos,ref.c_str(),alt.c_str(),gt.c_str());
+    return generate_record(hdr,str);
 }
 
-
-bcf1_t *generate_record(bcf_hdr_t *hdr,const std::string & vcfrow)
+bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles)
 {
-    bcf1_t *ret = bcf_init1();
-    kstring_t str = {0,0,nullptr};
-    kputs(vcfrow.c_str(),&str);
-    vcf_parse(&str,hdr,ret);
-    bcf_unpack(ret,BCF_UN_ALL);
-    free(str.s);
-    return(ret);
+    return generate_record(hdr,rid,pos,alleles,"0/1");
 }
 
 bcf_hdr_t *get_header()

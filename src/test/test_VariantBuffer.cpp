@@ -125,3 +125,36 @@ TEST(VariantBuffer, VariantBuffer_back)
     ASSERT_EQ(vb.back(),rec1);
 }
 
+TEST(VariantBuffer, VariantBuffer_push_back_duplicate)
+{
+    VariantBuffer vb;
+    auto hdr = get_header();
+    auto rec1 = generate_record(hdr,20,20000,"A,T");
+    vb.push_back(hdr,rec1);
+    auto rec2 = generate_record(hdr,20,20000,"A,T");
+    vb.push_back(hdr,rec2);
+    ASSERT_EQ(vb.size(),(size_t)1);
+    ASSERT_EQ(vb.back(),rec1);
+    ASSERT_EQ(vb.get_num_duplicated_records(),(size_t)1);
+    vb.flush_buffer();
+}
+
+TEST(VariantBuffer, VariantBuffer_push_back_duplicate_hom_ref)
+{
+    VariantBuffer vb;
+    auto hdr = get_header();
+    bcf1_t* rec1 = generate_record(hdr,20,20000,"A,T","0/0");
+    vb.push_back(hdr,rec1);
+    bcf1_t* rec2 = generate_record(hdr,20,20000,"A,T","0/1");
+    // need a copy of rec2 here since rec2 will be destroyed
+    bcf1_t* rec2b = bcf_dup(rec2);
+    vb.push_back(hdr,rec2);
+
+    ASSERT_EQ(vb.size(),(size_t)1);
+    bcf1_t* rec3 = vb.pop();
+    bool cmp = bcf1_equal(rec2b,rec3) && !is_hom_ref(hdr,rec3);
+    ASSERT_EQ(cmp,true);
+
+    ASSERT_EQ(vb.get_num_duplicated_records(),(size_t)1);
+    vb.flush_buffer();
+}

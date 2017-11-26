@@ -8,23 +8,23 @@
 TEST(DepthBlock, DepthBlock_def_constr)
 {
     DepthBlock db;
-    ASSERT_EQ(db._rid,0);
-    ASSERT_EQ(db._start,0);
-    ASSERT_EQ(db._end,0);
-    ASSERT_EQ(db._dp,bcf_int32_missing);
-    ASSERT_EQ(db._gq,bcf_int32_missing);
-    ASSERT_EQ(db._dpf,bcf_int32_missing);
+    ASSERT_EQ(db.rid(),0);
+    ASSERT_EQ(db.start(),0);
+    ASSERT_EQ(db.end(),0);
+    ASSERT_EQ(db.dp(),bcf_int32_missing);
+    ASSERT_EQ(db.gq(),bcf_int32_missing);
+    ASSERT_EQ(db.dpf(),bcf_int32_missing);
 }
 
 TEST(DepthBlock, DepthBlock_constr)
 {
     DepthBlock db(5,15,20,10,11,12);
-    ASSERT_EQ(db._rid,5);
-    ASSERT_EQ(db._start,15);
-    ASSERT_EQ(db._end,20);
-    ASSERT_EQ(db._dp,10);
-    ASSERT_EQ(db._dpf,11);
-    ASSERT_EQ(db._gq,12);
+    ASSERT_EQ(db.rid(),5);
+    ASSERT_EQ(db.start(),15);
+    ASSERT_EQ(db.end(),20);
+    ASSERT_EQ(db.dp(),10);
+    ASSERT_EQ(db.dpf(),11);
+    ASSERT_EQ(db.gq(),12);
 }
 
 TEST(DepthBlock, DepthBlock_intersect1)
@@ -73,18 +73,18 @@ TEST(DepthBlock, DepthBlock_set_missing)
 {
     DepthBlock db(5,1,100,10,10,10);
     db.set_missing();
-    ASSERT_EQ(db._dp,bcf_int32_missing);
-    ASSERT_EQ(db._gq,bcf_int32_missing);
-    ASSERT_EQ(db._dpf,bcf_int32_missing);
+    ASSERT_EQ(db.dp(),bcf_int32_missing);
+    ASSERT_EQ(db.gq(),bcf_int32_missing);
+    ASSERT_EQ(db.dpf(),bcf_int32_missing);
 }
 
 TEST(DepthBlock, DepthBlock_set_zero)
 {
     DepthBlock db(5,1,100,10,10,10);
     db.zero();
-    ASSERT_EQ(db._dp,0);
-    ASSERT_EQ(db._gq,0);
-    ASSERT_EQ(db._dpf,0);
+    ASSERT_EQ(db.dp(),0);
+    ASSERT_EQ(db.gq(),0);
+    ASSERT_EQ(db.dpf(),0);
 }
 
 
@@ -93,12 +93,12 @@ TEST(DepthBlock, DepthBlock_add1)
     DepthBlock db1(5,1,100,10,10,10);
     DepthBlock db2(5,101,200,20,20,20);
     db1.add(db2);
-    ASSERT_EQ(db1._rid,5);
-    ASSERT_EQ(db1._start,1);
-    ASSERT_EQ(db1._end,200);
-    ASSERT_EQ(db1._dp,15);
-    ASSERT_EQ(db1._dpf,15);
-    ASSERT_EQ(db1._gq,15);
+    ASSERT_EQ(db1.rid(),5);
+    ASSERT_EQ(db1.start(),1);
+    ASSERT_EQ(db1.end(),200);
+    ASSERT_EQ(db1.dp(),15);
+    ASSERT_EQ(db1.dpf(),15);
+    ASSERT_EQ(db1.gq(),15);
 }
 
 TEST(DepthBlock, DepthBlock_add2)
@@ -106,10 +106,10 @@ TEST(DepthBlock, DepthBlock_add2)
     DepthBlock db1(5,1,100,10,10,10);
     DepthBlock db2(5,101,150,20,20,20);
     db1.add(db2);
-    ASSERT_EQ(db1._rid,5);
-    ASSERT_EQ(db1._start,1);
-    ASSERT_EQ(db1._end,150);
-    ASSERT_EQ(db1._dp,13);
-    ASSERT_EQ(db1._dpf,13);
-    ASSERT_EQ(db1._gq,13);
+    ASSERT_EQ(db1.rid(),5);
+    ASSERT_EQ(db1.start(),1);
+    ASSERT_EQ(db1.end(),150);
+    ASSERT_EQ(db1.dp(),13);
+    ASSERT_EQ(db1.dpf(),13);
+    ASSERT_EQ(db1.gq(),13);
 }
