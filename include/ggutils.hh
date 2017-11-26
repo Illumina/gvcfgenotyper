@@ -14,6 +14,8 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <exception>
+
 
 using namespace std;
 
@@ -28,31 +30,6 @@ extern "C" {
 
 namespace ggutils
 {
-
-    class value_not_in_row: public exception
-    {
-        virtual const char* what() const throw()
-        {
-            return "value was not in VCF row";
-        }
-    };
-
-    class value_not_in_header: public exception
-    {
-        virtual const char* what() const throw()
-        {
-            return "value was not in VCF header";
-        }
-    };
-
-    class bcf_incorrect_type: public exception
-    {
-        virtual const char* what() const throw()
-        {
-            return "value was not correct type";
-        }
-    };
-
 
     int read_text_file(const string &fname, vector<string> &output);
 
@@ -136,10 +113,10 @@ namespace ggutils
     int choose(int n, int k);
 
     //these are simple htslib wrappers shortcuts to get scalar ints/floats (not appropriate for arrays)
-    float bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag);
-    float bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag);
-    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag);
-    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag);
+    int bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
+    int bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
+    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
+    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
 
     //gets the index of a genotype likelihood for ploidy == 2
     int get_gl_index(int g0, int g1);

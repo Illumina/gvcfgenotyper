@@ -377,64 +377,43 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return (ploidy);
     }
 
-    float bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    int bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);
-        float val;
-        float *ptr=&val;
+        float *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_float(header,record,tag,&ptr,&nval);
         if(ret>1)  die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
-        if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw bcf_incorrect_type();
-        if(ret==-3) throw value_not_in_row();
-        assert(ret==1);
-
-        return(val);
+        return(ret);
     }
 
-    float bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    int bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
-        float val;
-        float *ptr=&val;
+        float *ptr=&output;
         int nval=1;
         int ret =   bcf_get_format_float(header,record,tag,&ptr,&nval);
         if(ret>1)  die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
-        if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw bcf_incorrect_type();
-        if(ret==-3) throw value_not_in_row();
-        assert(ret==1);
-        return(val);
+        return(ret);
     }
 
-    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
     {
         bcf_unpack(record, BCF_UN_INFO);
-        int32_t val;
-        int32_t *ptr=&val;
+        int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_int32(header,record,tag,&ptr,&nval);
         if(ret>1)  die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
-        if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw bcf_incorrect_type();
-        if(ret==-3) throw value_not_in_row();
-        assert(ret==1);
-        return(val);
+        return(ret);
     }
 
-    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag)
+    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
-        int32_t val;
-        int32_t *ptr=&val;
+        int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
         if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
-        if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw bcf_incorrect_type();
-        if(ret==-3) throw value_not_in_row();
-        assert(ret==1);
-        return(val);
+        return(ret);
     }
 }
