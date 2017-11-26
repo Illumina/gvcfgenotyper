@@ -20,14 +20,14 @@ TEST(VariantBuffer, VariantBuffer_push_back)
     int rid=13;
     int pos=600;
     auto rec1 = generate_record(hdr,rid,pos,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     ASSERT_EQ(vb.size(),(size_t)1);
     ASSERT_EQ(vb.empty(),false);
 
     rid=13;
     pos=800;
     auto rec2 = generate_record(hdr,rid,pos,"A,G");
-    vb.push_back(rec2);
+    vb.push_back(hdr,rec2);
     ASSERT_EQ(vb.size(),(size_t)2);
     ASSERT_EQ(vb.empty(),false);
 }
@@ -38,11 +38,11 @@ TEST(VariantBuffer, VariantBuffer_flush_buffer1)
 
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     auto rec2 = generate_record(hdr,13,800,"A,G");
-    vb.push_back(rec2);
+    vb.push_back(hdr,rec2);
     auto rec3 = generate_record(hdr,13,1000,"A,TTG");
-    vb.push_back(rec3);
+    vb.push_back(hdr,rec3);
 
     ASSERT_EQ(vb.flush_buffer(13,800),2);
     ASSERT_EQ(vb.size(),(size_t)1);
@@ -59,11 +59,11 @@ TEST(VariantBuffer, VariantBuffer_flush_buffer2)
 
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     auto rec2 = generate_record(hdr,13,800,"A,G");
-    vb.push_back(rec2);
+    vb.push_back(hdr,rec2);
     auto rec3 = generate_record(hdr,13,1000,"A,T");
-    vb.push_back(rec3);
+    vb.push_back(hdr,rec3);
 
     auto rec2a = generate_record(hdr,13,800,"A,G");
     ASSERT_EQ(vb.flush_buffer(rec2a),2);
@@ -82,11 +82,11 @@ TEST(VariantBuffer, VariantBuffer_flush_buffer3)
 
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     auto rec2 = generate_record(hdr,13,800,"A,G");
-    vb.push_back(rec2);
+    vb.push_back(hdr,rec2);
     auto rec3 = generate_record(hdr,13,1000,"A,TTG");
-    vb.push_back(rec3);
+    vb.push_back(hdr,rec3);
 
     ASSERT_EQ(vb.flush_buffer(),3);
     ASSERT_EQ(vb.size()==0,true);
@@ -99,10 +99,10 @@ TEST(VariantBuffer, VariantBuffer_size)
     ASSERT_EQ(vb.size()==0,true);
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     ASSERT_EQ(vb.size()==1,true);
     auto rec2 = generate_record(hdr,13,800,"A,G");
-    vb.push_back(rec2);
+    vb.push_back(hdr,rec2);
     ASSERT_EQ(vb.size()==2,true);
 }
 
@@ -112,7 +112,7 @@ TEST(VariantBuffer, VariantBuffer_empty)
     ASSERT_EQ(vb.empty(),true);
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     ASSERT_EQ(vb.empty(),false);
 }
 
@@ -121,7 +121,7 @@ TEST(VariantBuffer, VariantBuffer_back)
     VariantBuffer vb;
     auto hdr = get_header();
     auto rec1 = generate_record(hdr,13,600,"A,T");
-    vb.push_back(rec1);
+    vb.push_back(hdr,rec1);
     ASSERT_EQ(vb.back(),rec1);
 }
 

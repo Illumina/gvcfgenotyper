@@ -115,11 +115,52 @@ namespace ggutils
     }
 
 
-    bool is_snp(bcf1_t *record)
-    {
+
+   bool is_snp(bcf1_t *record)
+   {
         assert(record->n_allele > 1);
         bcf_unpack(record, BCF_UN_ALL);
         return (bcf_get_variant_type(record, 1) & VCF_SNP);
+   }
+
+
+bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
+{
+    int *gt = nullptr, ngt = 0;
+    bool is_hom_ref = false;
+    if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+    {
+        // A vcf record without GT cannot be hom ref
+        return is_hom_ref;
+    }
+    int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
+    // check for 0/0
+    is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
+    is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
+    free(gt);
+    return is_hom_ref;
+}
+
+    int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
+    {
+        int ret;
+        int *ptr = NULL, nval = 0;
+        if (bcf_get_info_int32(header, record, "END", &ptr, &nval) == 1)
+        {
+            ret = *ptr - 1;
+            free(ptr);
+        }
+        else
+        {
+            ret = record->pos + strlen(record->d.allele[0]) - 1;
+        }
+
+        return (ret);
+    }
+
+    int get_end_of_variant(bcf1_t *record)
+    {
+        return (record->pos + strlen(record->d.allele[0]) - 1);
     }
 
     bool is_deletion(bcf1_t *record)
@@ -159,28 +200,6 @@ namespace ggutils
         }
         die("bad variant");
         return (-1);
-    }
-
-    int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
-    {
-        int ret;
-        int *ptr = NULL, nval = 0;
-        if (bcf_get_info_int32(header, record, "END", &ptr, &nval) == 1)
-        {
-            ret = *ptr - 1;
-            free(ptr);
-        }
-        else
-        {
-            ret = record->pos + strlen(record->d.allele[0]) - 1;
-        }
-
-        return (ret);
-    }
-
-    int get_end_of_variant(bcf1_t *record)
-    {
-        return (record->pos + strlen(record->d.allele[0]) - 1);
     }
 
     bool  bcf1_equal(bcf1_t *a, bcf1_t *b)

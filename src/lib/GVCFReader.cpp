@@ -149,10 +149,10 @@ int GVCFReader::read_lines(const unsigned num_lines)
             _normaliser->unarise(_bcf_record,atomised_variants);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
-                _variant_buffer.push_back(*v);
+                _variant_buffer.push_back(_bcf_header,*v);
             }
             num_read++;
-        }
+        } 
 
         //buffer a depth block
         int num_format_values = 0;

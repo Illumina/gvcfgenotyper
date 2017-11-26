@@ -10,7 +10,7 @@ VariantBuffer::~VariantBuffer()
     flush_buffer();
 }
 
-bool VariantBuffer::has_variant(bcf1_t *v)
+bool VariantBuffer::has_variant(const bcf_hdr_t * hdr, bcf1_t *v)
 {
     if (_buffer.empty())
     {
@@ -21,6 +21,11 @@ bool VariantBuffer::has_variant(bcf1_t *v)
     {
         if (ggutils::bcf1_equal(v, _buffer[i]))
         {
+            if (ggutils::is_hom_ref(hdr,_buffer[i]) && !ggutils::is_hom_ref(hdr,v)) {
+                // if duplicate record in buffer is hom ref and the new record 
+                // is not, swap them
+                iter_swap(_buffer[i],v);
+            }
             return (true);
         }
         i--;
@@ -28,24 +33,23 @@ bool VariantBuffer::has_variant(bcf1_t *v)
     return (false);
 }
 
-int VariantBuffer::push_back(bcf1_t *rec)
+int VariantBuffer::push_back(const bcf_hdr_t * hdr, bcf1_t *rec)
 {
     bcf_unpack(rec, BCF_UN_ALL);
-    if (has_variant(rec))
+    if (has_variant(hdr,rec))
     {
         _num_duplicated_records++;
         bcf_destroy(rec);
         return (0);
     }
 
+
     _buffer.push_back(rec);
     //moves the new record back through the buffer until buffer is sorted ie. one iteration of insert-sort
     int i = _buffer.size() - 1;
     while (i > 0 && ggutils::bcf1_less_than(_buffer[i], _buffer[i - 1]))
     {
-        bcf1_t *tmp = _buffer[i - 1];
-        _buffer[i - 1] = _buffer[i];
-        _buffer[i] = tmp;
+        swap(_buffer[i - 1],_buffer[i]);
         i--;
     }
     return (1);
