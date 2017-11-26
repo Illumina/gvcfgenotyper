@@ -152,7 +152,7 @@ TEST(VariantBuffer, VariantBuffer_push_back_duplicate_hom_ref)
 
     ASSERT_EQ(vb.size(),(size_t)1);
     bcf1_t* rec3 = vb.pop();
-    bool cmp = bcf1_equal(rec2b,rec3) && !is_hom_ref(hdr,rec3);
+    bool cmp = ggutils::bcf1_equal(rec2b,rec3) && !ggutils::is_hom_ref(hdr,rec3);
     ASSERT_EQ(cmp,true);
 
     ASSERT_EQ(vb.get_num_duplicated_records(),(size_t)1);

@@ -384,9 +384,9 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         float *ptr=&val;
         int nval=1;
         int ret = bcf_get_info_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret>1)  die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
         if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw std::runtime_error((string)tag+" was not a float");
+        if(ret==-2) throw bcf_incorrect_type();
         if(ret==-3) throw value_not_in_row();
         assert(ret==1);
 
@@ -400,9 +400,9 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         float *ptr=&val;
         int nval=1;
         int ret =   bcf_get_format_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret>1)  die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
         if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw std::runtime_error((string)tag+" was not a float");
+        if(ret==-2) throw bcf_incorrect_type();
         if(ret==-3) throw value_not_in_row();
         assert(ret==1);
         return(val);
@@ -415,9 +415,9 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         int32_t *ptr=&val;
         int nval=1;
         int ret = bcf_get_info_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret>1)  die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
         if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw std::runtime_error((string)tag+" was not an integer");
+        if(ret==-2) throw bcf_incorrect_type();
         if(ret==-3) throw value_not_in_row();
         assert(ret==1);
         return(val);
@@ -430,9 +430,9 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         int32_t *ptr=&val;
         int nval=1;
         int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  throw std::runtime_error((string)tag+" had more than one value");
+        if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
         if(ret==-1) throw value_not_in_header();
-        if(ret==-2) throw std::runtime_error((string)tag+" was not an integer");
+        if(ret==-2) throw bcf_incorrect_type();
         if(ret==-3) throw value_not_in_row();
         assert(ret==1);
         return(val);

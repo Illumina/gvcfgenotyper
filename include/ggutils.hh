@@ -45,6 +45,14 @@ namespace ggutils
         }
     };
 
+    class bcf_incorrect_type: public exception
+    {
+        virtual const char* what() const throw()
+        {
+            return "value was not correct type";
+        }
+    };
+
 
     int read_text_file(const string &fname, vector<string> &output);
 
