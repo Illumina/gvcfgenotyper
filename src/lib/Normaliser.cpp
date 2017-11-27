@@ -135,7 +135,7 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
                         for (int j = i; j < num_allele; j++)
                         {
                             new_genotype._gl[ggutils::get_gl_index(allele_remap[i],
-                                                          allele_remap[j])] += old_genotype._gl[ggutils::get_gl_index(i, j)];
+                                                                   allele_remap[j])] += old_genotype._gl[ggutils::get_gl_index(i, j)];
                         }
                     }
                     new_genotype._dp[0] = old_genotype._dp[0];
@@ -161,64 +161,54 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
 //starting positions.
 void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_variants)
 {
-    if(bcf_record_to_split->n_allele==2)//bi-allelic so there is nothing to split.
+    assert(bcf_record_to_split->n_allele>2);
+    bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
+    bcf1_t *new_record = bcf_dup(bcf_record_to_split);
+    std::vector<int> new_positions;
+    auto **new_alleles = new char *[bcf_record_to_split->n_allele];
+    for (int i = 1; i < bcf_record_to_split->n_allele; i++)
     {
-        if (realign(_norm_args, bcf_record_to_split) != ERR_OK)
-        {
+        new_alleles[0] = bcf_record_to_split->d.allele[0];
+        new_alleles[1] = bcf_record_to_split->d.allele[i];
+        bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, 2);
+        if (realign(_norm_args, new_record) != ERR_OK)
             ggutils::die("vcf record did not match the reference");
-        }
-        split_variants.push_back(bcf_record_to_split);
+        new_positions.push_back(new_record->pos);
     }
-    else
+
+    bcf_destroy(new_record);
+    std::set<int> unique_positions(new_positions.begin(),new_positions.end());
+
+    for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
     {
-        bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
-        bcf1_t *new_record = bcf_dup(bcf_record_to_split);
-        std::vector<int> new_positions;
-        auto **new_alleles = new char *[bcf_record_to_split->n_allele];
-        for (int i = 1; i < bcf_record_to_split->n_allele; i++)
+        int counter=1;
+        vector<int> alleles_at_this_position;
+        new_alleles[0] = bcf_record_to_split->d.allele[0];
+        for(size_t i=0;i<new_positions.size();i++)
         {
-            new_alleles[0] = bcf_record_to_split->d.allele[0];
-            new_alleles[1] = bcf_record_to_split->d.allele[i];
-            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, 2);
-            if (realign(_norm_args, new_record) != ERR_OK)
+            if(new_positions[i]==*pos)
+            {
+                alleles_at_this_position.push_back(1+(int)i);
+                new_alleles[counter++] = bcf_record_to_split->d.allele[i+1];
+            }
+        }
+        assert(alleles_at_this_position.size()>0);
+        Genotype g(_hdr,bcf_record_to_split);
+        new_record = bcf_dup(bcf_record_to_split);
+        bcf_unpack(new_record, BCF_UN_ALL);
+        bcf_update_alleles(_hdr, new_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
+        g.collapse_alleles_into_ref(alleles_at_this_position).update_bcf1_t(_hdr,new_record);
+        for (int i = 1; i < new_record->n_allele; i++)
+        {
+            bcf1_t *out_record = bcf_dup(new_record);
+            ggutils::bcf1_allele_swap(_hdr,out_record,i,1);
+            if (realign(_norm_args, out_record) != ERR_OK)
                 ggutils::die("vcf record did not match the reference");
-            new_positions.push_back(new_record->pos);
+            split_variants.push_back(out_record);
         }
-
-        bcf_destroy(new_record);
-        std::set<int> unique_positions(new_positions.begin(),new_positions.end());
-
-        for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
-        {
-            int counter=1;
-            vector<int> alleles_at_this_position;
-            new_alleles[0] = bcf_record_to_split->d.allele[0];
-            for(size_t i=0;i<new_positions.size();i++)
-            {
-                if(new_positions[i]==*pos)
-                {
-                    alleles_at_this_position.push_back(1+(int)i);
-                    new_alleles[counter++] = bcf_record_to_split->d.allele[i+1];
-                }
-            }
-            assert(alleles_at_this_position.size()>0);
-            Genotype g(_hdr,bcf_record_to_split);
-            new_record = bcf_dup(bcf_record_to_split);
-            bcf_unpack(new_record, BCF_UN_ALL);
-            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
-            g.collapse_alleles_into_ref(alleles_at_this_position).update_bcf1_t(_hdr,new_record);
-            for (int i = 1; i < new_record->n_allele; i++)
-            {
-                bcf1_t *out_record = bcf_dup(new_record);
-                ggutils::bcf1_allele_swap(_hdr,out_record,i,1);
-                if (realign(_norm_args, out_record) != ERR_OK)
-                    ggutils::die("vcf record did not match the reference");
-                split_variants.push_back(out_record);
-            }
-            bcf_destroy1(new_record);
-        }
-        free(new_alleles);
+        bcf_destroy1(new_record);
     }
+    free(new_alleles);
 }
 
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
@@ -248,7 +238,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         }
         else
         {
-           multi_split(*it,atomised_variants);
+            multi_split(*it,atomised_variants);
         }
     }
 }
