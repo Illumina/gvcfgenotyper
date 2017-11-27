@@ -120,4 +120,7 @@ namespace ggutils
 
     //gets the index of a genotype likelihood for ploidy == 2
     int get_gl_index(int g0, int g1);
+
+    //swaps the ath alle with the bth allele, rearranges PL/AD accordingly
+    int bcf1_allele_swap(int a,int b);
 }

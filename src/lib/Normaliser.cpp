@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "Normaliser.hh"
 
 // remove all INFO fields
@@ -155,6 +156,40 @@ int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & out
     }
 }
 
+//This function checks if a multi-allelic variant can be split into separate rows. This
+//is only the case when the alleles can be left-shifted such that they have different
+//starting positions.
+void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_variants)
+{
+    if(bcf_record_to_split->n_allele==2)//bi-allelic so there is nothing to split.
+    {
+        if (realign(_norm_args, bcf_record_to_split) != ERR_OK)
+        {
+            ggutils::die("vcf record did not match the reference");
+        }
+        split_variants.push_back(bcf_record_to_split);
+    }
+    else
+    {
+        bcf1_t *new_record = bcf_dup(bcf_record_to_split);
+        std::vector<int> new_positions;
+        auto **new_alleles = new char *[2];
+        for (int i = 1; i < bcf_record_to_split->n_allele; i++)
+        {
+            new_alleles[0] = bcf_record_to_split->d.allele[0];
+            new_alleles[1] = bcf_record_to_split->d.allele[i];
+            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, 2);
+            if (realign(_norm_args, new_record) != ERR_OK)
+                ggutils::die("vcf record did not match the reference");
+            new_positions.push_back(new_record->pos);
+        }
+        std::set<int> unique_positions(new_positions.begin(),new_positions.end());
+        assert(unique_positions.size()==1);
+
+    }
+}
+
+
 
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
@@ -217,3 +252,4 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
     }
     delete[] new_alleles;
 }
+
