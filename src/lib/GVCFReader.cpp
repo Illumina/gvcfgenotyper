@@ -212,7 +212,7 @@ bool GVCFReader::empty()
     }
 }
 
-const  bcf_hdr_t *GVCFReader::get_header()
+bcf_hdr_t *GVCFReader::get_header()
 {
     return (_bcf_header);
 }
