@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "test_helpers.hh"
 
 #include "ggutils.hh"
@@ -144,4 +145,20 @@ TEST(UtilTest,getters)
     float sb;
     ggutils::bcf1_get_one_format_float(hdr,record1,"SB",sb);
     ASSERT_FLOAT_EQ(sb,1.01);
+}
+
+TEST(UtilTest,bcf1AlleleSwap)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01");
+
+//    ggutils::print_variant(hdr,record1);
+    for(int i=1;i<record1->n_allele;i++)
+    {
+        bcf1_t *record2=bcf_dup(record1);
+        ggutils::bcf1_allele_swap(hdr,record2,i,1);
+//        ggutils::print_variant(hdr,record2);
+
+        bcf_destroy1(record2);
+    }
 }

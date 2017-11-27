@@ -356,6 +356,35 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         {
             std::cerr << ":" << record->d.allele[i];
         }
+        int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
+        int num_gt=0,num_ad=0,num_pl=0;
+        int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
+        assert(ret>0);
+        std::cerr<<"\tGT=";
+        for(int i=0;i<ret;i++)
+        {
+            if(i>0) std::cerr<<"/";
+            std::cerr<<bcf_gt_allele(gt[i]);
+        }
+
+        std::cerr<<"\tAD=";
+        ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
+        for(int i=0;i<ret;i++)
+        {
+            if(i>0) std::cerr<<",";
+            std::cerr<<ad[i];
+        }
+
+        std::cerr<<"\tPL=";
+        ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
+        for(int i=0;i<ret;i++)
+        {
+            if(i>0) std::cerr<<",";
+            std::cerr<<pl[i];
+        }
+        free(gt);
+        free(pl);
+        free(ad);
         std::cerr << std::endl;
     }
 
@@ -421,41 +450,56 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
     {
         assert(a>0 && b>0);
         assert(a<record->n_allele && b<record->n_allele);
-        bcf_unpack(new_record,BCF_UN_ALL);
+        bcf_unpack(record,BCF_UN_ALL);
         int32_t *format_ad=nullptr,*format_pl=nullptr,*gt= nullptr;
         int num_ad=0,num_pl=0,num_gt=0;
+        vector<int> allele_map;//maps old alleles to new alleles
+        for(int i=0;i<record->n_allele;i++) allele_map.push_back(i);
+        allele_map[a]=b;
+        allele_map[b]=a;
 
-        char **new_alleles = (char **)malloc(record->n_allele);
+        //update the ALT
+        char **new_alleles = (char **)malloc(record->n_allele*sizeof(char *));
         for(int i=0;i<record->n_allele;i++)
         {
-            if(i==a)
-            {
-                new_alleles[i] = (char *)malloc(strlen(record->d.allele[b])+1);
-                strcpy(new_alleles[i],record->d.allele[b]);
-            }
-            else if(i==b)
-            {
-                new_alleles[i] = (char *)malloc(strlen(record->d.allele[b])+1);
-                strcpy(new_alleles[i],record->d.allele[b]);
-            }
-            else
-            {
-                new_alleles[i] = (char *)malloc(strlen(record->d.allele[i])+1);
-                strcpy(new_alleles[i],record->d.allele[i]);
-            }
+            new_alleles[allele_map[i]] = (char *)malloc(strlen(record->d.allele[i])+1);
+            strcpy(new_alleles[allele_map[i]],record->d.allele[i]);
         }
-        memcpy(new_alleles,record->d.allele,record->n_allele);
-        new_alleles[i]=record->d.allele[j];
-        new_alleles[j]=record->d.allele[i];
         bcf_update_alleles(header, record, (const char **) new_alleles, record->n_allele);
 
+        //AD
         assert(bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad)==record->n_allele);
-        std::swap(format_ad[i],format[j]);
+        std::swap(format_ad[a],format_ad[b]);
         bcf_update_format_int32(header,record,"AD",format_ad,record->n_allele);
 
+
+        //GT
+        int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);
+        assert(ploidy==1 || ploidy==2);
+        bool phased = ploidy==1 ? bcf_gt_is_phased(gt[0]) : bcf_gt_is_phased(gt[0])&&bcf_gt_is_phased(gt[1]);
+        for(int i=0;i<ploidy;i++)
+        {
+            if(bcf_gt_allele(gt[i])==a)
+                gt[i] = phased ? bcf_gt_phased(b) : bcf_gt_unphased(b);
+            else if(bcf_gt_allele(gt[i])==b)
+                gt[i] = phased ? bcf_gt_phased(a) : bcf_gt_unphased(a);
+        }
+        bcf_update_genotypes(header,record,gt,ploidy);
+
+        //PL
+        assert(bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl)==(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele));
+        vector<int> tmp_pl(format_pl,format_pl+num_pl);
+        for(int i=0;i<record->n_allele;i++)
+            for(int j=i;j<record->n_allele;j++)
+                format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
+
+        bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
+
+        //memory cleanup
         for(int i=0;i<record->n_allele;i++) free(new_alleles[i]);
         free(new_alleles);
         free(format_ad);
         free(format_pl);
+        return(1);
     }
 }
