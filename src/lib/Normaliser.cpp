@@ -38,7 +38,7 @@ Normaliser::~Normaliser()
     free(_norm_args);
 }
 
-int mnp_split(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & output)
+int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> & output)
 {
     int num_allele = record_to_split->n_allele;
     char **alleles = record_to_split->d.allele;
@@ -171,9 +171,10 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
     }
     else
     {
+        bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
         bcf1_t *new_record = bcf_dup(bcf_record_to_split);
         std::vector<int> new_positions;
-        auto **new_alleles = new char *[2];
+        auto **new_alleles = new char *[bcf_record_to_split->n_allele];
         for (int i = 1; i < bcf_record_to_split->n_allele; i++)
         {
             new_alleles[0] = bcf_record_to_split->d.allele[0];
@@ -183,13 +184,42 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
                 ggutils::die("vcf record did not match the reference");
             new_positions.push_back(new_record->pos);
         }
-        std::set<int> unique_positions(new_positions.begin(),new_positions.end());
-        assert(unique_positions.size()==1);
 
+        bcf_destroy(new_record);
+        std::set<int> unique_positions(new_positions.begin(),new_positions.end());
+
+        for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
+        {
+            int counter=1;
+            vector<int> alleles_at_this_position;
+            new_alleles[0] = bcf_record_to_split->d.allele[0];
+            for(size_t i=0;i<new_positions.size();i++)
+            {
+                if(new_positions[i]==*pos)
+                {
+                    alleles_at_this_position.push_back(1+(int)i);
+                    new_alleles[counter++] = bcf_record_to_split->d.allele[i+1];
+                }
+            }
+            assert(alleles_at_this_position.size()>0);
+            Genotype g(_hdr,bcf_record_to_split);
+            new_record = bcf_dup(bcf_record_to_split);
+            bcf_unpack(new_record, BCF_UN_ALL);
+            bcf_update_alleles(_hdr, new_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
+            g.collapse_alleles_into_ref(alleles_at_this_position).update_bcf1_t(_hdr,new_record);
+            for (int i = 1; i < new_record->n_allele; i++)
+            {
+                bcf1_t *out_record = bcf_dup(new_record);
+                ggutils::bcf1_allele_swap(_hdr,out_record,i,1);
+                if (realign(_norm_args, out_record) != ERR_OK)
+                    ggutils::die("vcf record did not match the reference");
+                split_variants.push_back(out_record);
+            }
+            bcf_destroy1(new_record);
+        }
+        free(new_alleles);
     }
 }
-
-
 
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
@@ -200,17 +230,10 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         return;
     }
 
-    const int reference_allele = 0;
-    const int primary_allele = 1;
-    const int symbolic_allele = 2;
-    const int num_new_allele = 3;
-
-    auto **new_alleles = new char *[num_new_allele];
-
     //FIXME: we would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
     //FIXME: for now this at least allows us to behave well for SNPs that are hidden in MNPS
     vector<bcf1_t *> decomposed_variants;
-    mnp_split(bcf_record_to_marginalise, _hdr, decomposed_variants);
+    mnp_decompose(bcf_record_to_marginalise, _hdr, decomposed_variants);
 
     for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); ++it)
     {
@@ -225,31 +248,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         }
         else
         {
-            Genotype old_genotype(_hdr, decomposed_record);
-            for (int i = 1; i < old_genotype._num_allele; i++)
-            {
-                bcf1_t *new_record = bcf_dup(decomposed_record);
-                bcf_unpack(new_record,BCF_UN_ALL);
-                new_alleles[reference_allele] = decomposed_record->d.allele[reference_allele];
-                new_alleles[primary_allele] = decomposed_record->d.allele[i];
-                bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele-1);
-                if (realign(_norm_args, new_record) != ERR_OK)
-                {
-                    ggutils::die("vcf record did not match the reference");
-                }
-                //now add the symbolic allele
-                new_alleles[reference_allele] =  new_record->d.allele[0];
-                new_alleles[primary_allele] =  new_record->d.allele[1];
-                new_alleles[symbolic_allele] =  _symbolic_allele;
-                bcf_update_alleles(_hdr, new_record, (const char **) new_alleles, num_new_allele);
-
-                Genotype new_genotype = old_genotype.marginalise(i);
-                new_genotype.update_bcf1_t(_hdr, new_record);
-                atomised_variants.push_back(new_record);
-            }
-            bcf_destroy(decomposed_record);
+           multi_split(*it,atomised_variants);
         }
     }
-    delete[] new_alleles;
 }
-

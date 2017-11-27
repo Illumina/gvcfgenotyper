@@ -5,7 +5,7 @@
 #include "test_helpers.hh"
 #include "GVCFReader.hh"
 
-TEST(Normaliser, mnp_split1)
+TEST(Normaliser, mnp_decompose1)
 {
     std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
@@ -26,7 +26,7 @@ TEST(Normaliser, mnp_split1)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
     vector<bcf1_t *> buffer;
-    mnp_split(record1, hdr, buffer);
+    mnp_decompose(record1, hdr, buffer);
 
 
     htsFile *output_file = hts_open("/dev/null", "wv");
@@ -50,7 +50,7 @@ TEST(Normaliser, mnp_split1)
     ASSERT_TRUE( ggutils::bcf1_equal(record3, buffer[1]));
 }
 
-TEST(Normaliser, mnp_split2)
+TEST(Normaliser, mnp_decompose2)
 {
     std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
@@ -71,7 +71,7 @@ TEST(Normaliser, mnp_split2)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
     bcf_update_genotypes(hdr, record1, gt, 2);
     vector<bcf1_t *> buffer;
-    mnp_split(record1, hdr, buffer);
+    mnp_decompose(record1, hdr, buffer);
 
     htsFile *output_file = hts_open("/dev/null", "wv");
     bcf_hdr_write(output_file, hdr);
@@ -94,7 +94,7 @@ TEST(Normaliser, mnp_split2)
     ASSERT_TRUE( ggutils::bcf1_equal(record3, buffer[1]));
 }
 
-TEST(Normaliser, mnp_split3)
+TEST(Normaliser, mnp_decompose3)
 {
     int rid=3;
     int pos=527;
@@ -111,7 +111,7 @@ TEST(Normaliser, mnp_split3)
     bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     vector<bcf1_t *> decomposed;
-    mnp_split(record1,hdr,decomposed);
+    mnp_decompose(record1,hdr,decomposed);
     for(auto rec = decomposed.begin();rec!=decomposed.end();rec++)
     {
         Genotype g(hdr,*rec);
@@ -227,7 +227,7 @@ TEST(Normaliser, unarise3)
     hts_close(output_file);
 }
 
-//regression test checking that QUAL is correctly propagated by Normaliser::unarise
+
 TEST(Normaliser, unarise4)
 {
     int rid=20,pos=83250;
@@ -251,7 +251,7 @@ TEST(Normaliser, unarise4)
         ggutils::print_variant(hdr,*it);
     }
 }
-//regression test checking that QUAL is correctly propagated by Normaliser::unarise
+
 TEST(Normaliser, unarise5)
 {
     auto hdr = get_header();
@@ -274,6 +274,23 @@ TEST(Normaliser, unarise5)
     ASSERT_TRUE( ggutils::bcf1_equal(record3,buffer[0]));
 }
 
+
+TEST(Normaliser, unarise6)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:49:7:54:2,15,16:1,12,0:1,3,16:PASS:429,123,50,137,0,295");
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
+    std::cerr <<"Output:"<<std::endl;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        ggutils::print_variant(hdr,*it);
+    }
+}
 
 //regression test checking that QUAL is correctly propagated by Normaliser::unarise
 TEST(Normaliser, qual)
@@ -302,3 +319,4 @@ TEST(Normaliser, qual)
         ASSERT_FLOAT_EQ((*it)->qual,221);
     }
 }
+

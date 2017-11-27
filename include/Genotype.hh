@@ -18,6 +18,7 @@ public:
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
     Genotype(int ploidy, int num_allele);
     Genotype marginalise(int index);
+    Genotype collapse_alleles_into_ref(vector<int> & indices);
     ~Genotype();
     void setDepthFromAD();
     int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
@@ -28,6 +29,7 @@ public:
     int get_ad(int index);
     int get_adr(int index);
     int get_adf(int index);
+    void PLfromGL();
     void set_dp_missing();
     bool is_dp_missing();
     int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl, *_adf, *_adr, *_gqx;
