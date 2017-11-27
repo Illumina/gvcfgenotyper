@@ -416,4 +416,46 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
         return(ret);
     }
+
+    int bcf1_allele_swap(bcf_hdr_t *header, bcf1_t *record, int a,int b)
+    {
+        assert(a>0 && b>0);
+        assert(a<record->n_allele && b<record->n_allele);
+        bcf_unpack(new_record,BCF_UN_ALL);
+        int32_t *format_ad=nullptr,*format_pl=nullptr,*gt= nullptr;
+        int num_ad=0,num_pl=0,num_gt=0;
+
+        char **new_alleles = (char **)malloc(record->n_allele);
+        for(int i=0;i<record->n_allele;i++)
+        {
+            if(i==a)
+            {
+                new_alleles[i] = (char *)malloc(strlen(record->d.allele[b])+1);
+                strcpy(new_alleles[i],record->d.allele[b]);
+            }
+            else if(i==b)
+            {
+                new_alleles[i] = (char *)malloc(strlen(record->d.allele[b])+1);
+                strcpy(new_alleles[i],record->d.allele[b]);
+            }
+            else
+            {
+                new_alleles[i] = (char *)malloc(strlen(record->d.allele[i])+1);
+                strcpy(new_alleles[i],record->d.allele[i]);
+            }
+        }
+        memcpy(new_alleles,record->d.allele,record->n_allele);
+        new_alleles[i]=record->d.allele[j];
+        new_alleles[j]=record->d.allele[i];
+        bcf_update_alleles(header, record, (const char **) new_alleles, record->n_allele);
+
+        assert(bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad)==record->n_allele);
+        std::swap(format_ad[i],format[j]);
+        bcf_update_format_int32(header,record,"AD",format_ad,record->n_allele);
+
+        for(int i=0;i<record->n_allele;i++) free(new_alleles[i]);
+        free(new_alleles);
+        free(format_ad);
+        free(format_pl);
+    }
 }

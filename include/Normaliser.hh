@@ -37,6 +37,7 @@ public:
     ~Normaliser();
 
     void unarise(bcf1_t *rec, std::vector<bcf1_t *>& atomised_variants);
+    void Normliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_variants);
 
 private:
     char _symbolic_allele[2];
