@@ -192,7 +192,6 @@ TEST(Genotype,format)
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ggutils::print_variant(hdr,*it);
-        cout << "idx=" << idx << "\n";
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);
 
