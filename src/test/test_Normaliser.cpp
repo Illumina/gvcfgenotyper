@@ -41,13 +41,13 @@ TEST(Normaliser, mnp_split1)
     record2->rid = 2;
     record2->pos = 92;
     bcf_update_alleles_str(hdr, record2, "C,A");
-    ASSERT_TRUE(bcf1_equal(record2, buffer[0]));
+    ASSERT_TRUE( ggutils::bcf1_equal(record2, buffer[0]));
 
     bcf1_t *record3 = bcf_init1();
     record3->rid = 2;
     record3->pos = 94;
     bcf_update_alleles_str(hdr, record3, "G,T");
-    ASSERT_TRUE(bcf1_equal(record3, buffer[1]));
+    ASSERT_TRUE( ggutils::bcf1_equal(record3, buffer[1]));
 }
 
 TEST(Normaliser, mnp_split2)
@@ -85,13 +85,13 @@ TEST(Normaliser, mnp_split2)
     record2->rid = 1;
     record2->pos = 100;
     bcf_update_alleles_str(hdr, record2, "C,A");
-    ASSERT_TRUE(bcf1_equal(record2, buffer[0]));
+    ASSERT_TRUE(ggutils::bcf1_equal(record2, buffer[0]));
 
     bcf1_t *record3 = bcf_init1();
     record3->rid = 1;
     record3->pos = 102;
     bcf_update_alleles_str(hdr, record3, "G,T");
-    ASSERT_TRUE(bcf1_equal(record3, buffer[1]));
+    ASSERT_TRUE( ggutils::bcf1_equal(record3, buffer[1]));
 }
 
 TEST(Normaliser, mnp_split3)
@@ -248,7 +248,7 @@ TEST(Normaliser, unarise4)
     norm.unarise(record1,buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-        print_variant(hdr,*it);
+        ggutils::print_variant(hdr,*it);
     }
 }
 //regression test checking that QUAL is correctly propagated by Normaliser::unarise
@@ -268,10 +268,10 @@ TEST(Normaliser, unarise5)
 
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-        print_variant(hdr,*it);
+        ggutils::print_variant(hdr,*it);
     }
-    ASSERT_TRUE(bcf1_equal(record2,buffer[1]));
-    ASSERT_TRUE(bcf1_equal(record3,buffer[0]));
+    ASSERT_TRUE( ggutils::bcf1_equal(record2,buffer[1]));
+    ASSERT_TRUE( ggutils::bcf1_equal(record3,buffer[0]));
 }
 
 

@@ -101,7 +101,7 @@ DepthBlock DepthBlock::intersect(int rid, int start, int end)
     {
         std::cerr << "DepthBlock " << _rid << ":" << _start + 1 << "-" << _end + 1 << " does not contain region: "
                   << rid << ":" << start + 1 << "-" << end + 1 << std::endl;
-        die("DepthBlock: bad coordinates.");
+        ggutils::die("DepthBlock: bad coordinates.");
     }
 
     return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq};

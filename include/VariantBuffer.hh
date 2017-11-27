@@ -11,7 +11,7 @@ extern "C" {
 #include <htslib/vcf.h>
 }
 
-#include "utils.hh"
+#include "ggutils.hh"
 
 //small class to buffer bcf1_t records and sort them as they are inserted.
 class VariantBuffer

@@ -78,7 +78,7 @@ int multiAllele::allele(bcf1_t *record)
 
     bcf1_t *tmp = copy_alleles(_hdr,record);
     auto location = _records.begin();
-    while(location!=_records.end() && bcf1_not_equal(*location,tmp))
+    while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp))
     {
         location++;
     }
@@ -99,9 +99,9 @@ bcf1_t *multiAllele::get_max()
     bcf1_t *ret = nullptr;
     for(auto rec=_records.begin();rec!=_records.end();rec++)
     {
-        if(ret== nullptr || bcf1_greater_than(*rec,ret))
+        if(ret== nullptr ||  ggutils::bcf1_greater_than(*rec,ret))
         {
-//            print_variant(*rec);
+//            ggutils::print_variant(*rec);
             ret = *rec;
         }
     }
@@ -136,7 +136,7 @@ void multiAllele::collapse(bcf1_t *output)
         if(strncmp(new_alleles[0],(*rec)->d.allele[0],strlen((*rec)->d.allele[0]))!=0)
         {
             std::cerr << _pos+1 << " " <<  new_alleles[0] << "!=" <<(*rec)->d.allele[0] << std::endl;
-            print_variant(*rec);
+            ggutils::print_variant(*rec);
             throw std::runtime_error("inconsistent REF on first allele");
         }
         size_t old_ref_len = strlen((*rec)->d.allele[0]);

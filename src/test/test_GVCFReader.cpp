@@ -90,7 +90,7 @@ TEST(GVCFReader, readMNP)
     int32_t *dp = nullptr, nval = 0;
     while (line != nullptr)
     {
-        if (is_snp(line))
+        if (ggutils::is_snp(line))
         {
             ASSERT_EQ(bcf_get_format_int32(hdr, line, "DP", &dp, &nval),-3);
         }
@@ -126,7 +126,7 @@ TEST(GVCFReader, readAGVCF)
     {
 //        print_variant(hdr,line);
         ofs << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos + 1 << ":" << line->d.allele[0] << ":" << line->d.allele[1] << std::endl;
-        if (is_snp(line))
+        if (ggutils::is_snp(line))
         {
             reader.get_depth(line->rid, line->pos, line->pos, db);
             if (bcf_get_format_int32(hdr, line, "DP", &dp, &nval) == 1)
@@ -191,7 +191,7 @@ TEST(Genotype,format)
     size_t idx = 0;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-        print_variant(hdr,*it);
+        ggutils::print_variant(hdr,*it);
         cout << "idx=" << idx << "\n";
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);

@@ -81,15 +81,15 @@ Genotype::Genotype(int ploidy, int num_allele)
     _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
-    _gt = zeros(_num_gt);
-    _pl = zeros(_num_pl);
-    _ad = zeros(_num_ad);
-    _adf = zeros(_num_ad);
-    _adr = zeros(_num_ad);
-    _gq = zeros(_num_gq);
-    _gqx = zeros(_num_gqx);
-    _dp = zeros(_num_dp);
-    _dpf = zeros(_num_dpf);
+    _gt = ggutils::zeros(_num_gt);
+    _pl = ggutils::zeros(_num_pl);
+    _ad = ggutils::zeros(_num_ad);
+    _adf = ggutils::zeros(_num_ad);
+    _adr = ggutils::zeros(_num_ad);
+    _gq = ggutils::zeros(_num_gq);
+    _gqx = ggutils::zeros(_num_gqx);
+    _dp = ggutils::zeros(_num_dp);
+    _dpf = ggutils::zeros(_num_dpf);
     _gl.assign(_num_pl, 0.);
     _adf_found=false;
     _adr_found=false;
@@ -127,7 +127,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 
     if(ret != _num_gl)
     {
-        print_variant((bcf_hdr_t *)header,record);
+        ggutils::print_variant((bcf_hdr_t *)header,record);
         std::cerr << "Got " << ret << " values instead of " << _num_gl << " ploidy="<<_ploidy<<" num_allele="<<_num_allele<<std::endl;
         throw std::runtime_error("incorrect number of values in  FORMAT/PL");
     }
@@ -179,7 +179,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _gl.assign(_num_gl, 1.);
     for (int i = 0; i < _num_pl; i++)
     {
-        _gl[i] = unphred(_pl[i]);
+        _gl[i] =ggutils::unphred(_pl[i]);
     }
 }
 
@@ -253,7 +253,7 @@ Genotype Genotype::marginalise(int index)
     //FIXME: dummy values for the time being because PLs are complicated.
     for (int j = 0; j < ret._num_pl; j++)
     {
-        ret._pl[j] = phred(ret._gl[j]);
+        ret._pl[j] =ggutils::phred(ret._gl[j]);
     }
 
     return (ret);
@@ -293,7 +293,7 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
     {
-        _pl[i] = _gl[i] > 0 ? phred(_gl[i] / max_gl) : 255;
+        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : 255;
     }
 
     assert(bcf_update_genotypes(header, record, _gt, _num_gt)==0);

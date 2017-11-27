@@ -29,10 +29,10 @@ TEST(multiAllele,test1)
 
     bcf1_t *v = bcf_init1();
     m.collapse(v);
-//    print_variant(hdr,v);
+//    ggutils::print_variant(hdr,v);
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
-    ASSERT_TRUE(bcf1_equal(truth,v));
+    ASSERT_TRUE( ggutils::bcf1_equal(truth,v));
     bcf_destroy(rec1);
     bcf_destroy(rec2);
     bcf_destroy(rec3);

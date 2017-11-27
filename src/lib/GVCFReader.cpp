@@ -35,16 +35,16 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     {
         if (bcf_sr_set_regions(_bcf_reader, region.c_str(), is_file) == -1)
         {
-            die("Cannot navigate to region " + region);
+            ggutils::die("Cannot navigate to region " + region);
         }
     }
     if (!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-        die("problem opening input");
+        ggutils::die("problem opening input");
     }
     if (buffer_size < 2)
     {
-        die("GVCFReader needs buffer size of at least 2");
+        ggutils::die("GVCFReader needs buffer size of at least 2");
     }
     _buffer_size = buffer_size;
     _bcf_record = nullptr;
@@ -154,31 +154,30 @@ int GVCFReader::read_lines(const unsigned num_lines)
             num_read++;
         } 
 
-        //buffer a depth block
-        int num_format_values = 0;
-        int32_t *value_pointer = nullptr;
-        if (bcf_get_format_int32(_bcf_header, _bcf_record, "DP", &value_pointer, &num_format_values) == 1)
-        {//if DP is present, this is either a snp or a homref block and we want to store it in depth buffer;
-            int start = _bcf_record->pos;
-            int32_t dp, dpf, gq, end;
-            dp = *value_pointer;
-            end = get_end_of_gvcf_block(_bcf_header, _bcf_record);
-            //if it is a variant use GQ else use GQX (this is a illumina GVCF quirk)
-            if (_bcf_record->n_allele>1)
-            {
-                bcf_get_format_int32(_bcf_header, _bcf_record, "GQ", &value_pointer, &num_format_values);
-            }
-            else
-            {
-                bcf_get_format_int32(_bcf_header, _bcf_record, "GQX", &value_pointer, &num_format_values);
-            }
-            gq = *value_pointer;
-            bcf_get_format_int32(_bcf_header, _bcf_record, "DPF", &value_pointer, &num_format_values);
-            dpf = *value_pointer;
-            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq));
-            free(value_pointer);
-        }
 
+        int32_t dp;
+        //buffer a depth block. FIXME: this should really all be in the DepthBlock constructor.
+        if(ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "DP",dp)==1)
+        {
+            int start = _bcf_record->pos;
+            int32_t dpf, gq, end;
+            end = ggutils::get_end_of_gvcf_block(_bcf_header, _bcf_record);
+            //If the record has FORMAT/GQ, use that, otherwise take FORMAT/GQX (illumina gvcf quirk).
+            int ret = ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"GQ",gq);
+            if(ret!=1)
+            {
+                float tmp;
+                ret = ggutils::bcf1_get_one_format_float(_bcf_header, _bcf_record, "GQ", tmp);
+                gq = (int32_t)tmp;
+            }
+            if(ret!=1)
+                ret=ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "GQX", gq);
+            if(ret!=1)
+                ggutils::die("no FORMAT/GQ found");
+
+            ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"DPF",dpf);
+            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq));
+        }
     }
     return (num_read);
 }
@@ -213,7 +212,7 @@ bool GVCFReader::empty()
     }
 }
 
-const bcf_hdr_t *GVCFReader::get_header()
+const  bcf_hdr_t *GVCFReader::get_header()
 {
     return (_bcf_header);
 }
@@ -224,7 +223,7 @@ void GVCFReader::get_depth(int rid, int start, int stop, DepthBlock &db)
     read_until(rid, stop);
     if (_depth_buffer.interpolate(rid, start, stop, db) < 0)
     {
-        die("GVCFReader::get_depth problem with depth buffer");
+        ggutils::die("GVCFReader::get_depth problem with depth buffer");
     }
 }
 

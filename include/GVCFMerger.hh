@@ -10,7 +10,7 @@ extern "C" {
 #include <htslib/tbx.h>
 }
 
-#include "utils.hh"
+#include "ggutils.hh"
 #include "GVCFReader.hh"
 #include "multiAllele.hh"
 #include "Genotype.hh"
