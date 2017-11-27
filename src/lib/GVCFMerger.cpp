@@ -203,7 +203,7 @@ bcf1_t *GVCFMerger::next()
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
         auto sample_variants = _readers[i].get_all_variants_up_to(_record_collapser.get_max());
-        const bcf_hdr_t *sample_header = _readers[i].get_header();
+        bcf_hdr_t *sample_header = _readers[i].get_header();
         if (sample_variants.first!=sample_variants.second)
         {//this sample has variants at this position, we need to populate its FORMAT field
             int dst_genotype_count = 0; //this tracks how many destination (haploid) genotypes have been filled.
@@ -260,9 +260,11 @@ bcf1_t *GVCFMerger::next()
                     _format_adr[i*_output_record->n_allele+allele] = g.get_adr(1);
                 }
                 int32_t sample_mq = 0;
-                int nval=1;
-                int32_t* ptr = &sample_mq;
-                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0) {
+//                int nval=1;
+//                int32_t* ptr = &sample_mq;
+//                if (bcf_get_info_int32(sample_header,sample_record,"MQ",&ptr,&nval) > 0) {
+                if(ggutils::bcf1_get_one_info_int(sample_header,sample_record,"MQ",sample_mq))
+                {
                     mean_mq += sample_mq;
                     ++num_mq;
                 }
