@@ -90,7 +90,8 @@ namespace ggutils
 
     int get_end_of_variant(bcf1_t *record);
 
-    bool bcf1_equal(bcf1_t *a, bcf1_t *b);
+    bool bcf1_equal(bcf1_t *a, bcf1_t *b); //checks if the first ALT allele is equivalent in a/b
+    bool bcf1_all_equal(bcf1_t *a, bcf1_t *b); //checks if all ALT alleles are equivalent
 
     bool bcf1_less_than(bcf1_t *a, bcf1_t *b);
 
@@ -123,4 +124,7 @@ namespace ggutils
 
     //swaps the ath alle with the bth allele, rearranges PL/AD accordingly
     int bcf1_allele_swap(bcf_hdr_t *header, bcf1_t *record, int a,int b);
+
+    //returns the string length of the right trimmed ref/alt (see https://academic.oup.com/bioinformatics/article/31/13/2202/196142)
+    void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen);
 }

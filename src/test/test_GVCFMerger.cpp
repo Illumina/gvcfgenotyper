@@ -12,8 +12,8 @@ TEST(multiAllele,test1)
     auto rec1 = generate_record(hdr,rid,pos,"C,G");
     auto rec2 = generate_record(hdr,rid,pos,"C,A");
     auto rec3 = generate_record(hdr,rid,200,"CTG,C");
-    auto rec4 = generate_record(hdr,rid,pos,"CTGG,C");
-    auto rec5 = generate_record(hdr,rid,pos,"C,CAAAAAAAA");
+    auto rec4 = generate_record(hdr,rid,pos,"CTGG,C,CAAAAAAAATGG");
+    auto rec5 = generate_record(hdr,rid,pos,"CTGG,CAAAAAAAATGG,C");
 
     multiAllele m;
     m.init(hdr);
@@ -32,7 +32,7 @@ TEST(multiAllele,test1)
 //    ggutils::print_variant(hdr,v);
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
-    ASSERT_TRUE( ggutils::bcf1_equal(truth,v));
+    ASSERT_TRUE( ggutils::bcf1_all_equal(truth,v));
     bcf_destroy(rec1);
     bcf_destroy(rec2);
     bcf_destroy(rec3);

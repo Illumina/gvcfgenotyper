@@ -220,15 +220,15 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         return;
     }
 
-    //FIXME: we would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
-    //FIXME: for now this at least allows us to behave well for SNPs that are hidden in MNPS
+    //FIXME: We would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
+    //FIXME: For now this at least allows us to behave well for SNPs that are hidden in MNPS.
     vector<bcf1_t *> decomposed_variants;
     mnp_decompose(bcf_record_to_marginalise, _hdr, decomposed_variants);
 
     for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); ++it)
     {
         bcf1_t *decomposed_record = *it;
-        if(decomposed_record->n_allele==2)//bi-alleic. no further decomposition needed.
+        if(decomposed_record->n_allele==2)//bi-allelic. no further decomposition needed.
         {
             if (realign(_norm_args, decomposed_record) != ERR_OK)
             {

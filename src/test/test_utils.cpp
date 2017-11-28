@@ -93,6 +93,23 @@ TEST(UtilTest, comparators)
     ASSERT_FALSE( ggutils::bcf1_equal(record2,record1));
     ASSERT_FALSE( ggutils::bcf1_less_than(record2,record1));
     ASSERT_TRUE( ggutils::bcf1_greater_than(record2,record1));
+
+    update_record(hdr,1,100,"TA,TAA",record1);
+    update_record(hdr,1,100,"T,TA" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,TA",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,TA,T",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,T,TA",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_FALSE( ggutils::bcf1_equal(record1, record2));
+
     bcf_destroy(record1);
     bcf_destroy(record2);
 }
@@ -161,4 +178,38 @@ TEST(UtilTest,bcf1AlleleSwap)
 
         bcf_destroy1(record2);
     }
+}
+
+TEST(UtilTest,rightTrim)
+{
+    std::string ref="TA";
+    std::string alt="TAA";
+    size_t a,b;
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)2);
+
+    ref="T";
+    alt="TA";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)2);
+
+    ref="TTTAAATTCT";
+    alt="TTTAAATACT";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,ref.size()-2);
+    ASSERT_EQ(b,alt.size()-2);
+
+    ref="T";
+    alt="A";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)1);
+
+    ref="T";
+    alt="T";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)1);
 }
