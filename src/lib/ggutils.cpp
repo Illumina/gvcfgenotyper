@@ -114,32 +114,29 @@ namespace ggutils
         return (output.size());
     }
 
-
-
-   bool is_snp(bcf1_t *record)
-   {
+    bool is_snp(bcf1_t *record)
+    {
         assert(record->n_allele > 1);
         bcf_unpack(record, BCF_UN_ALL);
         return (bcf_get_variant_type(record, 1) & VCF_SNP);
-   }
+    }
 
-
-bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
-{
-    int *gt = nullptr, ngt = 0;
-    bool is_hom_ref = false;
-    if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+    bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
     {
-        // A vcf record without GT cannot be hom ref
+        int *gt = nullptr, ngt = 0;
+        bool is_hom_ref = false;
+        if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+        {
+            // A vcf record without GT cannot be hom ref
+            return is_hom_ref;
+        }
+        int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
+        // check for 0/0
+        is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
+        is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
+        free(gt);
         return is_hom_ref;
     }
-    int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
-    // check for 0/0
-    is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
-    is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
-    free(gt);
-    return is_hom_ref;
-}
 
     int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
     {
@@ -202,7 +199,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return (-1);
     }
 
-    bool  bcf1_equal(bcf1_t *a, bcf1_t *b)
+    bool bcf1_equal(bcf1_t *a, bcf1_t *b)
     {
         bcf_unpack(a, BCF_UN_ALL);
         bcf_unpack(b, BCF_UN_ALL);
