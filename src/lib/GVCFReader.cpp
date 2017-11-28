@@ -152,9 +152,7 @@ int GVCFReader::read_lines(const unsigned num_lines)
                 _variant_buffer.push_back(_bcf_header,*v);
             }
             num_read++;
-        } 
-
-
+        }
         int32_t dp;
         //buffer a depth block. FIXME: this should really all be in the DepthBlock constructor.
         if(ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "DP",dp)==1)
