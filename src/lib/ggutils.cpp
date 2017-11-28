@@ -2,7 +2,18 @@
 
 namespace ggutils
 {
-
+    void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen)
+    {
+        reflen=strlen(ref);
+        altlen=strlen(alt);
+        assert(reflen>0);
+        assert(altlen>0);
+        while(ref[reflen-1]==alt[altlen-1] && reflen>1 && altlen>1)
+        {
+            reflen--;
+            altlen--;
+        }
+    }
 
     int *zeros(int n)
     {
@@ -201,6 +212,8 @@ namespace ggutils
 
     bool bcf1_equal(bcf1_t *a, bcf1_t *b)
     {
+        assert(a->n_allele>1);
+        assert(b->n_allele>1);
         bcf_unpack(a, BCF_UN_ALL);
         bcf_unpack(b, BCF_UN_ALL);
         if (a == nullptr || b == nullptr)
@@ -217,7 +230,36 @@ namespace ggutils
         }
         else
         {
-            for (size_t i = 0; i < min(a->n_allele, b->n_allele); i++)
+            size_t a1,b1,a2,b2;
+            right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+            right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+            if(a1!=a2 || b1!=b2) return(false);
+            return(strncmp(a->d.allele[0],b->d.allele[0],a1)==0 && strncmp(a->d.allele[1],b->d.allele[1],b1)==0);
+        }
+    }
+
+    bool bcf1_all_equal(bcf1_t *a, bcf1_t *b)
+    {
+        bcf_unpack(a, BCF_UN_ALL);
+        bcf_unpack(b, BCF_UN_ALL);
+        if (a == nullptr || b == nullptr)
+        {
+            die(" (bcf1_equal: tried to compare NULL bcf1_t");
+        }
+        if (a->rid != b->rid)
+        {
+            return (false);
+        }
+        else if (a->pos != b->pos)
+        {
+            return (false);
+        }
+        else
+        {
+            if(a->n_allele!=b->n_allele)
+                return(false);
+
+            for (size_t i = 0; i < a->n_allele; i++)
             {
                 if (strcmp(a->d.allele[i], b->d.allele[i]))
                 {
@@ -229,7 +271,7 @@ namespace ggutils
     }
 
 
-    bool  bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
     {
 
         if (a == NULL || b == NULL)
@@ -255,25 +297,21 @@ namespace ggutils
         {
             if (get_variant_rank(a) == get_variant_rank(b))
             {
-                for (size_t i = 0; i < min(a->n_allele, b->n_allele); i++)
-                {
-                    int val = strcmp(a->d.allele[i], b->d.allele[i]);
-                    if (val < 0)
-                    {
-                        return (true);
-                    }
-                    if (val > 0)
-                    {
-                        return (false);
-                    }
-                }
+                size_t a1,b1,a2,b2;
+                right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+                right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+                if(a1>a2 || b1>b2) return(false);
+                int dif1 = strncmp(a->d.allele[0],b->d.allele[0],a1);
+                int dif2 = strncmp(a->d.allele[1],b->d.allele[1],b1);
+                if(dif1==0 && dif2==0) return(false);
+                return(min(dif1,dif2)<0);
             }
             else
             {
                 return (get_variant_rank(a) < get_variant_rank(b));
             }
         }
-        return (false);
+        return(false);
     }
 
     bool  bcf1_greater_than(bcf1_t *a, bcf1_t *b)
@@ -356,28 +394,36 @@ namespace ggutils
         int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
         int num_gt=0,num_ad=0,num_pl=0;
         int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
-        assert(ret>0);
-        std::cerr<<"\tGT=";
-        for(int i=0;i<ret;i++)
+        if(ret>0)
         {
-            if(i>0) std::cerr<<"/";
-            std::cerr<<bcf_gt_allele(gt[i]);
+            std::cerr << "\tGT=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << "/";
+                std::cerr << bcf_gt_allele(gt[i]);
+            }
         }
 
-        std::cerr<<"\tAD=";
         ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
-        for(int i=0;i<ret;i++)
+        if(ret>0)
         {
-            if(i>0) std::cerr<<",";
-            std::cerr<<ad[i];
+            std::cerr << "\tAD=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << ",";
+                std::cerr << ad[i];
+            }
         }
 
-        std::cerr<<"\tPL=";
         ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
-        for(int i=0;i<ret;i++)
+        if(ret>0)
         {
-            if(i>0) std::cerr<<",";
-            std::cerr<<pl[i];
+            std::cerr << "\tPL=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << ",";
+                std::cerr << pl[i];
+            }
         }
         free(gt);
         free(pl);
