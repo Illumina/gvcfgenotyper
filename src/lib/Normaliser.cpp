@@ -163,7 +163,7 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
 {
     assert(bcf_record_to_split->n_allele>2);
     bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
-    std::vector<int> new_positions;
+    std::vector< std::pair<int,int> > new_positions; //stores the position + rank of each variant post-normalisation
     char **new_alleles = (char **)malloc(sizeof(char *)*bcf_record_to_split->n_allele);
     bcf1_t *tmp_record = bcf_init(); //this is a temporary bcf record for working
     for (int i = 1; i < bcf_record_to_split->n_allele; i++)
@@ -176,10 +176,10 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
         bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles, 2);
         if (realign(_norm_args, tmp_record) != ERR_OK)
             ggutils::die("vcf record did not match the reference");
-        new_positions.push_back(tmp_record->pos);
+        new_positions.push_back(pair<int,int>(tmp_record->pos,ggutils::get_variant_rank(tmp_record)));
     }
 
-    std::set<int> unique_positions(new_positions.begin(),new_positions.end());
+    std::set< std::pair<int,int> > unique_positions(new_positions.begin(),new_positions.end());
 
     for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
     {

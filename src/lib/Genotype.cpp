@@ -166,6 +166,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
             throw std::runtime_error("problem extracting FORMAT/DP");
         }
     }
+    ggutils::bcf1_get_one_info_int(header,record,"MQ",_mq);
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
     bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
     //FIXME: GQ is should be an integer but is sometimes set as float. we need to catch and handle this.
@@ -459,7 +460,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     {
         Genotype g(sample_header, *it);
         int dst_allele_index = alleles_to_map.allele(*it);
-        assert(dst_allele_index<_num_ad);
+        assert(dst_allele_index<_num_ad && dst_allele_index>0);
         _qual = max(_qual,g.get_qual()); //FIXME: QUAL should be estimated from PL
 
         //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case.
@@ -507,6 +508,13 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
                 }
             }
         }
+    }
+
+    //FIXME: This is a sanity check which should be moved to our unit testing.
+    if(_ploidy==2 && (_gt[0]==bcf_gt_missing) != (_gt[1]==bcf_gt_missing))
+    {
+        ggutils::print_variant(sample_header,*sample_variants.first);
+        ggutils::die("bad genotypes");
     }
 
     _gl.assign(_num_pl,1.0);//FIXME: do something meaningful with GLs!
