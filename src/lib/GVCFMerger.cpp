@@ -191,17 +191,19 @@ void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>
 {
     Genotype g(_readers[sample_index].get_header(), sample_variants,_record_collapser);
     g.propagate_format_fields(sample_index,2,_format_gt,_format_gq,_format_gqx,_format_dp,_format_dpf,_format_ad,_format_adf,_format_adr,_format_pl);
-    _mean_mq = g.get_mq();
+    _mean_mq += g.get_mq();
+    _num_mq++;
+    _output_record->qual += g.get_qual();
 }
 
 void GVCFMerger::genotype_sample(int sample_index)
 {
-    //   std::cerr<< (int)(pl_ptr-_format_pl)<<std::endl;//debug
     DepthBlock homref_block;//working structure to store homref info.
     auto sample_variants = _readers[sample_index].get_all_variants_up_to(_record_collapser.get_max());
 
+    //this sample has variants at this position, we need to populate its FORMAT field
     if (sample_variants.first!=sample_variants.second)
-    {//this sample has variants at this position, we need to populate its FORMAT field
+    {
         genotype_alt_variant(sample_index,sample_variants);
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
@@ -209,15 +211,6 @@ void GVCFMerger::genotype_sample(int sample_index)
         _readers[sample_index].get_depth(_output_record->rid, _output_record->pos, ggutils::get_end_of_variant(_output_record), homref_block);
         genotype_homref_variant(sample_index,homref_block);
     }
-
-    //FIXME: this is a debug check. we need to fix the "partially missing" genotype bug and then remove this code.
-    if((_format_gt[2*sample_index]==bcf_gt_missing) != (_format_gt[2*sample_index+1]==bcf_gt_missing))
-    {
-//            ggutils::print_variant(_output_header,_output_record);
-//            std::cerr << i << " " <<  bcf_gt_allele(_format_gt[2*i]) << "/" << bcf_gt_allele(_format_gt[2*i+1]) << std::endl;
-        //   ggutils::die("bad genotypes");
-    }
-
 }
 
 bcf1_t *GVCFMerger::next()
@@ -289,9 +282,10 @@ bcf1_t *GVCFMerger::next()
     bcf_update_format_int32(_output_header, _output_record, "PL", _format_pl, _num_pl);
 
     // Write INFO/MQ
-    if (_num_mq>0) {
+    if (_num_mq>0)
+    {
         _mean_mq /= _num_mq;
-        bcf_update_info_int32(_output_header,_output_record,"MQ",&_mean_mq,1);
+        assert(bcf_update_info_int32(_output_header,_output_record,"MQ",&_mean_mq,1)==0);
     }
 
     // Calculate AC/AN using htslib standard functions
@@ -300,9 +294,9 @@ bcf1_t *GVCFMerger::next()
     {
         // sum over all allele counts to get AN
         int an = 0;
-        for (int i=0; i<_output_record->n_allele; i++) {
+        for (int i=0; i<_output_record->n_allele; i++)
             an += _info_ac[i];
-        }
+
         bcf_update_info_int32(_output_header, _output_record, "AN", &an, 1);
         bcf_update_info_int32(_output_header, _output_record, "AC", _info_ac+1, _output_record->n_allele-1);
     }
@@ -382,6 +376,7 @@ void GVCFMerger::build_header()
                    "##INFO=<ID=ADR,Number=R,Type=Integer,Description=\"Sum of allelic depth on reverse strand for ALL individuals\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"sum of depth  across all samples\">");
+    bcf_hdr_append(_output_header,"##INFO=<ID=MQ,Number=1,Type=Integer,Description=\"RMS of mapping quality\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=DPF,Number=1,Type=Integer,Description=\"sum of basecalls filtered from input prior to site genotyping\">");
     bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes\">");

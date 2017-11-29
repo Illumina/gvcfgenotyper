@@ -438,7 +438,7 @@ namespace ggutils
         return (ploidy);
     }
 
-    int bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
+    int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);
         float *ptr=&output;
@@ -448,7 +448,7 @@ namespace ggutils
         return(ret);
     }
 
-    int bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
+    int bcf1_get_one_format_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
         float *ptr=&output;
@@ -458,7 +458,7 @@ namespace ggutils
         return(ret);
     }
 
-    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
+    int bcf1_get_one_info_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
     {
         bcf_unpack(record, BCF_UN_INFO);
         int32_t *ptr=&output;
@@ -468,7 +468,7 @@ namespace ggutils
         return(ret);
     }
 
-    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
+    int bcf1_get_one_format_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
         int32_t *ptr=&output;
