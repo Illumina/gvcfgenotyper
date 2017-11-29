@@ -252,28 +252,6 @@ TEST(Normaliser, unarise4)
     }
 }
 
-TEST(Normaliser, unarise5)
-{
-    auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
-
-    Normaliser norm(ref_file_name, hdr);
-
-    auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:AD:PL\t1/2:49:2,15,16:429,123,50,137,0,295");
-
-    vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
-    auto record2 = generate_record(hdr,"chr1\t5418\t.\tTACAAAA\tT,X\t423\tPASS\t.\tGT\t2/1");
-    auto record3 = generate_record(hdr,"chr1	5420	.	CAAAAAA	C,X	423	PASS	.	GT	1/2");
-
-    for (auto it = buffer.begin(); it != buffer.end(); it++)
-    {
-        ggutils::print_variant(hdr,*it);
-    }
-    ASSERT_TRUE( ggutils::bcf1_equal(record2,buffer[1]));
-    ASSERT_TRUE( ggutils::bcf1_equal(record3,buffer[0]));
-}
-
 
 TEST(Normaliser, unarise6)
 {
@@ -281,6 +259,29 @@ TEST(Normaliser, unarise6)
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:49:7:54:2,15,16:1,12,0:1,3,16:PASS:429,123,50,137,0,295");
+    multiAllele m;
+    m.init(hdr);
+    m.setPosition(record1->rid,record1->pos);
+
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
+    std::cerr <<"Output:"<<std::endl;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        ggutils::print_variant(hdr,*it);
+        m.allele(*it);
+    }
+//    ggutils::print_variant(hdr,m.get_max());
+}
+
+TEST(Normaliser, unarise7)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t95593\t.\tAAAAAAG\tAAA,A\t738\tLowGQX\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:151:0:29:1,15,14:1,7,8:0,8,6:LowGQX:816,279,187,308,0,231");
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;

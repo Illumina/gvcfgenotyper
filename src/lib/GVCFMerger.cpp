@@ -11,7 +11,6 @@ extern "C" {
 
 GVCFMerger::~GVCFMerger()
 {
-//    bcf_destroy(_output_record);
     hts_close(_output_file);
     bcf_hdr_destroy(_output_header);
     free(_format_gt);
@@ -165,12 +164,12 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
     int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
 
     int *pl_ptr = _format_pl + sample_index*num_pl_per_sample;
-    _format_dp[sample_index] = homref_block._dp;
-    _format_dpf[sample_index] = homref_block._dpf;
-    _format_gq[sample_index] = homref_block._gq;
+    _format_dp[sample_index] = homref_block.dp();
+    _format_dpf[sample_index] = homref_block.dpf();
+    _format_gq[sample_index] = homref_block.gq();
     // GQX is missing for HOM REF
-    _format_ad[sample_index * _output_record->n_allele] = homref_block._dp;
-    if (homref_block._dp > 0)
+    _format_ad[sample_index * _output_record->n_allele] = homref_block.dp();
+    if (homref_block.dp() > 0)
     {
         if(homref_block.get_ploidy()==2)
         {
@@ -243,14 +242,10 @@ bcf1_t *GVCFMerger::next()
 #ifdef DEBUG
     std::cerr << "GVCFMerger::next()" << std::endl;
     ggutils::print_variant(_output_header, _output_record);
-    if(prev_rec!=nullptr && ! (ggutils::bcf1_greater_than(_output_record,prev_rec))//DEBUG
+    if(prev_rec!=nullptr && (prev_rec->pos>_output_record->pos || ggutils::bcf1_all_equal(prev_rec,_output_record)))//DEBUG
     {
-        ggutils::print_variant(prev_rec);
-        ggutils::print_variant(_output_record);
-        std::cerr<< (ggutils::bcf1_greater_than(_output_record,prev_rec)<<std::endl;
-        std::cerr<< (ggutils::bcf1_equal(_output_record,prev_rec)<<std::endl;
-        std::cerr<<ggutils:: (ggutils::bcf1_less_than(_output_record,prev_rec)<<std::endl;
-        std::cerr<<ggutils::get_variant_rank(_output_record)<< " "<<ggutils::get_variant_rank(prev_rec) <<std::endl;
+        ggutils::print_variant(_output_header,prev_rec);
+        ggutils::print_variant(_output_header,_output_record);
         throw std::runtime_error("incorrect variant order detected");
     }
 #endif
