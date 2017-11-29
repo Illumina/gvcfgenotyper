@@ -128,8 +128,7 @@ namespace ggutils
     bool is_snp(bcf1_t *record)
     {
         assert(record->n_allele > 1);
-        bcf_unpack(record, BCF_UN_ALL);
-        return (bcf_get_variant_type(record, 1) & VCF_SNP);
+        return bcf_is_snp(record);
     }
 
     bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
@@ -210,34 +209,6 @@ namespace ggutils
         return (-1);
     }
 
-    bool bcf1_equal(bcf1_t *a, bcf1_t *b)
-    {
-        assert(a->n_allele>1);
-        assert(b->n_allele>1);
-        bcf_unpack(a, BCF_UN_ALL);
-        bcf_unpack(b, BCF_UN_ALL);
-        if (a == nullptr || b == nullptr)
-        {
-            die(" (bcf1_equal: tried to compare NULL bcf1_t");
-        }
-        if (a->rid != b->rid)
-        {
-            return (false);
-        }
-        else if (a->pos != b->pos)
-        {
-            return (false);
-        }
-        else
-        {
-            size_t a1,b1,a2,b2;
-            right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
-            right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
-            if(a1!=a2 || b1!=b2) return(false);
-            return(strncmp(a->d.allele[0],b->d.allele[0],a1)==0 && strncmp(a->d.allele[1],b->d.allele[1],b1)==0);
-        }
-    }
-
     bool bcf1_all_equal(bcf1_t *a, bcf1_t *b)
     {
         bcf_unpack(a, BCF_UN_ALL);
@@ -270,47 +241,65 @@ namespace ggutils
         return (true);
     }
 
-
-    bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    bool bcf1_equal(bcf1_t *a, bcf1_t *b)
     {
-
-        if (a == NULL || b == NULL)
+        assert(a->n_allele>1);
+        assert(b->n_allele>1);
+        bcf_unpack(a, BCF_UN_ALL);
+        bcf_unpack(b, BCF_UN_ALL);
+        if (a == nullptr || b == nullptr)
         {
-            die(" (bcf1_less_than: tried to compare NULL bcf1_t");
+            die(" (bcf1_equal: tried to compare NULL bcf1_t");
         }
-
-        if (a->rid < b->rid)
-        {
-            return (true);
-        }
-        if (a->rid > b->rid)
+        if (a->rid != b->rid)
         {
             return (false);
         }
+        else if (a->pos != b->pos)
+        {
+            return (false);
+        }
+        else
+        {
+            size_t a1,b1,a2,b2;
+            right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+            right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+            if(a1!=a2 || b1!=b2) return(false);
+            return(strncmp(a->d.allele[0],b->d.allele[0],a1)==0 && strncmp(a->d.allele[1],b->d.allele[1],b1)==0);
+        }
+    }
 
+
+    bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    {
+        assert(a->n_allele>1 && b->n_allele>1);
+        assert(a!=nullptr && b!=nullptr);
+
+        if (a->rid < b->rid)
+            return(true);
+        if (a->rid > b->rid)
+            return(false);
         if (a->pos < b->pos)
-        {
-            return (true);
-        }
-
-        if (a->pos == b->pos)
-        {
-            if (get_variant_rank(a) == get_variant_rank(b))
-            {
-                size_t a1,b1,a2,b2;
-                right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
-                right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
-                if(a1>a2 || b1>b2) return(false);
-                int dif1 = strncmp(a->d.allele[0],b->d.allele[0],a1);
-                int dif2 = strncmp(a->d.allele[1],b->d.allele[1],b1);
-                if(dif1==0 && dif2==0) return(false);
-                return(min(dif1,dif2)<0);
-            }
-            else
-            {
-                return (get_variant_rank(a) < get_variant_rank(b));
-            }
-        }
+            return(true);
+        if (a->pos > b->pos)
+            return(false);
+        if(get_variant_rank(a) < get_variant_rank(b))
+            return(true);
+        if(get_variant_rank(a) > get_variant_rank(b))
+            return(false);
+        if(bcf1_equal(a,b))
+            return(false);
+        size_t a1,b1,a2,b2;
+        right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+        right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+        if(a1<a2)
+            return(true);
+        if(b1<b2)
+            return(true);
+        if(strncmp(a->d.allele[0],b->d.allele[0],min(a1,a2))<0)
+            return(true);
+        if(strncmp(a->d.allele[1],b->d.allele[1],min(b1,b2))<0)
+            return(true);
         return(false);
     }
 
@@ -494,8 +483,8 @@ namespace ggutils
         assert(a>0 && b>0);
         assert(a<record->n_allele && b<record->n_allele);
         bcf_unpack(record,BCF_UN_ALL);
-        int32_t *format_ad=nullptr,*format_pl=nullptr,*gt= nullptr;
-        int num_ad=0,num_pl=0,num_gt=0;
+        int32_t *format_ad=nullptr,*format_adr=nullptr,*format_adf=nullptr,*format_pl=nullptr,*gt= nullptr;
+        int num_adr=0,num_adf=0,num_ad=0,num_pl=0,num_gt=0;
         vector<int> allele_map;//maps old alleles to new alleles
         for(int i=0;i<record->n_allele;i++) allele_map.push_back(i);
         allele_map[a]=b;
@@ -515,6 +504,17 @@ namespace ggutils
         std::swap(format_ad[a],format_ad[b]);
         bcf_update_format_int32(header,record,"AD",format_ad,record->n_allele);
 
+        if(bcf_get_format_int32(header,record,"ADF",&format_adf,&num_adf)==record->n_allele)
+        {
+            std::swap(format_adf[a], format_adf[b]);
+            bcf_update_format_int32(header, record, "ADF", format_adf, record->n_allele);
+        }
+
+        if(bcf_get_format_int32(header,record,"ADR",&format_adr,&num_adr)==record->n_allele)
+        {
+            std::swap(format_adr[a], format_adr[b]);
+            bcf_update_format_int32(header, record, "ADR", format_adr, record->n_allele);
+        }
 
         //GT
         int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);

@@ -29,7 +29,9 @@ TEST(multiAllele,test1)
 
     bcf1_t *v = bcf_init1();
     m.collapse(v);
-//    ggutils::print_variant(hdr,v);
+    ggutils::print_variant(hdr,v);
+
+    m.get_max();
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
     ASSERT_TRUE( ggutils::bcf1_all_equal(truth,v));

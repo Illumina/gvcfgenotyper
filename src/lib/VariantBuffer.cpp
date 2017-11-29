@@ -43,7 +43,6 @@ int VariantBuffer::push_back(const bcf_hdr_t * hdr, bcf1_t *rec)
         return (0);
     }
 
-
     _buffer.push_back(rec);
     //moves the new record back through the buffer until buffer is sorted ie. one iteration of insert-sort
     int i = _buffer.size() - 1;
