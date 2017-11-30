@@ -74,3 +74,26 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
     GVCFMerger g(files, output_file_name, "z", ref_file_name, buffer_size);
     g.write_vcf();
 }
+
+TEST(GVCFMerger, likelihood)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t85677\t.\tT\tA\t191\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/1:224:30:42:0:22,20:13,11:9,9:-26:PASS:226,0,257");
+
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    multiAllele m;
+    m.init(hdr);
+    m.setPosition(record1->rid,record1->pos);
+    m.allele(record1);
+
+    ggutils::print_variant(hdr,record1);
+    Genotype g(hdr,record1);
+    //g.propagate_format_fields(0,2,2,)
+    ggutils::vcf_data_t d(2,2,1);
+
+}
+
+

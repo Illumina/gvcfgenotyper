@@ -30,6 +30,19 @@ extern "C" {
 
 namespace ggutils
 {
+    //Simple struct to hold our default FORMAT fields.
+    struct vcf_data_t
+    {
+        int32_t *pl,*ad,*adf,*adr,*gt,*gq,*gqx,*dp,*dpf,*ps;
+        size_t ploidy,num_allele,num_sample,num_ad,num_pl;
+        vcf_data_t(size_t ploidy,size_t num_allele,size_t num_sample);
+        void resize(size_t num_alleles);
+        void set_missing();
+        ~vcf_data_t();
+    };
+
+    void init_vcf_data(size_t ploidy,size_t num_allele,size_t num_sample,vcf_data_t & record);
+    void destroy_vcf_data(vcf_data_t & record);
 
     int read_text_file(const string &fname, vector<string> &output);
 
@@ -127,4 +140,5 @@ namespace ggutils
 
     //returns the string length of the right trimmed ref/alt (see https://academic.oup.com/bioinformatics/article/31/13/2202/196142)
     void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen);
+
 }

@@ -13,16 +13,7 @@ GVCFMerger::~GVCFMerger()
 {
     hts_close(_output_file);
     bcf_hdr_destroy(_output_header);
-    free(_format_gt);
-    free(_format_ad);
-    free(_format_dp);
-    free(_format_gq);
-    free(_format_gqx);
-    free(_format_dpf);
-    free(_format_ps);
-    free(_format_adf);
-    free(_format_adr);
-    free(_format_pl);
+    delete format;
     free(_info_adf);
     free(_info_adr);
     free(_info_ac);
@@ -56,23 +47,12 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     }
 
     size_t n_allele = 2;
-    _format_pl = nullptr;
-    _format_gt = (int32_t *) malloc(2 * _num_gvcfs * sizeof(int32_t));
-    _format_ad = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
-
-    _format_adf = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
-    _format_adr = (int32_t *) malloc(n_allele * _num_gvcfs * sizeof(int32_t));
+    format = new ggutils::vcf_data_t(2,2,_num_gvcfs);
 
     _info_adf = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_adr = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_ac = (int32_t *) malloc(n_allele * sizeof(int32_t));
 
-    _format_dp = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-    _format_gq = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-    _format_gqx = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-    _format_ps = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-    _format_dpf = (int32_t *) malloc(_num_gvcfs * sizeof(int32_t));
-    _num_pl=_num_variants=0;
     build_header();
     _record_collapser.init(_output_header);
     _output_record = bcf_init1();
@@ -128,34 +108,17 @@ bool GVCFMerger::all_readers_empty()
 
 void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 {
-    int ploidy = 2;
-    _num_pl = ggutils::get_number_of_likelihoods(ploidy,num_alleles)* _num_gvcfs;
-    _format_pl = (int32_t *) realloc(_format_pl, _num_pl * sizeof(int32_t));
-    std::fill(_format_pl, _format_pl + _num_pl, bcf_int32_missing);
-    _format_ad = (int32_t *) realloc(_format_ad, num_alleles * _num_gvcfs * sizeof(int32_t));
-
-    _format_adf = (int32_t *) realloc(_format_adf, num_alleles * _num_gvcfs * sizeof(int32_t));
-    _format_adr = (int32_t *) realloc(_format_adr, num_alleles * _num_gvcfs * sizeof(int32_t));
+    format->resize(num_alleles);
+    format->set_missing();
 
     _info_adf = (int32_t *) realloc(_info_adf, num_alleles * sizeof(int32_t));
     _info_adr = (int32_t *) realloc(_info_adr, num_alleles * sizeof(int32_t));
     _info_ac = (int32_t *) realloc(_info_ac, num_alleles * sizeof(int32_t));
 
-    std::fill(_format_gt, _format_gt + 2 * _num_gvcfs, bcf_gt_missing);
-    std::fill(_format_ad, _format_ad + num_alleles * _num_gvcfs, 0);
-
-    std::fill(_format_adf, _format_adf + num_alleles * _num_gvcfs, 0);
-    std::fill(_format_adr, _format_adr + num_alleles * _num_gvcfs, 0);
-
     std::fill(_info_adf, _info_adf + num_alleles, 0);
     std::fill(_info_adr, _info_adr + num_alleles, 0);
     std::fill(_info_ac, _info_ac + num_alleles, 0);
 
-    std::fill(_format_dp, _format_dp + _num_gvcfs, bcf_int32_missing);
-    std::fill(_format_dpf, _format_dpf + _num_gvcfs, bcf_int32_missing);
-    std::fill(_format_gq, _format_gq + _num_gvcfs, bcf_int32_missing);
-    std::fill(_format_gqx, _format_gqx + _num_gvcfs, bcf_int32_missing);
-    std::fill(_format_ps, _format_ps + _num_gvcfs, bcf_int32_missing);
 }
 
 void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_block)
@@ -163,22 +126,21 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
     int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
     int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
 
-    int *pl_ptr = _format_pl + sample_index*num_pl_per_sample;
-    _format_dp[sample_index] = homref_block.dp();
-    _format_dpf[sample_index] = homref_block.dpf();
-    _format_gq[sample_index] = homref_block.gq();
-    // GQX is missing for HOM REF
-    _format_ad[sample_index * _output_record->n_allele] = homref_block.dp();
+    int *pl_ptr = format->pl + sample_index*num_pl_per_sample;
+    format->dp[sample_index] = homref_block.dp();
+    format->dpf[sample_index] = homref_block.dpf();
+    format->gq[sample_index] = homref_block.gq();
+    format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
     if (homref_block.dp() > 0)
     {
         if(homref_block.get_ploidy()==2)
         {
-            _format_gt[2 * sample_index] = _format_gt[2 * sample_index + 1] = bcf_gt_unphased(0);
+            format->gt[2 * sample_index] = format->gt[2 * sample_index + 1] = bcf_gt_unphased(0);
         }
         else
         {
-            _format_gt[2 * sample_index] = bcf_gt_unphased(0);
-            _format_gt[2 * sample_index + 1] = bcf_int32_vector_end;
+            format->gt[2 * sample_index] = bcf_gt_unphased(0);
+            format->gt[2 * sample_index + 1] = bcf_int32_vector_end;
         }
     }
     //FIXME: dummy PL value for homref sites
@@ -190,7 +152,7 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
 void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
 {
     Genotype g(_readers[sample_index].get_header(), sample_variants,_record_collapser);
-    g.propagate_format_fields(sample_index,2,_format_gt,_format_gq,_format_gqx,_format_dp,_format_dpf,_format_ad,_format_adf,_format_adr,_format_pl);
+    g.propagate_format_fields(sample_index,2,_record_collapser.num_alleles(),format);
     _mean_mq += g.get_mq();
     _num_mq++;
     _output_record->qual += g.get_qual();
@@ -219,34 +181,18 @@ bcf1_t *GVCFMerger::next()
     {
         return (nullptr);
     }
-#ifdef DEBUG
-    bcf1_t *prev_rec = nullptr;
-    if(_num_variants>0)//DEBUG
-    {
-        prev_rec = bcf_dup(_output_record);//debug
-        bcf_unpack(prev_rec,BCF_UN_ALL);
-    }
-#endif
+
     bcf_clear(_output_record);
     get_next_variant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
     _record_collapser.collapse(_output_record);
     _output_record->qual = 0;
-#ifdef DEBUG
-    std::cerr << "GVCFMerger::next()" << std::endl;
-    ggutils::print_variant(_output_header, _output_record);
-    if(prev_rec!=nullptr && (prev_rec->pos>_output_record->pos || ggutils::bcf1_all_equal(prev_rec,_output_record)))//DEBUG
-    {
-        ggutils::print_variant(_output_header,prev_rec);
-        ggutils::print_variant(_output_header,_output_record);
-        throw std::runtime_error("incorrect variant order detected");
-    }
-#endif
+
     //fill in the format information for every sample.
     set_output_buffers_to_missing(_output_record->n_allele);
 
     // count the number of written PS tags
-    unsigned nps_written(0);
+    _num_ps_written = 0;
     _mean_mq = 0;
     _num_mq = 0;
 
@@ -256,30 +202,28 @@ bcf1_t *GVCFMerger::next()
         _readers[i].flush_buffer(_record_collapser.get_max());
     }
     _num_variants++;
-#ifdef DEBUG
-    std::cerr << "BUFFER SIZES:";
-    for (size_t i = 0; i < _num_gvcfs; i++)
-    {
-        std::cerr << " (" << _readers[i].get_num_variants() << "," << _readers[i].get_num_depth() << ")";
-    }
-    std::cerr << std::endl;
-#endif
+    update_format_info();
+    return(_output_record);
+}
 
-    assert(bcf_update_genotypes(_output_header, _output_record, _format_gt, _num_gvcfs * 2)==0);
-    assert(bcf_update_format_int32(_output_header, _output_record, "GQ", _format_gq, _num_gvcfs)==0);
-    //int ret1 = bcf_update_format_int32(_output_header, _output_record, "GQX", _format_gqx, _num_gvcfs);
-    assert(bcf_update_format_int32(_output_header, _output_record, "GQX", _format_gqx, _num_gvcfs)==0);
-    if (nps_written > 0)
+void GVCFMerger::update_format_info()
+{
+    assert(bcf_update_genotypes(_output_header, _output_record,format->gt, _num_gvcfs * 2)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "GQ",format->gq, _num_gvcfs)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "GQX",format->gqx, _num_gvcfs)==0);
+
+
+    if (_num_ps_written > 0)
     {
-//        bcf_update_format_int32(_output_header, _output_record, "PS", _format_ps, _num_gvcfs);
+//        bcf_update_format_int32(_output_header, _output_record, "PS",format->ps, _num_gvcfs);
     }
 
-    bcf_update_format_int32(_output_header, _output_record, "DP", _format_dp, _num_gvcfs);
-    bcf_update_format_int32(_output_header, _output_record, "DPF", _format_dpf, _num_gvcfs);
-    bcf_update_format_int32(_output_header, _output_record, "AD", _format_ad, _num_gvcfs * _output_record->n_allele);
-    bcf_update_format_int32(_output_header, _output_record, "ADF", _format_adf, _num_gvcfs * _output_record->n_allele);
-    bcf_update_format_int32(_output_header, _output_record, "ADR", _format_adr, _num_gvcfs * _output_record->n_allele);
-    bcf_update_format_int32(_output_header, _output_record, "PL", _format_pl, _num_pl);
+    assert(bcf_update_format_int32(_output_header, _output_record, "DP",format->dp, _num_gvcfs)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "DPF",format->dpf, _num_gvcfs)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "AD",format->ad, _num_gvcfs * _output_record->n_allele)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "ADF",format->adf, _num_gvcfs * _output_record->n_allele)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "ADR",format->adr, _num_gvcfs * _output_record->n_allele)==0);
+    assert(bcf_update_format_int32(_output_header, _output_record, "PL",format->pl, format->num_pl)==0);
 
     // Write INFO/MQ
     if (_num_mq>0)
@@ -304,14 +248,12 @@ bcf1_t *GVCFMerger::next()
     // Calculate INFO/ADF + INFO/ADR
     for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele) {
         for (size_t j=0;j<_output_record->n_allele;++j) {
-            _info_adf[j] += _format_adf[i+j];
-            _info_adr[j] += _format_adr[i+j];
+            _info_adf[j] +=format->adf[i+j];
+            _info_adr[j] +=format->adr[i+j];
         }
     }
     bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
     bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
-
-    return (_output_record);
 }
 
 void GVCFMerger::write_vcf()

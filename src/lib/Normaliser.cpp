@@ -165,11 +165,9 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
     bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
     std::vector< std::pair<int,int> > new_positions; //stores the position + rank of each variant post-normalisation
     char **new_alleles = (char **)malloc(sizeof(char *)*bcf_record_to_split->n_allele);
-    bcf1_t *tmp_record = bcf_init(); //this is a temporary bcf record for working
     for (int i = 1; i < bcf_record_to_split->n_allele; i++)
     {
-        bcf_clear(tmp_record);
-        bcf_copy(tmp_record,bcf_record_to_split);
+        bcf1_t *tmp_record = bcf_dup(bcf_record_to_split);
         bcf_unpack(tmp_record, BCF_UN_ALL);
         new_alleles[0] = bcf_record_to_split->d.allele[0];
         new_alleles[1] = bcf_record_to_split->d.allele[i];
@@ -177,6 +175,7 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
         if (realign(_norm_args, tmp_record) != ERR_OK)
             ggutils::die("vcf record did not match the reference");
         new_positions.push_back(pair<int,int>(tmp_record->pos,ggutils::get_variant_rank(tmp_record)));
+        bcf_destroy(tmp_record);
     }
 
     std::set< std::pair<int,int> > unique_positions(new_positions.begin(),new_positions.end());
@@ -197,8 +196,7 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
         assert(alleles_at_this_position.size()>0);
         Genotype g(_hdr,bcf_record_to_split);
 
-        bcf_clear(tmp_record);
-        bcf_copy(tmp_record,bcf_record_to_split);
+        bcf1_t *tmp_record = bcf_dup(bcf_record_to_split);
         bcf_unpack(tmp_record, BCF_UN_ALL);
         bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
         g.collapse_alleles_into_ref(alleles_at_this_position).update_bcf1_t(_hdr,tmp_record);
@@ -211,8 +209,8 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
                 ggutils::die("vcf record did not match the reference");
             split_variants.push_back(out_record);
         }
+        bcf_destroy1(tmp_record);
     }
-    bcf_destroy1(tmp_record);
     free(new_alleles);
 }
 
@@ -244,6 +242,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         else
         {
             multi_split(*it,atomised_variants);
+            bcf_destroy(*it);
         }
     }
 }
