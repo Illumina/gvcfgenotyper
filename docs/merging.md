@@ -39,7 +39,7 @@ This is handled in the `Normaliser::mnp_decompose` function.
 
 ### Step 2.
 
-We apply the normalisation routine described in the [vt paper](https://academic.oup.com/bioinformatics/article/31/13/2202/196142) to all indels. As of NorthStar 5, all bi-allelic variants (one `ALT`) appear normalised so this step is mostly redundant. However a small number of multi-allelics still appear unnormalised, this seems to be occurring at overlapping variants. 
+ We apply the normalisation routine described in the [vt paper](https://academic.oup.com/bioinformatics/article/31/13/2202/196142) to all indels.  Note that in that all Strelka bi-allelic variants (one `ALT`) appear normalised so this step is mostly redundant. However a small number of multi-allelics still appear unnormalised, this seems to be occurring at overlapping variants. 
 
 For example, take the following variant:
 
@@ -55,14 +55,13 @@ ALT1: AAA----GGAGGGGGACTT
 ALT2: A------GGAGGGGGACTT
 ```
 
-the first alternate allele can have two bases trimmed be moved to position `197095594`. The problem with this shifting is that the variants still overlap, meaning that values of `FORMAT/AD` and `FORMAT/PL` strictly should involve the overlapping allele but there is no good way to do this in VCF. Our pragmatic solution is to collapse the values into the reference call:
+the first alternate allele can have two bases trimmed and be moved to position `197095594`. The problem with this shifting is that the variants still overlap, meaning that values of `FORMAT/AD` and `FORMAT/PL` strictly should involve the overlapping allele but there is no good way to do this in VCF. Our pragmatic solution is to collapse the values into the reference call:
 
 ```
 chr1	95593	.	AAAAAAG	A	738	.	.	GT:GQ:GQX:DP:DPF:AD:PL	0/1:151:0:30:.:16,14:187,0,231
 chr1	95595	.	AAAAG	A	738	.	.	GT:GQ:GQX:DP:DPF:AD:PL	1/0:151:0:30:.:15,15:231,0,187
 ```
-The above result is achieved by splitting an *N* alternate allele VCF row into *N* bi-allelic rows, normalising each row indepedently, and then collapsing alleles with the same normalised position into a multi-allelic row. In practice this often results in the output being identical to the input, but occasionally results into multiple new rows as in the above example.   
-
+The above result is achieved by splitting an *N* alternate allele VCF row into *N* bi-allelic rows, normalising each row independently, and then collapsing alleles with the same normalised position into a multi-allelic row. In practice this often results in the output being identical to the input, but occasionally results into multiple new rows as in the above example.   
 
 Finally, we would prefer to introduce the symbolic deletion allele `*`  here:
 
@@ -76,7 +75,7 @@ and plan to do this at a later date (https://jira.illumina.com/browse/GG-2).
 
 ### Step 3.
 
-Our merging procedure only ever looks at the first alternate allele. To handle *N* multi-allelics, we create *N* duplicate rows with each allele shuffled to the front. 
+Our merging procedure only ever looks at the first alternate allele. To handle a row with *N>1* alternate alleles, we create *N* duplicate rows with each allele shuffled to the front. 
 
 For example:
 
@@ -98,7 +97,7 @@ Steps 2 and 3 are both implemented in `Normaliser::multi_split`.
 
 ### Step 4.
 
-We still occasionally see duplicated variants with different representations, this appears to be an artefact of forced genotyping (usually one of the variants has a clinvar annotation).  Sometimes the genotypes disagree between duplicated variants creating a conflict, in these cases we prefer the variant with an alternate genotype call over one with a homozygous reference call. If both samples are homref or alternate, we take the first copy of the variant that appears.
+We still occasional see duplicated variants with different representations, this appears to be an artefact of forced genotyping (usually one of the variants has a clinvar annotation).  Sometimes the genotypes disagree between duplicated variants creating a conflict, in these cases we prefer the variant with an alternate genotype call over one with a homozygous reference call. If both samples are homref or alternate, we take the first copy of the variant that appears.
 
 For example:
 
