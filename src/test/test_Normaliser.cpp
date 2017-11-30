@@ -5,6 +5,34 @@
 #include "test_helpers.hh"
 #include "GVCFReader.hh"
 
+//regression test checking that QUAL is correctly propagated by Normaliser::unarise
+TEST(Normaliser, qual)
+{
+    int rid=1;
+    int pos=4151;
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,rid,pos+1,"A,ATTT");
+    int qual = 221;
+    record1->qual = qual;
+    int32_t ad[2] = {17, 10};
+    int32_t pl[3] = {255, 0,255};
+    int32_t gt[2] = {bcf_gt_unphased(0), bcf_gt_unphased(1)};
+    float gq = 58;
+    bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
+    bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
+    bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
+    bcf_update_genotypes(hdr, record1, gt, 2);
+    //print_variant(hdr, record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        ASSERT_FLOAT_EQ((*it)->qual,221);
+    }
+}
+
 TEST(Normaliser, mnp_decompose1)
 {
     std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
@@ -310,35 +338,29 @@ TEST(Normaliser, unarise8)
     }
 }
 
-
-
-
-//regression test checking that QUAL is correctly propagated by Normaliser::unarise
-TEST(Normaliser, qual)
+TEST(Normaliser, unarise9)
 {
-    int rid=1;
-    int pos=4151;
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
-    auto record1 = generate_record(hdr,rid,pos+1,"A,ATTT");
-    int qual = 221;
-    record1->qual = qual;
-    int32_t ad[2] = {17, 10};
-    int32_t pl[3] = {255, 0,255};
-    int32_t gt[2] = {bcf_gt_unphased(0), bcf_gt_unphased(1)};
-    float gq = 58;
-    bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
-    bcf_update_format_int32(hdr, record1, "AD", &ad, 2);
-    bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
-    bcf_update_genotypes(hdr, record1, gt, 2);
-    //print_variant(hdr, record1);
-    vector<bcf1_t *> buffer;
+    auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tT,G\t0\tLowGQX\tSNVHPOL=2;MQ=33\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/2:9:0:9:0:7,1,1:5,1,1:2,0,0:0:LowGQX:14,11,149,0,117,138");
+    multiAllele m;
+    m.init(hdr);
+    m.setPosition(record1->rid,record1->pos);
+
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    std::vector<bcf1_t *> buffer;
     norm.unarise(record1,buffer);
+    std::cerr <<"Output:"<<std::endl;
+    std::deque<bcf1_t *> q;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
-        ASSERT_FLOAT_EQ((*it)->qual,221);
+        ggutils::print_variant(hdr,*it);
+        m.allele(*it);
+        q.push_back(*it);
     }
+    std::cerr<<std::endl;
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
+    Genotype g(hdr,i,m);
 }
-
-

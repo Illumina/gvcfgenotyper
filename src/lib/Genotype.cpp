@@ -487,11 +487,13 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
             _pl[ggutils::get_gl_index(0,dst_allele_index)]=g.get_pl(0,1);
             _pl[ggutils::get_gl_index(dst_allele_index,dst_allele_index)]=g.get_pl(1,1);
         }
-
+        _gt[0] = bcf_gt_unphased(0);
+        if(_ploidy==2) _gt[1] = bcf_gt_unphased(0);
+        
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
         {
             assert(dst_genotype_count <= _ploidy);
-            if(num_sample_variants==1)
+            if(num_sample_variants==1)//only one allele so this is a straightforward copy
             {
                 if (bcf_gt_allele(g.get_gt(genotype_index)) == 0)
                     _gt[dst_genotype_count] = bcf_gt_unphased(0);
@@ -524,8 +526,6 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
         ggutils::print_variant(sample_header,*sample_variants.first);
         ggutils::die("bad genotypes at sample "+(string)sample_header->samples[0]);
     }
-
-
 }
 
 float Genotype::get_qual()
@@ -537,7 +537,6 @@ int Genotype::get_mq()
 {
     return(_mq);
 }
-
 
 int Genotype::get_ploidy() {return _ploidy;};
 
