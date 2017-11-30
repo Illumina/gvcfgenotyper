@@ -23,7 +23,7 @@ public:
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
     Genotype(int ploidy, int num_allele);
     Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map);
-    int propagate_format_fields(int sample_index,int ploidy,int num_allele,ggutils::vcf_data_t *format);
+    int propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format);
     Genotype marginalise(int index);
     Genotype collapse_alleles_into_ref(vector<int> & indices);
     ~Genotype();

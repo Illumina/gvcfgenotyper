@@ -568,9 +568,7 @@ namespace ggutils
 
         num_pl = get_number_of_likelihoods(ploidy,num_allele)*num_sample;
         pl = (int32_t *)malloc(num_pl*sizeof(int32_t));
-
         gt = (int32_t *)malloc(num_sample*ploidy*sizeof(int32_t));
-
     }
 
     void vcf_data_t::resize(size_t num_alleles)

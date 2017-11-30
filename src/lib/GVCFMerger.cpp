@@ -151,8 +151,9 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
 
 void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
 {
+    int default_ploidy=2;
     Genotype g(_readers[sample_index].get_header(), sample_variants,_record_collapser);
-    g.propagate_format_fields(sample_index,2,_record_collapser.num_alleles(),format);
+    g.propagate_format_fields(sample_index,default_ploidy,format);
     _mean_mq += g.get_mq();
     _num_mq++;
     _output_record->qual += g.get_qual();

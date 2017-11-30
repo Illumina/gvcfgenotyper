@@ -90,10 +90,17 @@ TEST(GVCFMerger, likelihood)
     m.allele(record1);
 
     ggutils::print_variant(hdr,record1);
+
+    ggutils::vcf_data_t d(2,2,2);
     Genotype g(hdr,record1);
-    //g.propagate_format_fields(0,2,2,)
-    ggutils::vcf_data_t d(2,2,1);
+    g.propagate_format_fields(0,2,&d);
+    ASSERT_EQ(d.pl[0],226);
+    ASSERT_EQ(d.pl[1],0);
+    ASSERT_EQ(d.pl[2],257);
+
+    g.propagate_format_fields(1,2,&d);
+    ASSERT_EQ(d.pl[3],226);
+    ASSERT_EQ(d.pl[4],0);
+    ASSERT_EQ(d.pl[5],257);
 
 }
-
-
