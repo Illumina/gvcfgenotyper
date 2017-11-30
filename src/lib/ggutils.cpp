@@ -542,7 +542,76 @@ namespace ggutils
         for(int i=0;i<record->n_allele;i++) free(new_alleles[i]);
         free(new_alleles);
         free(format_ad);
+        free(format_adr);
+        free(format_adf);
         free(format_pl);
+        free(gt);
         return(1);
+    }
+
+    vcf_data_t::vcf_data_t(size_t ploidy, size_t num_allele, size_t num_sample)
+    {
+        this->ploidy=ploidy;
+        this->num_allele=num_allele;
+        this->num_sample=num_sample;
+
+        gq=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        gqx=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        dp=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        dpf=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        ps=(int32_t*)malloc(num_sample*sizeof(int32_t));
+
+        num_ad=num_allele*num_sample;
+        ad = (int32_t *)malloc(num_ad*sizeof(int32_t));
+        adf = (int32_t *)malloc(num_ad*sizeof(int32_t));
+        adr = (int32_t *)malloc(num_ad*sizeof(int32_t));
+
+        num_pl = get_number_of_likelihoods(ploidy,num_allele)*num_sample;
+        pl = (int32_t *)malloc(num_pl*sizeof(int32_t));
+
+        gt = (int32_t *)malloc(num_sample*ploidy*sizeof(int32_t));
+
+    }
+
+    void vcf_data_t::resize(size_t num_alleles)
+    {
+        if(num_alleles!=this->num_allele)
+        {
+            this->num_allele=num_alleles;
+            num_pl = ggutils::get_number_of_likelihoods(ploidy,num_allele)* num_sample;
+            pl = (int32_t *) realloc(pl, num_pl * sizeof(int32_t));
+            num_ad=num_allele*num_sample;
+            ad = (int32_t *)realloc(ad,num_ad*sizeof(int32_t));
+            adr = (int32_t *)realloc(adr,num_ad*sizeof(int32_t));
+            adf = (int32_t *)realloc(adf,num_ad*sizeof(int32_t));
+        }
+    }
+
+    void vcf_data_t::set_missing()
+    {
+        std::fill(gq,gq+num_sample,bcf_int32_missing);
+        std::fill(gqx,gqx+num_sample,bcf_int32_missing);
+        std::fill(dp,dp+num_sample,bcf_int32_missing);
+        std::fill(dpf,dpf+num_sample,bcf_int32_missing);
+        std::fill(ps,ps+num_sample,bcf_int32_missing);
+        std::fill(gt,gt+ploidy*num_sample,bcf_gt_missing);
+        std::fill(pl,pl+num_pl,bcf_int32_missing);
+        std::fill(ad,ad+num_ad,bcf_int32_missing);
+        std::fill(adf,adf+num_ad,bcf_int32_missing);
+        std::fill(adr,adr+num_ad,bcf_int32_missing);
+    }
+
+    vcf_data_t::~vcf_data_t()
+    {
+        free(ad);
+        free(adf);
+        free(adr);
+        free(pl);
+        free(gt);
+        free(gq);
+        free(gqx);
+        free(dp);
+        free(dpf);
+        free(ps);
     }
 }
