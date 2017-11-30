@@ -459,61 +459,64 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     for (auto it = sample_variants.first; it != sample_variants.second; it++)
     {
         Genotype g(sample_header, *it);
-        int dst_allele_index = alleles_to_map.allele(*it);
-        assert(dst_allele_index<_num_ad && dst_allele_index>0);
-        _qual = max(_qual,g.get_qual()); //FIXME: QUAL should be estimated from PL
-
-        //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case due variants shifting position.
-        _mq = g.get_mq();
-        *_dp  = g.get_dp();
-        *_gq  = g.get_gq();
-        *_gqx = g.get_gqx();
-        *_dpf = g.get_dpf();
-        _ad[dst_allele_index] = g.get_ad(1);
-        _adf[dst_allele_index] = g.get_ad(1);
-        _adr[dst_allele_index] = g.get_ad(1);
-        _ad[0] = g.get_ad(0);
-        _adf[0] = g.get_adf(0);
-        _adr[0] = g.get_adr(0);
-        if(ploidy==1)
+        if(g._ploidy!=ploidy)
         {
-            _pl[0]=g.get_pl(0);
-            _pl[dst_allele_index]=g.get_pl(1);
+            std::cerr<<"WARNING: inconsistent ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
         }
         else
         {
-            //std::cerr<<g.get_pl(0,0)<<","<<g.get_pl(0,1)<<","<<g.get_pl(1,1)<<std::endl; //debug
-            _pl[ggutils::get_gl_index(0,0)]=g.get_pl(0,0);
-            _pl[ggutils::get_gl_index(0,dst_allele_index)]=g.get_pl(0,1);
-            _pl[ggutils::get_gl_index(dst_allele_index,dst_allele_index)]=g.get_pl(1,1);
-        }
-        _gt[0] = bcf_gt_unphased(0);
-        if(_ploidy==2) _gt[1] = bcf_gt_unphased(0);
-        
-        for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
-        {
-            assert(dst_genotype_count <= _ploidy);
-            if(num_sample_variants==1)//only one allele so this is a straightforward copy
+            int dst_allele_index = alleles_to_map.allele(*it);
+            assert(dst_allele_index < _num_ad && dst_allele_index > 0);
+            _qual = max(_qual, g.get_qual()); //FIXME: QUAL should be estimated from PL
+
+            //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case due variants shifting position.
+            _mq = g.get_mq();
+            *_dp = g.get_dp();
+            *_gq = g.get_gq();
+            *_gqx = g.get_gqx();
+            *_dpf = g.get_dpf();
+            _ad[dst_allele_index] = g.get_ad(1);
+            _adf[dst_allele_index] = g.get_ad(1);
+            _adr[dst_allele_index] = g.get_ad(1);
+            _ad[0] = g.get_ad(0);
+            _adf[0] = g.get_adf(0);
+            _adr[0] = g.get_adr(0);
+            if (ploidy == 1)
             {
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 0)
-                    _gt[dst_genotype_count] = bcf_gt_unphased(0);
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
-                    _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
-                dst_genotype_count++;
+                _pl[0] = g.get_pl(0);
+                _pl[dst_allele_index] = g.get_pl(1);
             }
-            else //there are multiple variants at this position. we need to do some careful genotype counting.
+            else
             {
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
+                _pl[ggutils::get_gl_index(0, 0)] = g.get_pl(0, 0);
+                _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.get_pl(0, 1);
+                _pl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.get_pl(1, 1);
+            }
+            _gt[0] = bcf_gt_unphased(0);
+            if (_ploidy == 2) _gt[1] = bcf_gt_unphased(0);
+
+            for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
+            {
+                assert(dst_genotype_count <= _ploidy);
+                if (num_sample_variants == 1)//only one allele so this is a straightforward copy
                 {
-                    if (dst_genotype_count >= 2)
-                    {
-                        std::cerr << "WARNING: had to drop an allele due to conflicting genotype calls" << std::endl;
-                        ggutils::print_variant(sample_header,*it);
-                    }
-                    else
-                    {
+                    if (bcf_gt_allele(g.get_gt(genotype_index)) == 0)
+                        _gt[dst_genotype_count] = bcf_gt_unphased(0);
+                    if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
                         _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
-                        dst_genotype_count++;
+                    dst_genotype_count++;
+                } else //there are multiple variants at this position. we need to do some careful genotype counting.
+                {
+                    if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
+                    {
+                        if (dst_genotype_count >= 2)
+                        {
+                            std::cerr<<"WARNING: inconsistent alleles for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
+                        } else
+                        {
+                            _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
+                            dst_genotype_count++;
+                        }
                     }
                 }
             }
