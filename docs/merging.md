@@ -10,7 +10,7 @@ We "canonicalise" variants from our input GVCFs prior to merging them (this is h
 
 The canonicalisation steps are as follows:
 
-1. Multi-nucleotide polymorphism (MNP) decomposition
+1. Decomposition of multi-nucleotide polymorphisms (MNP) 
 2. Variant normalisation (left-shifting and trimming) 
 3. Multi-allelic variant splitting
 4. Removal of duplicated variants (very rare)
