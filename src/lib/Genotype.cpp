@@ -522,7 +522,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     if(_ploidy==2 && (_gt[0]==bcf_gt_missing) != (_gt[1]==bcf_gt_missing))
     {
         ggutils::print_variant(sample_header,*sample_variants.first);
-        ggutils::die("bad genotypes");
+        ggutils::die("bad genotypes at sample "+(string)sample_header->samples[0]);
     }
 
 
