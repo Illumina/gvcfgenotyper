@@ -123,6 +123,7 @@ TEST(UtilTest, GenotypeIndex)
     ASSERT_EQ(3, ggutils::get_gl_index(0, 2));
     ASSERT_EQ(4, ggutils::get_gl_index(1, 2));
     ASSERT_EQ(5, ggutils::get_gl_index(2, 2));
+    ASSERT_EQ(105,ggutils::get_gl_index(0,14));
 }
 
 TEST(UtilTest, phred)

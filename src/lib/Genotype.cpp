@@ -452,7 +452,9 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     int ploidy=0;
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
+    assert(ploidy==1 || ploidy==2);
     allocate(ploidy,alleles_to_map.num_alleles()+1);
+    assert(_num_allele>1);
     std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
     int dst_genotype_count=0;
     _qual = 0;
@@ -466,7 +468,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
         else
         {
             int dst_allele_index = alleles_to_map.allele(*it);
-            assert(dst_allele_index < _num_ad && dst_allele_index > 0);
+            assert(dst_allele_index < _num_allele && dst_allele_index > 0);
             _qual = max(_qual, g.get_qual()); //FIXME: QUAL should be estimated from PL
 
             //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case due variants shifting position.
