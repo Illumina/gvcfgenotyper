@@ -293,6 +293,26 @@ TEST(Normaliser, unarise7)
     }
 }
 
+TEST(Normaliser, unarise8)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t62430033\t.\tC\tT,A\t391\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t1/2:142:30:28:2:0,16,12:0,7,3:0,9,9:-41.5:PASS:370,214,166,242,0,206");
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
+    std::cerr <<"Output:"<<std::endl;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        ggutils::print_variant(hdr,*it);
+    }
+}
+
+
+
+
 //regression test checking that QUAL is correctly propagated by Normaliser::unarise
 TEST(Normaliser, qual)
 {
