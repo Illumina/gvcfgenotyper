@@ -413,8 +413,9 @@ void Genotype::PLfromGL()
     }
 }
 
-int Genotype::propagate_format_fields(int sample_index,int ploidy,int num_allele,ggutils::vcf_data_t *format)
+int Genotype::propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format)
 {
+    assert(sample_index<format->num_sample);
     //update scalars
     format->gq[sample_index] = get_gq();
     format->gqx[sample_index] = get_gqx();
@@ -438,7 +439,7 @@ int Genotype::propagate_format_fields(int sample_index,int ploidy,int num_allele
     else  format->gt[sample_index*ploidy+1] = get_gt(1);
 
     //update PL
-    size_t num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,num_allele+1);
+    size_t num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,_num_allele);
     size_t num_pl_in_this_sample = ggutils::get_number_of_likelihoods(_ploidy,_num_allele);
     int *dst = format->pl+num_pl_per_sample*sample_index;
     std::fill(dst,dst+num_pl_per_sample,bcf_float_vector_end);
@@ -452,7 +453,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
     allocate(ploidy,alleles_to_map.num_alleles()+1);
-    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),bcf_int32_missing);
+    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
     int dst_genotype_count=0;
     _qual = 0;
     for (auto it = sample_variants.first; it != sample_variants.second; it++)
@@ -481,7 +482,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
         }
         else
         {
-//            std::cerr<<g.get_pl(0,0)<<","<<g.get_pl(0,1)<<","<<g.get_pl(1,1)<<std::endl; //debug
+            //std::cerr<<g.get_pl(0,0)<<","<<g.get_pl(0,1)<<","<<g.get_pl(1,1)<<std::endl; //debug
             _pl[ggutils::get_gl_index(0,0)]=g.get_pl(0,0);
             _pl[ggutils::get_gl_index(0,dst_allele_index)]=g.get_pl(0,1);
             _pl[ggutils::get_gl_index(dst_allele_index,dst_allele_index)]=g.get_pl(1,1);
@@ -551,7 +552,7 @@ int Genotype::get_pl(int g0,int g1)
     assert(_ploidy==2);
     assert(g0>=0 && g1>=0);
     assert(g0<_num_allele && g1<_num_allele);
-    return(_pl[g0]);
+    return(_pl[ggutils::get_gl_index(g0,g1)]);
 }
 
 int Genotype::get_pl(int g0)
