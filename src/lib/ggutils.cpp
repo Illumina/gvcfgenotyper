@@ -340,26 +340,15 @@ namespace ggutils
         return ((float) pow(10., -pl / 10.));
     }
 
-    int factorial(int x)
-    {
-        int ret = 1;
-        for (int i = 2; i <= x; i++)
-        {
-            ret *= i;
-        }
-        return (ret);
-    }
-
+    //FIXME: One needs to be careful of overlow here. I have just used a recursive implementation. There is probably a better way to do this (check Rmath.h for example).
     int choose(int n, int k)
     {
-        if (k >= 0 && k <= n)
-        {
-            return (factorial(n) / (factorial(n - k) * factorial(k)));
-        }
+        if(n==0)
+            return(0);
+        if(k==0 || k==n)
+            return(1);
         else
-        {
-            return (0);
-        }
+            return(choose(n-1,k-1)+choose(n-1,k));
     }
 
     //gets the index of a genotype likelihood for ploidy == 2
