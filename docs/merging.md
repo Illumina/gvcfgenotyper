@@ -2,10 +2,11 @@
 
 ## Merging variants
 
-This problem is a straightforward [K-way Merge](https://en.wikipedia.org/wiki/K-Way_Merge_Algorithms), although does require variants to be pre-processed before merging to ensure consistent representation across samples.  We have implemented the "Direct K-Way Merge" described on wikipedia, there are more efficient algorithms but it is unlikely that this is a bottleneck at the moment. We "canonicalise" variants from our input GVCFs prior to merging them (this is handled on-the-fly by the GVCFReader class). To simplify merging, we also ensure that one VCF row represents one alternative allele eg. a row with two alternate alleles is split into two rows on-the-fly. 
-
+This problem is a straightforward [K-way Merge](https://en.wikipedia.org/wiki/K-Way_Merge_Algorithms), although does require variants to be pre-processed before merging to ensure consistent representation across samples.  We have implemented the "Direct K-Way Merge" described on wikipedia, there are more efficient algorithms but it is unlikely that this is a bottleneck at the moment. 
 
 ## Canonicalising single sample input
+
+We "canonicalise" variants from our input GVCFs prior to merging them (this is handled on-the-fly by the GVCFReader class). To simplify merging, we also ensure that one VCF row represents one alternative allele eg. a row with two alternate alleles is split into two rows on-the-fly. 
 
 The canonicalisation steps are as follows:
 
