@@ -197,6 +197,7 @@ Genotype Genotype::marginalise(int index)
     const int num_new_allele = 3;
     assert(index > 0 && index < _num_allele);
     Genotype ret(_ploidy, num_new_allele);
+    ret.set_depth_to_zero();
 
     for (int j = 0; j < _ploidy; j++)
     {
@@ -452,6 +453,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
     assert(ploidy==1 || ploidy==2);
     allocate(ploidy,alleles_to_map.num_alleles()+1);
+    set_depth_to_zero();
     assert(_num_allele>1);
     std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
     int dst_genotype_count=0;
