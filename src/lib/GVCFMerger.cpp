@@ -135,6 +135,8 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
     format->dpf[sample_index] = homref_block.dpf();
     format->gq[sample_index] = homref_block.gq();
     format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
+    for(int i=1;i<_output_record->n_allele;i++)
+        format->ad[sample_index * _output_record->n_allele+1] = 0;
     if (homref_block.dp() > 0)
     {
         if(homref_block.get_ploidy()==2)
@@ -251,10 +253,16 @@ void GVCFMerger::update_format_info()
     }
 
     // Calculate INFO/ADF + INFO/ADR
-    for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele) {
-        for (size_t j=0;j<_output_record->n_allele;++j) {
-            _info_adf[j] +=format->adf[i+j];
-            _info_adr[j] +=format->adr[i+j];
+    for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele)
+    {
+        for (size_t j=0;j<_output_record->n_allele;++j)
+        {
+            assert( (format->adr[i+j]==bcf_int32_missing) == (format->adf[i+j]==bcf_int32_missing) );
+            if(format->adf[i+j]!=bcf_int32_missing)
+            {
+                _info_adf[j] += format->adf[i+j];
+                _info_adr[j] += format->adr[i+j];
+            }
         }
     }
     bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
