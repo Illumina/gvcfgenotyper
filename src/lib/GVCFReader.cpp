@@ -162,18 +162,19 @@ int GVCFReader::read_lines(const unsigned num_lines)
             int32_t dpf, gq, end;
             end = ggutils::get_end_of_gvcf_block(_bcf_header, _bcf_record);
             //If the record has FORMAT/GQ, use that, otherwise take FORMAT/GQX (illumina gvcf quirk).
-            int ret = ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"GQ",gq);
-            if(ret!=1)
+            int status = ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"GQ",gq);
+            if(status!=1)
             {
                 float tmp;
-                ret = ggutils::bcf1_get_one_format_float(_bcf_header, _bcf_record, "GQ", tmp);
-                gq = (int32_t)tmp;
+                status = ggutils::bcf1_get_one_format_float(_bcf_header, _bcf_record, "GQ", tmp);
+                if (status == 1)
+                    gq = bcf_float_is_missing(tmp) ? 0 : (int32_t) tmp; //replace missing values with 0
+                if (status != 1)
+                    status = ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "GQX", gq);
+                if (status != 1)
+                    ggutils::die("no FORMAT/GQ found");
             }
-            if(ret!=1)
-                ret=ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "GQX", gq);
-            if(ret!=1)
-                ggutils::die("no FORMAT/GQ found");
-
+            gq = gq==bcf_int32_missing ? 0 : gq; //replace missing values with 0
             ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"DPF",dpf);
             _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq, ploidy));
         }
