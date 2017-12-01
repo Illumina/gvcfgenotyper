@@ -136,7 +136,7 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
     format->gq[sample_index] = homref_block.gq();
     format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
     for(int i=1;i<_output_record->n_allele;i++)
-        format->ad[sample_index * _output_record->n_allele+1] = 0;
+        format->ad[sample_index * _output_record->n_allele+i] = 0;
     if (homref_block.dp() > 0)
     {
         if(homref_block.get_ploidy()==2)
