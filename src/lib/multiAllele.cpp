@@ -7,24 +7,19 @@
 inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)
 {
     bcf_unpack(src,BCF_UN_ALL);
-    assert(src->n_allele==2 || src->n_allele==3);//we only handle 1. binary alleles 2. binary alleles + symbolic 'X' allele
-    if(src->n_allele==3)
-    {
-        assert(src->d.allele[2][0]=='X');
-    }
+    assert(src->n_allele>1);
+    size_t rlen,alen;
+    ggutils::right_trim(src->d.allele[0],src->d.allele[1], rlen,alen);
 
-    bcf1_t *dst = bcf_init1();
-
+    bcf1_t *dst = bcf_init();
     bcf_clear(dst);
     dst->rid  = src->rid;
     dst->pos  = src->pos;
-    dst->rlen = src->rlen;
-    dst->qual = src->qual;
-    bcf_update_id(hdr,dst,".");
+
     kstring_t str = {0,0,nullptr};
-    kputs(src->d.allele[0], &str);
+    kputsn(src->d.allele[0],rlen,&str);
     kputc(',', &str);
-    kputs(src->d.allele[1],&str);
+    kputsn(src->d.allele[1],alen,&str);
     bcf_update_alleles_str(hdr,dst,str.s);
     free(str.s);
     return(dst);
@@ -71,6 +66,8 @@ multiAllele::~multiAllele()
 
 int multiAllele::allele(bcf1_t *record)
 {
+    assert(_hdr!=nullptr);
+    assert(_rid>=0 && _pos>=0);
     if(record->rid!=_rid || record->pos!=_pos)
     {
         return(0);
@@ -97,11 +94,11 @@ int multiAllele::allele(bcf1_t *record)
 bcf1_t *multiAllele::get_max()
 {
     bcf1_t *ret = nullptr;
-    for(auto rec=_records.begin();rec!=_records.end();rec++)
-    {
+    for(auto rec=_records.begin();rec!=_records.end();rec++)    {
+
         if(ret== nullptr ||  ggutils::bcf1_greater_than(*rec,ret))
         {
-//            ggutils::print_variant(*rec);
+            //ggutils::print_variant(*rec);
             ret = *rec;
         }
     }

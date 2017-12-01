@@ -8,29 +8,28 @@ extern "C"
 #include "GVCFReader.hh"
 
 
-
 TEST(DepthBlock, intersects)
 {
-    DepthBlock db1(0, 100, 199, 20, 1, 30);
-    DepthBlock db2(0, 100, 100, 20, 1, 30);
+    DepthBlock db1(0, 100, 199, 20, 1, 30,2);
+    DepthBlock db2(0, 100, 100, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db2), 1);
     ASSERT_EQ(db1.intersect_size(db2), db2.intersect_size(db1));
 
-    DepthBlock db3(0, 300, 401, 20, 1, 30);
+    DepthBlock db3(0, 300, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db3), 0);
 
-    DepthBlock db4(1, 300, 401, 20, 1, 30);
+    DepthBlock db4(1, 300, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db4), 0);
 
-    DepthBlock db5(0, 190, 401, 20, 1, 30);
+    DepthBlock db5(0, 190, 401, 20, 1, 30,2);
     ASSERT_EQ(db1.intersect_size(db5), 10);
 
-    DepthBlock db6(0, 100, 100, 20, 1, 30);
-    DepthBlock db7(0, 100, 100, 20, 1, 30);
+    DepthBlock db6(0, 100, 100, 20, 1, 30,2);
+    DepthBlock db7(0, 100, 100, 20, 1, 30,2);
     ASSERT_EQ(db6.intersect_size(db7), 1);
 
-    DepthBlock db8(1, 10000, 10000, 20, 1, 30);
-    DepthBlock db9(1, 10000, 10000, 20, 1, 30);
+    DepthBlock db8(1, 10000, 10000, 20, 1, 30,2);
+    DepthBlock db9(1, 10000, 10000, 20, 1, 30,2);
     ASSERT_EQ(db8.intersect_size(db9), 1);
 
 }
@@ -38,9 +37,9 @@ TEST(DepthBlock, intersects)
 TEST(DepthBuffer, interpolate)
 {
     DepthBuffer buf;
-    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30));
-    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30));
-    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30));
+    buf.push_back(DepthBlock(0, 0, 99, 20, 1, 30,2));
+    buf.push_back(DepthBlock(0, 100, 109, 30, 1, 30,2));
+    buf.push_back(DepthBlock(0, 110, 200, 40, 1, 30,2));
     DepthBlock db;
     buf.interpolate(0, 90, 95, db);
     ASSERT_EQ(db.dp(), 20);
@@ -77,6 +76,29 @@ TEST(VariantBuffer, test1)
     ASSERT_FALSE(v.empty());
 
     v.flush_buffer(rec3);
+    ASSERT_TRUE(v.empty());
+}
+
+//This tests a fairly tricky case of two different insertions starting at the same position within the same sample.
+TEST(VariantBuffer, test2)
+{
+    multiAllele m;
+    auto hdr = get_header();
+    m.init(hdr);
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t7832\trs112070696\tC\tCTAAATAAATAAA,CTAAATAAATAAATAAA\t559\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:150:15:42:0,11,11:0,4,5:0,7,6:PASS:601,226,169,225,0,169");
+    m.setPosition(record1->rid,record1->pos);
+    vector<bcf1_t *> buffer;
+    norm.unarise(record1,buffer);
+    VariantBuffer v;
+    int count=0;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        v.push_back(hdr,*it);
+        ASSERT_EQ(m.allele(*it),++count);
+    }
+    v.flush_buffer(m.get_max());
     ASSERT_TRUE(v.empty());
 }
 
@@ -191,8 +213,8 @@ TEST(Genotype,format)
     size_t idx = 0;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
+        std::cerr<<"idx="<<idx<<std::endl;
         ggutils::print_variant(hdr,*it);
-        cout << "idx=" << idx << "\n";
         Genotype g(hdr,*it);
         ASSERT_FLOAT_EQ(g.get_gq(),gq);
 

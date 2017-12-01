@@ -2,16 +2,31 @@
 
 namespace ggutils
 {
-
-
-    int *zeros(int n)
+    void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen)
     {
-        int *ret = (int *) malloc(sizeof(int) * n);
-        for (int i = 0; i < n; i++)
+        reflen=strlen(ref);
+        altlen=strlen(alt);
+        assert(reflen>0);
+        assert(altlen>0);
+        while(ref[reflen-1]==alt[altlen-1] && reflen>1 && altlen>1)
         {
-            ret[i] = 0;
+            reflen--;
+            altlen--;
         }
+    }
+
+    int32_t *zeros(int n)
+    {
+        int32_t *ret = (int *) malloc(sizeof(int32_t) * n);
+        std::fill(ret,ret+n,0);
         return (ret);
+    }
+
+    int32_t *assign_bcf_int32_missing(size_t n)
+    {
+        int32_t *ret = (int32_t *)malloc(sizeof(int32_t) * n);
+        std::fill(ret,ret+n,bcf_int32_missing);
+        return(ret);
     }
 
     bool fileexists(const string &fname)
@@ -114,32 +129,28 @@ namespace ggutils
         return (output.size());
     }
 
-
-
-   bool is_snp(bcf1_t *record)
-   {
-        assert(record->n_allele > 1);
-        bcf_unpack(record, BCF_UN_ALL);
-        return (bcf_get_variant_type(record, 1) & VCF_SNP);
-   }
-
-
-bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
-{
-    int *gt = nullptr, ngt = 0;
-    bool is_hom_ref = false;
-    if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+    bool is_snp(bcf1_t *record)
     {
-        // A vcf record without GT cannot be hom ref
+        assert(record->n_allele > 1);
+        return bcf_is_snp(record);
+    }
+
+    bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
+    {
+        int *gt = nullptr, ngt = 0;
+        bool is_hom_ref = false;
+        if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+        {
+            // A vcf record without GT cannot be hom ref
+            return is_hom_ref;
+        }
+        int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
+        // check for 0/0
+        is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
+        is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
+        free(gt);
         return is_hom_ref;
     }
-    int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
-    // check for 0/0
-    is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
-    is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);
-    free(gt);
-    return is_hom_ref;
-}
 
     int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
     {
@@ -202,7 +213,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return (-1);
     }
 
-    bool  bcf1_equal(bcf1_t *a, bcf1_t *b)
+    bool bcf1_all_equal(bcf1_t *a, bcf1_t *b)
     {
         bcf_unpack(a, BCF_UN_ALL);
         bcf_unpack(b, BCF_UN_ALL);
@@ -220,7 +231,10 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         }
         else
         {
-            for (size_t i = 0; i < min(a->n_allele, b->n_allele); i++)
+            if(a->n_allele!=b->n_allele)
+                return(false);
+
+            for (size_t i = 0; i < a->n_allele; i++)
             {
                 if (strcmp(a->d.allele[i], b->d.allele[i]))
                 {
@@ -231,52 +245,66 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return (true);
     }
 
-
-    bool  bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    bool bcf1_equal(bcf1_t *a, bcf1_t *b)
     {
-
-        if (a == NULL || b == NULL)
+        assert(a->n_allele>1);
+        assert(b->n_allele>1);
+        bcf_unpack(a, BCF_UN_ALL);
+        bcf_unpack(b, BCF_UN_ALL);
+        if (a == nullptr || b == nullptr)
         {
-            die(" (bcf1_less_than: tried to compare NULL bcf1_t");
+            die(" (bcf1_equal: tried to compare NULL bcf1_t");
         }
-
-        if (a->rid < b->rid)
-        {
-            return (true);
-        }
-        if (a->rid > b->rid)
+        if (a->rid != b->rid)
         {
             return (false);
         }
+        else if (a->pos != b->pos)
+        {
+            return (false);
+        }
+        else
+        {
+            size_t a1,b1,a2,b2;
+            right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+            right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+            if(a1!=a2 || b1!=b2) return(false);
+            return(strncmp(a->d.allele[0],b->d.allele[0],a1)==0 && strncmp(a->d.allele[1],b->d.allele[1],b1)==0);
+        }
+    }
 
+
+    bool bcf1_less_than(bcf1_t *a, bcf1_t *b)
+    {
+        assert(a->n_allele>1 && b->n_allele>1);
+        assert(a!=nullptr && b!=nullptr);
+
+        if (a->rid < b->rid)
+            return(true);
+        if (a->rid > b->rid)
+            return(false);
         if (a->pos < b->pos)
-        {
-            return (true);
-        }
-
-        if (a->pos == b->pos)
-        {
-            if (get_variant_rank(a) == get_variant_rank(b))
-            {
-                for (size_t i = 0; i < min(a->n_allele, b->n_allele); i++)
-                {
-                    int val = strcmp(a->d.allele[i], b->d.allele[i]);
-                    if (val < 0)
-                    {
-                        return (true);
-                    }
-                    if (val > 0)
-                    {
-                        return (false);
-                    }
-                }
-            }
-            else
-            {
-                return (get_variant_rank(a) < get_variant_rank(b));
-            }
-        }
-        return (false);
+            return(true);
+        if (a->pos > b->pos)
+            return(false);
+        if(get_variant_rank(a) < get_variant_rank(b))
+            return(true);
+        if(get_variant_rank(a) > get_variant_rank(b))
+            return(false);
+        if(bcf1_equal(a,b))
+            return(false);
+        size_t a1,b1,a2,b2;
+        right_trim(a->d.allele[0],a->d.allele[1],a1,b1);
+        right_trim(b->d.allele[0],b->d.allele[1],a2,b2);
+        if(a1<a2)
+            return(true);
+        if(b1<b2)
+            return(true);
+        if(strncmp(a->d.allele[0],b->d.allele[0],min(a1,a2))<0)
+            return(true);
+        if(strncmp(a->d.allele[1],b->d.allele[1],min(b1,b2))<0)
+            return(true);
+        return(false);
     }
 
     bool  bcf1_greater_than(bcf1_t *a, bcf1_t *b)
@@ -316,26 +344,15 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return ((float) pow(10., -pl / 10.));
     }
 
-    int factorial(int x)
-    {
-        int ret = 1;
-        for (int i = 2; i <= x; i++)
-        {
-            ret *= i;
-        }
-        return (ret);
-    }
-
+    //FIXME: One needs to be careful of overlow here. I have just used a recursive implementation. There is probably a better way to do this (check Rmath.h for example).
     int choose(int n, int k)
     {
-        if (k >= 0 && k <= n)
-        {
-            return (factorial(n) / (factorial(n - k) * factorial(k)));
-        }
+        if(n==0)
+            return(0);
+        if(k==0 || k==n)
+            return(1);
         else
-        {
-            return (0);
-        }
+            return(choose(n-1,k-1)+choose(n-1,k));
     }
 
     //gets the index of a genotype likelihood for ploidy == 2
@@ -356,6 +373,43 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         {
             std::cerr << ":" << record->d.allele[i];
         }
+        int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
+        int num_gt=0,num_ad=0,num_pl=0;
+        int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
+        if(ret>0)
+        {
+            std::cerr << "\tGT=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << "/";
+                std::cerr << bcf_gt_allele(gt[i]);
+            }
+        }
+
+        ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
+        if(ret>0)
+        {
+            std::cerr << "\tAD=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << ",";
+                std::cerr << ad[i];
+            }
+        }
+
+        ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
+        if(ret>0)
+        {
+            std::cerr << "\tPL=";
+            for (int i = 0; i < ret; i++)
+            {
+                if (i > 0) std::cerr << ",";
+                std::cerr << pl[i];
+            }
+        }
+        free(gt);
+        free(pl);
+        free(ad);
         std::cerr << std::endl;
     }
 
@@ -377,7 +431,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return (ploidy);
     }
 
-    int bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
+    int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);
         float *ptr=&output;
@@ -387,7 +441,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return(ret);
     }
 
-    int bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
+    int bcf1_get_one_format_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
         float *ptr=&output;
@@ -397,7 +451,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return(ret);
     }
 
-    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
+    int bcf1_get_one_info_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
     {
         bcf_unpack(record, BCF_UN_INFO);
         int32_t *ptr=&output;
@@ -407,7 +461,7 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         return(ret);
     }
 
-    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
+    int bcf1_get_one_format_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
         int32_t *ptr=&output;
@@ -415,5 +469,140 @@ bool is_hom_ref(const bcf_hdr_t * header, bcf1_t* record)
         int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
         if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
         return(ret);
+    }
+
+    int bcf1_allele_swap(bcf_hdr_t *header, bcf1_t *record, int a,int b)
+    {
+        assert(a>0 && b>0);
+        assert(a<record->n_allele && b<record->n_allele);
+        bcf_unpack(record,BCF_UN_ALL);
+        int32_t *format_ad=nullptr,*format_adr=nullptr,*format_adf=nullptr,*format_pl=nullptr,*gt= nullptr;
+        int num_adr=0,num_adf=0,num_ad=0,num_pl=0,num_gt=0;
+        vector<int> allele_map;//maps old alleles to new alleles
+        for(int i=0;i<record->n_allele;i++) allele_map.push_back(i);
+        allele_map[a]=b;
+        allele_map[b]=a;
+
+        //update the ALT
+        char **new_alleles = (char **)malloc(record->n_allele*sizeof(char *));
+        for(int i=0;i<record->n_allele;i++)
+        {
+            new_alleles[allele_map[i]] = (char *)malloc(strlen(record->d.allele[i])+1);
+            strcpy(new_alleles[allele_map[i]],record->d.allele[i]);
+        }
+        bcf_update_alleles(header, record, (const char **) new_alleles, record->n_allele);
+
+        //AD
+        assert(bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad)==record->n_allele);
+        std::swap(format_ad[a],format_ad[b]);
+        bcf_update_format_int32(header,record,"AD",format_ad,record->n_allele);
+
+        if(bcf_get_format_int32(header,record,"ADF",&format_adf,&num_adf)==record->n_allele)
+        {
+            std::swap(format_adf[a], format_adf[b]);
+            bcf_update_format_int32(header, record, "ADF", format_adf, record->n_allele);
+        }
+
+        if(bcf_get_format_int32(header,record,"ADR",&format_adr,&num_adr)==record->n_allele)
+        {
+            std::swap(format_adr[a], format_adr[b]);
+            bcf_update_format_int32(header, record, "ADR", format_adr, record->n_allele);
+        }
+
+        //GT
+        int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);
+        assert(ploidy==1 || ploidy==2);
+        bool phased = ploidy==1 ? bcf_gt_is_phased(gt[0]) : bcf_gt_is_phased(gt[0])&&bcf_gt_is_phased(gt[1]);
+        for(int i=0;i<ploidy;i++)
+        {
+            if(bcf_gt_allele(gt[i])==a)
+                gt[i] = phased ? bcf_gt_phased(b) : bcf_gt_unphased(b);
+            else if(bcf_gt_allele(gt[i])==b)
+                gt[i] = phased ? bcf_gt_phased(a) : bcf_gt_unphased(a);
+        }
+        bcf_update_genotypes(header,record,gt,ploidy);
+
+        //PL
+        assert(bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl)==(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele));
+        vector<int> tmp_pl(format_pl,format_pl+num_pl);
+        for(int i=0;i<record->n_allele;i++)
+            for(int j=i;j<record->n_allele;j++)
+                format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
+
+        bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
+
+        //memory cleanup
+        for(int i=0;i<record->n_allele;i++) free(new_alleles[i]);
+        free(new_alleles);
+        free(format_ad);
+        free(format_adr);
+        free(format_adf);
+        free(format_pl);
+        free(gt);
+        return(1);
+    }
+
+    vcf_data_t::vcf_data_t(size_t ploidy, size_t num_allele, size_t num_sample)
+    {
+        this->ploidy=ploidy;
+        this->num_allele=num_allele;
+        this->num_sample=num_sample;
+
+        gq=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        gqx=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        dp=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        dpf=(int32_t*)malloc(num_sample*sizeof(int32_t));
+        ps=(int32_t*)malloc(num_sample*sizeof(int32_t));
+
+        num_ad=num_allele*num_sample;
+        ad = (int32_t *)malloc(num_ad*sizeof(int32_t));
+        adf = (int32_t *)malloc(num_ad*sizeof(int32_t));
+        adr = (int32_t *)malloc(num_ad*sizeof(int32_t));
+
+        num_pl = get_number_of_likelihoods(ploidy,num_allele)*num_sample;
+        pl = (int32_t *)malloc(num_pl*sizeof(int32_t));
+        gt = (int32_t *)malloc(num_sample*ploidy*sizeof(int32_t));
+    }
+
+    void vcf_data_t::resize(size_t num_alleles)
+    {
+        if(num_alleles!=this->num_allele)
+        {
+            this->num_allele=num_alleles;
+            num_pl = ggutils::get_number_of_likelihoods(ploidy,num_allele)* num_sample;
+            pl = (int32_t *) realloc(pl, num_pl * sizeof(int32_t));
+            num_ad=num_allele*num_sample;
+            ad = (int32_t *)realloc(ad,num_ad*sizeof(int32_t));
+            adr = (int32_t *)realloc(adr,num_ad*sizeof(int32_t));
+            adf = (int32_t *)realloc(adf,num_ad*sizeof(int32_t));
+        }
+    }
+
+    void vcf_data_t::set_missing()
+    {
+        std::fill(gq,gq+num_sample,bcf_int32_missing);
+        std::fill(gqx,gqx+num_sample,bcf_int32_missing);
+        std::fill(dp,dp+num_sample,bcf_int32_missing);
+        std::fill(dpf,dpf+num_sample,bcf_int32_missing);
+        std::fill(ps,ps+num_sample,bcf_int32_missing);
+        std::fill(gt,gt+ploidy*num_sample,bcf_gt_missing);
+        std::fill(pl,pl+num_pl,bcf_int32_missing);
+        std::fill(ad,ad+num_ad,bcf_int32_missing);
+        std::fill(adf,adf+num_ad,bcf_int32_missing);
+        std::fill(adr,adr+num_ad,bcf_int32_missing);
+    }
+
+    vcf_data_t::~vcf_data_t()
+    {
+        free(ad);
+        free(adf);
+        free(adr);
+        free(pl);
+        free(gt);
+        free(gq);
+        free(gqx);
+        free(dp);
+        free(dpf);
+        free(ps);
     }
 }

@@ -8,16 +8,11 @@ DepthBlock::DepthBlock()
     set_missing();
 }
 
-DepthBlock::DepthBlock(int rid, int start, int end, int dp, int dpf, int gq)
+DepthBlock::DepthBlock(int rid, int start, int end, int dp, int dpf, int gq, int ploidy)
+: _rid(rid), _start(start), _end(end), _dp(dp), _dpf(dpf), _gq(gq), _ploidy(ploidy)
 {
     assert(end >= 0 && start >= 0);
     assert(end >= start);
-    _rid = rid;
-    _start = start;
-    _end = end;
-    _dp = dp;
-    _dpf = dpf;
-    _gq = gq;
 }
 
 void DepthBlock::set_missing()
@@ -104,5 +99,7 @@ DepthBlock DepthBlock::intersect(int rid, int start, int end)
         ggutils::die("DepthBlock: bad coordinates.");
     }
 
-    return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq};
+    return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq, _ploidy};
 }
+
+int DepthBlock::get_ploidy() {return _ploidy;}

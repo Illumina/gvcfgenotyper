@@ -152,13 +152,12 @@ int GVCFReader::read_lines(const unsigned num_lines)
                 _variant_buffer.push_back(_bcf_header,*v);
             }
             num_read++;
-        } 
-
-
+        }
         int32_t dp;
         //buffer a depth block. FIXME: this should really all be in the DepthBlock constructor.
         if(ggutils::bcf1_get_one_format_int(_bcf_header, _bcf_record, "DP",dp)==1)
         {
+            int ploidy = ggutils::get_ploidy(_bcf_header,_bcf_record);
             int start = _bcf_record->pos;
             int32_t dpf, gq, end;
             end = ggutils::get_end_of_gvcf_block(_bcf_header, _bcf_record);
@@ -176,7 +175,7 @@ int GVCFReader::read_lines(const unsigned num_lines)
                 ggutils::die("no FORMAT/GQ found");
 
             ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"DPF",dpf);
-            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq));
+            _depth_buffer.push_back(DepthBlock(_bcf_record->rid, start, end, dp, dpf, gq, ploidy));
         }
     }
     return (num_read);
@@ -212,7 +211,7 @@ bool GVCFReader::empty()
     }
 }
 
-const  bcf_hdr_t *GVCFReader::get_header()
+bcf_hdr_t *GVCFReader::get_header()
 {
     return (_bcf_header);
 }

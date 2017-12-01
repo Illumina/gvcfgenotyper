@@ -30,6 +30,19 @@ extern "C" {
 
 namespace ggutils
 {
+    //Simple struct to hold our default FORMAT fields.
+    struct vcf_data_t
+    {
+        int32_t *pl,*ad,*adf,*adr,*gt,*gq,*gqx,*dp,*dpf,*ps;
+        size_t ploidy,num_allele,num_sample,num_ad,num_pl;
+        vcf_data_t(size_t ploidy,size_t num_allele,size_t num_sample);
+        void resize(size_t num_alleles);
+        void set_missing();
+        ~vcf_data_t();
+    };
+
+    void init_vcf_data(size_t ploidy,size_t num_allele,size_t num_sample,vcf_data_t & record);
+    void destroy_vcf_data(vcf_data_t & record);
 
     int read_text_file(const string &fname, vector<string> &output);
 
@@ -37,7 +50,9 @@ namespace ggutils
 
     void print_variant(bcf1_t *record);
 
-    int *zeros(int n);
+    int32_t *zeros(int n);
+
+    int32_t *assign_bcf_int32_missing(size_t n);
 
     bool fileexists(const string &fname);
 
@@ -90,7 +105,8 @@ namespace ggutils
 
     int get_end_of_variant(bcf1_t *record);
 
-    bool bcf1_equal(bcf1_t *a, bcf1_t *b);
+    bool bcf1_equal(bcf1_t *a, bcf1_t *b); //checks if the first ALT allele is equivalent in a/b
+    bool bcf1_all_equal(bcf1_t *a, bcf1_t *b); //checks if all ALT alleles are equivalent
 
     bool bcf1_less_than(bcf1_t *a, bcf1_t *b);
 
@@ -113,11 +129,18 @@ namespace ggutils
     int choose(int n, int k);
 
     //these are simple htslib wrappers shortcuts to get scalar ints/floats (not appropriate for arrays)
-    int bcf1_get_one_info_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
-    int bcf1_get_one_format_float(bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
-    int bcf1_get_one_info_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
-    int bcf1_get_one_format_int(bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
+    int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
+    int bcf1_get_one_format_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output);
+    int bcf1_get_one_info_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
+    int bcf1_get_one_format_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output);
 
     //gets the index of a genotype likelihood for ploidy == 2
     int get_gl_index(int g0, int g1);
+
+    //swaps the ath alle with the bth allele, rearranges PL/AD accordingly
+    int bcf1_allele_swap(bcf_hdr_t *header, bcf1_t *record, int a,int b);
+
+    //returns the string length of the right trimmed ref/alt (see https://academic.oup.com/bioinformatics/article/31/13/2202/196142)
+    void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen);
+
 }

@@ -12,8 +12,8 @@ TEST(multiAllele,test1)
     auto rec1 = generate_record(hdr,rid,pos,"C,G");
     auto rec2 = generate_record(hdr,rid,pos,"C,A");
     auto rec3 = generate_record(hdr,rid,200,"CTG,C");
-    auto rec4 = generate_record(hdr,rid,pos,"CTGG,C");
-    auto rec5 = generate_record(hdr,rid,pos,"C,CAAAAAAAA");
+    auto rec4 = generate_record(hdr,rid,pos,"CTGG,C,CAAAAAAAATGG");
+    auto rec5 = generate_record(hdr,rid,pos,"CTGG,CAAAAAAAATGG,C");
 
     multiAllele m;
     m.init(hdr);
@@ -29,10 +29,12 @@ TEST(multiAllele,test1)
 
     bcf1_t *v = bcf_init1();
     m.collapse(v);
-//    ggutils::print_variant(hdr,v);
+    ggutils::print_variant(hdr,v);
+
+    m.get_max();
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
-    ASSERT_TRUE( ggutils::bcf1_equal(truth,v));
+    ASSERT_TRUE( ggutils::bcf1_all_equal(truth,v));
     bcf_destroy(rec1);
     bcf_destroy(rec2);
     bcf_destroy(rec3);
@@ -71,4 +73,34 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
     std::cerr << "Outputting to " << output_file_name << std::endl;
     GVCFMerger g(files, output_file_name, "z", ref_file_name, buffer_size);
     g.write_vcf();
+}
+
+TEST(GVCFMerger, likelihood)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+    auto record1 = generate_record(hdr,"chr1\t85677\t.\tT\tA\t191\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/1:224:30:42:0:22,20:13,11:9,9:-26:PASS:226,0,257");
+
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    multiAllele m;
+    m.init(hdr);
+    m.setPosition(record1->rid,record1->pos);
+    m.allele(record1);
+
+    ggutils::print_variant(hdr,record1);
+
+    ggutils::vcf_data_t d(2,2,2);
+    Genotype g(hdr,record1);
+    g.propagate_format_fields(0,2,&d);
+    ASSERT_EQ(d.pl[0],226);
+    ASSERT_EQ(d.pl[1],0);
+    ASSERT_EQ(d.pl[2],257);
+
+    g.propagate_format_fields(1,2,&d);
+    ASSERT_EQ(d.pl[3],226);
+    ASSERT_EQ(d.pl[4],0);
+    ASSERT_EQ(d.pl[5],257);
+
 }

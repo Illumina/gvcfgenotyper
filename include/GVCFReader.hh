@@ -48,7 +48,7 @@ public:
 
     size_t get_num_depth();
 
-    const bcf_hdr_t *get_header();
+    bcf_hdr_t *get_header();
 
     int read_until(int rid, int pos);
 

@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "test_helpers.hh"
 
 #include "ggutils.hh"
@@ -92,6 +93,23 @@ TEST(UtilTest, comparators)
     ASSERT_FALSE( ggutils::bcf1_equal(record2,record1));
     ASSERT_FALSE( ggutils::bcf1_less_than(record2,record1));
     ASSERT_TRUE( ggutils::bcf1_greater_than(record2,record1));
+
+    update_record(hdr,1,100,"TA,TAA",record1);
+    update_record(hdr,1,100,"T,TA" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,TA",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,TA,T",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_TRUE( ggutils::bcf1_equal(record1, record2));
+
+    update_record(hdr,1,100,"TAA,T,TA",record1);
+    update_record(hdr,1,100,"TA,T" ,record2);
+    ASSERT_FALSE( ggutils::bcf1_equal(record1, record2));
+
     bcf_destroy(record1);
     bcf_destroy(record2);
 }
@@ -105,6 +123,7 @@ TEST(UtilTest, GenotypeIndex)
     ASSERT_EQ(3, ggutils::get_gl_index(0, 2));
     ASSERT_EQ(4, ggutils::get_gl_index(1, 2));
     ASSERT_EQ(5, ggutils::get_gl_index(2, 2));
+    ASSERT_EQ(105,ggutils::get_gl_index(0,14));
 }
 
 TEST(UtilTest, phred)
@@ -144,4 +163,54 @@ TEST(UtilTest,getters)
     float sb;
     ggutils::bcf1_get_one_format_float(hdr,record1,"SB",sb);
     ASSERT_FLOAT_EQ(sb,1.01);
+}
+
+TEST(UtilTest,bcf1AlleleSwap)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01");
+
+//    ggutils::print_variant(hdr,record1);
+    for(int i=1;i<record1->n_allele;i++)
+    {
+        bcf1_t *record2=bcf_dup(record1);
+        ggutils::bcf1_allele_swap(hdr,record2,i,1);
+//        ggutils::print_variant(hdr,record2);
+
+        bcf_destroy1(record2);
+    }
+}
+
+TEST(UtilTest,rightTrim)
+{
+    std::string ref="TA";
+    std::string alt="TAA";
+    size_t a,b;
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)2);
+
+    ref="T";
+    alt="TA";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)2);
+
+    ref="TTTAAATTCT";
+    alt="TTTAAATACT";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,ref.size()-2);
+    ASSERT_EQ(b,alt.size()-2);
+
+    ref="T";
+    alt="A";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)1);
+
+    ref="T";
+    alt="T";
+    ggutils::right_trim(ref.c_str(),alt.c_str(),a,b);
+    ASSERT_EQ(a,(size_t)1);
+    ASSERT_EQ(b,(size_t)1);
 }
