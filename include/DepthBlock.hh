@@ -52,8 +52,7 @@ public:
     void divide(int n);
 
 private:
-    int _rid, _start, _end, _dp, _gq, _dpf;
-    uint8_t _ploidy;
+    int _rid, _start, _end, _dp, _dpf, _gq, _ploidy;
 };
 
 #endif //GVCFGENOTYPER_DEPTHBLOCK_HH

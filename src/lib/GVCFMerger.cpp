@@ -56,6 +56,10 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     build_header();
     _record_collapser.init(_output_header);
     _output_record = bcf_init1();
+
+    _num_ps_written = 0;
+    _mean_mq = 0;
+    _num_mq = 0;
 }
 
 int GVCFMerger::get_next_variant()

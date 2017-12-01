@@ -56,12 +56,6 @@ int Genotype::get_dpf()
     }
 }
 
-void Genotype::set_dp_missing()
-{
-    _num_dp=0;
-    _num_dpf=0;
-}
-
 bool Genotype::is_dp_missing()
 {
     return(_num_dp==0);
@@ -87,15 +81,15 @@ void Genotype::allocate(int ploidy, int num_allele)
     _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
-    _gt = ggutils::zeros(_num_gt);
-    _pl = ggutils::zeros(_num_pl);
-    _ad = ggutils::zeros(_num_ad);
-    _adf = ggutils::zeros(_num_ad);
-    _adr = ggutils::zeros(_num_ad);
-    _gq = ggutils::zeros(_num_gq);
-    _gqx = ggutils::zeros(_num_gqx);
-    _dp = ggutils::zeros(_num_dp);
-    _dpf = ggutils::zeros(_num_dpf);
+    _gt = ggutils::assign_bcf_int32_missing(_num_gt);
+    _pl = ggutils::assign_bcf_int32_missing(_num_pl);
+    _ad = ggutils::assign_bcf_int32_missing(_num_ad);
+    _adf = ggutils::assign_bcf_int32_missing(_num_ad);
+    _adr = ggutils::assign_bcf_int32_missing(_num_ad);
+    _gq = ggutils::assign_bcf_int32_missing(_num_gq);
+    _gqx = ggutils::assign_bcf_int32_missing(_num_gqx);
+    _dp = ggutils::assign_bcf_int32_missing(_num_dp);
+    _dpf = ggutils::assign_bcf_int32_missing(_num_dpf);
     _gl.assign(_num_pl, 0.);
     _adf_found=false;
     _adr_found=false;
@@ -115,27 +109,29 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     _ploidy = bcf_get_genotypes(header, record, &_gt, &_num_gt);
     assert(_ploidy >= 0 && _ploidy <= 2);
     _num_pl = _num_gl = _ploidy == 1 ? _num_allele : _num_allele * (1 + _num_allele) / 2;
+
+    //These values with be updated by their respective bcf_get_* calls.
     _num_ad = 0, _num_adf = 0, _num_adr = 0, _num_gq = 0, _num_gqx = 0, _num_dpf = 0,  _num_dp = 0;
 
     _qual = record->qual;
     _pl = (int32_t *)malloc(sizeof(int32_t)*_num_gl);
-    int ret;
-    ret = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
-    if(ret==1 || ret==-3 || ret==-1)
+    int status;
+    status = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
+    if(status==1 || status==-3 || status==-1)
     {
         //std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
         //std::cerr<<_pl[0]<<std::endl;
         //assert(_pl[0]==bcf_int32_missing);//FIXME: I don't understand why some times this is *not* bcf_int32_missing. Probably need to look at the htslib code to understand.
         std::fill(_pl,_pl+_num_gl,bcf_int32_missing);
         _num_pl=_num_gl;
-        ret=_num_gl;
+        status=_num_gl;
         _has_pl=false;
     }
 
-    if(ret != _num_gl)
+    if(status != _num_gl)
     {
         ggutils::print_variant((bcf_hdr_t *)header,record);
-        std::cerr << "Got " << ret << " values instead of " << _num_gl << " ploidy="<<_ploidy<<" num_allele="<<_num_allele<<std::endl;
+        std::cerr << "Got " << status << " values instead of " << _num_gl << " ploidy="<<_ploidy<<" num_allele="<<_num_allele<<std::endl;
         ggutils::die("incorrect number of values in  FORMAT/PL");
     }
     assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
@@ -154,10 +150,10 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         std::cerr << "WARNING: gvcf without ADR supplied." << "\n";
         _adr_found=false;
     }
-    ret = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
-    if(ret!=1)
+    status = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
+    if(status!=1)
     {
-        if(ret==-3)
+        if(status==-3)
         {
             setDepthFromAD();
         }
@@ -169,24 +165,23 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     ggutils::bcf1_get_one_info_int(header,record,"MQ",_mq);
     bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
     bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
-    //FIXME: GQ is should be an integer but is sometimes set as float. we need to catch and handle this.
+
     if (bcf_get_format_int32(header, record, "GQ", &_gq, &_num_gq) == -2)
     {
-        _gq = (int *)malloc(sizeof(int));
-        float tmp_gq = -1;
-        float *tmp_ptr = &tmp_gq;
-        _num_gq = 1;
-        if(bcf_get_format_float(header, record, "GQ", &tmp_ptr, &_num_gq) != 1)
+        _gq = ggutils::assign_bcf_int32_missing(1);
+        float *tmp_gq = nullptr;
+        if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
             std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
-            _gq[0] = bcf_int32_missing;
         }
         else
         {
-            _gq[0] = (int32_t)tmp_gq;
+            _gq[0] = (int32_t)tmp_gq[0];
+            free(tmp_gq);
         }
         _num_gq = 1;
     }
+
     _gl.assign(_num_gl, 1.);
     for (int i = 0; i < _num_pl; i++)
     {
@@ -224,10 +219,6 @@ Genotype Genotype::marginalise(int index)
         memcpy(ret._dp, _dp, sizeof(int32_t) * _num_dp);
         memcpy(ret._dpf, _dpf, sizeof(int32_t) * _num_dpf);
     }
-    else
-    {
-        ret.set_dp_missing();
-    }
 
     memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);
     memcpy(ret._gqx, _gqx, sizeof(int32_t) * _num_gqx);
@@ -261,6 +252,7 @@ Genotype Genotype::marginalise(int index)
             }
         }
     }
+
     //FIXME: dummy values for the time being because PLs are complicated.
     for (int j = 0; j < ret._num_pl; j++)
     {
@@ -343,6 +335,14 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
     return (0);
 }
 
+void Genotype::set_depth_to_zero()
+{
+    std::fill(_dp,_dp+_num_dp,0);
+    std::fill(_ad,_ad+_num_ad,0);
+    std::fill(_adf,_adf+_num_adf,0);
+    std::fill(_adr,_adr+_num_adr,0);
+}
+
 Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
 {
     int num_new_allele = indices.size()+1;
@@ -352,15 +352,13 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
     }
 
     Genotype ret(_ploidy, num_new_allele);
+    ret.set_depth_to_zero();
+
     if(_num_dp>0)
     {
         assert(_num_dpf>0);
         memcpy(ret._dp, _dp, sizeof(int32_t) * _num_dp);
         memcpy(ret._dpf, _dpf, sizeof(int32_t) * _num_dpf);
-    }
-    else
-    {
-        ret.set_dp_missing();
     }
 
     memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);

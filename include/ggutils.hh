@@ -50,7 +50,9 @@ namespace ggutils
 
     void print_variant(bcf1_t *record);
 
-    int *zeros(int n);
+    int32_t *zeros(int n);
+
+    int32_t *assign_bcf_int32_missing(size_t n);
 
     bool fileexists(const string &fname);
 

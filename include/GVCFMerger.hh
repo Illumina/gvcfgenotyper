@@ -44,7 +44,7 @@ private:
     //int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps,*_format_pl,*_format_adf,*_format_adr,*_format_gqx;
     ggutils::vcf_data_t *format;//stores all our format fields.
     int32_t *_info_adf, *_info_adr, *_info_ac;
-    int _num_pl,_mean_mq,_num_mq,_num_variants;
+    int _mean_mq,_num_mq,_num_variants;
     size_t _num_ps_written;
 };
 

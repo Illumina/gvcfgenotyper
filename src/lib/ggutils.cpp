@@ -15,14 +15,18 @@ namespace ggutils
         }
     }
 
-    int *zeros(int n)
+    int32_t *zeros(int n)
     {
-        int *ret = (int *) malloc(sizeof(int) * n);
-        for (int i = 0; i < n; i++)
-        {
-            ret[i] = 0;
-        }
+        int32_t *ret = (int *) malloc(sizeof(int32_t) * n);
+        std::fill(ret,ret+n,0);
         return (ret);
+    }
+
+    int32_t *assign_bcf_int32_missing(size_t n)
+    {
+        int32_t *ret = (int32_t *)malloc(sizeof(int32_t) * n);
+        std::fill(ret,ret+n,bcf_int32_missing);
+        return(ret);
     }
 
     bool fileexists(const string &fname)

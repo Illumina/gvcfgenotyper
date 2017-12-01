@@ -9,16 +9,10 @@ DepthBlock::DepthBlock()
 }
 
 DepthBlock::DepthBlock(int rid, int start, int end, int dp, int dpf, int gq, int ploidy)
+: _rid(rid), _start(start), _end(end), _dp(dp), _dpf(dpf), _gq(gq), _ploidy(ploidy)
 {
     assert(end >= 0 && start >= 0);
     assert(end >= start);
-    _rid = rid;
-    _start = start;
-    _end = end;
-    _dp = dp;
-    _dpf = dpf;
-    _gq = gq;
-    _ploidy = ploidy;
 }
 
 void DepthBlock::set_missing()
