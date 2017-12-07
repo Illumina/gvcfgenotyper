@@ -99,6 +99,7 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
                 {
                     //creates a mapping from old alleles -> new alleles
                     Genotype new_genotype(old_genotype._ploidy, num_new_allele);
+                    new_genotype.set_depth_to_zero();
                     vector<int> allele_remap(num_allele);
                     for (int new_allele = 0; new_allele < num_new_allele; new_allele++)
                     {
