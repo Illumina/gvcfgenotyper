@@ -364,3 +364,22 @@ TEST(Normaliser, unarise9)
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
     Genotype g(hdr,i,m);
 }
+
+TEST(Normaliser, unarise10)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name, hdr);
+
+    auto record1 = generate_record(hdr,"chr1\t4\trs863224454;rs863224781\tGCA\tCTG,CCA\t2\tLowGQX\tRU=.,.;REFREP=.,.;IDREP=.,.;MQ=60;OLD_VARIANT=chr5:148407707:GACG/GCTG/GCCA;clinvar=1|likely_pathogenic,2|uncertain_significance;GMAF=A|0.009385,A|0.009385;CSQT=1|SH3TC2|NM_024577.3|missense_variant,2|SH3TC2|NM_024577.3|missense_variant\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/1:5:0:56:4,3,3:1,1,1:3,2,2:LowGQX:43,8,8,16,0,29");
+    std::vector<bcf1_t *> buffer;
+    norm.unarise(record1, buffer);
+    std::cerr << "Output:" << std::endl;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        Genotype g(hdr,*it);
+        ASSERT_TRUE(g.get_ad(0)>=0);
+        ASSERT_TRUE(g.get_ad(1)>=0);
+        ggutils::print_variant(hdr, *it);
+    }
+}
