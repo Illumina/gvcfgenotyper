@@ -382,7 +382,7 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
         ret._ad[allele_map[i]]+=_ad[i];
         if(_adf_found)
             ret._adf[allele_map[i]]+=_adf[i];
-        if(_adf_found)
+        if(_adr_found)
             ret._adr[allele_map[i]]+=_adr[i];
 
 	if(_ploidy==1)
