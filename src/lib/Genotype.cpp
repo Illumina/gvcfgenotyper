@@ -387,9 +387,11 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
 
 	if(_ploidy==1)
 	    ret._gl[allele_map[i]]+=_gl[i];
-	else
+	else if(_ploidy==2)
 	    for(int j=i;j<_num_allele;j++)
 		ret._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
+	else
+	    ggutils::die("Genotype::collapse_alleles_into_ref invalid ploidy");
     }
     ret.PLfromGL();
 
