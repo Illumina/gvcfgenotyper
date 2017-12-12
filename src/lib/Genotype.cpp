@@ -384,8 +384,12 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
             ret._adf[allele_map[i]]+=_adf[i];
         if(_adf_found)
             ret._adr[allele_map[i]]+=_adr[i];
-        for(int j=i;j<_num_allele;j++)
-            ret._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
+
+	if(_ploidy==1)
+	    ret._gl[allele_map[i]]+=_gl[i];
+	else
+	    for(int j=i;j<_num_allele;j++)
+		ret._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
     }
     ret.PLfromGL();
 
@@ -393,7 +397,9 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
 
     for(int i=0;i<_ploidy;i++)
     {
-        if(is_phased)
+	if(bcf_gt_is_missing(_gt[i]))
+	    ret._gt[i] = bcf_gt_missing;
+        else if(is_phased)
             ret._gt[i] = bcf_gt_phased(allele_map[bcf_gt_allele(_gt[i])]);
         else
             ret._gt[i] = bcf_gt_unphased(allele_map[bcf_gt_allele(_gt[i])]);

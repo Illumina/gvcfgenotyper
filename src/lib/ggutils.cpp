@@ -526,9 +526,13 @@ namespace ggutils
         assert(bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl)==(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele));
         vector<int> tmp_pl(format_pl,format_pl+num_pl);
         for(int i=0;i<record->n_allele;i++)
-            for(int j=i;j<record->n_allele;j++)
-                format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
-
+	{
+	    if(ploidy==1)
+		format_pl[allele_map[i]] = tmp_pl[i];
+	    else
+		for(int j=i;j<record->n_allele;j++)
+		    format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
+	}
         bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
 
         //memory cleanup
