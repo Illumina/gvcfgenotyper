@@ -6,7 +6,7 @@ tmpdir=`mktemp -d`
 
 bcftools=/illumina/thirdparty/bcftools/bcftools-1.5/bcftools
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/.././test/smoke_test_output/
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../../test/smoke_test_output/
 
 echo running FORMAT/PS behaviour test....
 
@@ -28,4 +28,3 @@ diff ${tmpdir}/region_test2.observed ${DIR}/region_test2.expected
 echo set_region test passed
 
 rm -rf $tmpdir
-
