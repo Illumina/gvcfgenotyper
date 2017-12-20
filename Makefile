@@ -20,6 +20,7 @@ include $(HTSDIR)/htslib.mk
 HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
 
+#special builds for debugging and profiling
 debug: CXXFLAGS = -g -O1 -Wall
 debug: CFLAGS = -g -O1 
 debug: all
@@ -56,7 +57,10 @@ bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp build/version.hh $(OBJS) $(HTSLIB)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS) src/cpp/gvcfgenotyper.cpp 
 bin/test_gvcfgenotyper: build/version.hh $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
 	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS) build/gtest.a build/gtest_main.a
-
+.PHONY: test
+test: bin/test_gvcfgenotyper bin/gvcfgenotyper
+	bin/test_gvcfgenotyper
+	bash -e src/bash/run_smoke_tests.sh
 .PHONY: clean
 clean:
 	rm build/* bin/gvcfgenotyper
