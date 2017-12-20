@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2017-12-20
+- replaced CMake with good old Make
+
 ## [Unreleased] - 2017-11-01
 - updated to htslib-1.6
 - first version that produces multi-allelic output
