@@ -5,7 +5,7 @@
 
 TEST(UtilTest, comparators)
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
 
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
 

@@ -39,7 +39,7 @@ bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & allel
 bcf_hdr_t *get_header()
 {
     //FIXME: we should store the header as a big string within the source code
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/test2/NA12887_S1.vcf.gz";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/test2/NA12887_S1.vcf.gz";
     return(bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r")));
 }
 
