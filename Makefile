@@ -33,7 +33,7 @@ profile: all
 ifneq "$(wildcard .git)" ""
 VERSION = $(shell git describe --always)
 endif
-build/version.hh:
+build/version.hh: 
 	echo '#define GG_VERSION "$(VERSION)"' > $@
 
 OBJS=$(shell for i in src/cpp/lib/*.cpp;do echo build/$$(basename $${i%cpp})o;done)
