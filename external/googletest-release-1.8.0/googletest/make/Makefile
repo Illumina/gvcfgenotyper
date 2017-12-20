@@ -1,3 +1,5 @@
+# Slightly odified version of the original googltest makefile - Jared O'Connell
+
 # A sample Makefile for building Google Test and using it in user
 # tests.  Please tweak it to suit your environment and project.  You
 # may want to move it to your project's root directory.
@@ -27,21 +29,10 @@ CPPFLAGS += -isystem $(GTEST_DIR)/include
 # Flags passed to the C++ compiler.
 CXXFLAGS += -g -Wall -Wextra -pthread
 
-# All tests produced by this Makefile.  Remember to add new tests you
-# created to the list.
-TESTS = sample1_unittest
-
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
-
-# House-keeping build targets.
-
-all : $(TESTS)
-
-clean :
-	rm -f $(TESTS) gtest.a gtest_main.a *.o
 
 # Builds gtest.a and gtest_main.a.
 
@@ -66,17 +57,3 @@ build/gtest.a : build/gtest-all.o
 
 build/gtest_main.a : build/gtest-all.o build/gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
-
-# Builds a sample test.  A test should link with either gtest.a or
-# gtest_main.a, depending on whether it defines its own main()
-# function.
-
-sample1.o : $(USER_DIR)/sample1.cc $(USER_DIR)/sample1.h $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/sample1.cc
-
-sample1_unittest.o : $(USER_DIR)/sample1_unittest.cc \
-                     $(USER_DIR)/sample1.h $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/sample1_unittest.cc
-
-sample1_unittest : sample1.o sample1_unittest.o gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
