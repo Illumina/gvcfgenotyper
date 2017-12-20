@@ -194,7 +194,9 @@ bcf1_t *GVCFMerger::next()
     bcf_update_id(_output_header, _output_record, ".");
     _record_collapser.collapse(_output_record);
     _output_record->qual = 0;
-
+#ifdef DEBUG
+    ggutils::print_variant(_output_header,_output_record);
+#endif
     //fill in the format information for every sample.
     set_output_buffers_to_missing(_output_record->n_allele);
 
