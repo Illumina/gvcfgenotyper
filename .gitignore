@@ -1,2 +1,6 @@
 *~
 *.o
+build/*
+bin/*
+external/htslib-1.6/libhts.a
+external/htslib-1.6/version.h
