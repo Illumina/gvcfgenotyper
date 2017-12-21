@@ -63,6 +63,7 @@ bool Genotype::is_dp_missing()
 
 Genotype::Genotype(int ploidy, int num_allele)
 {
+    _gt=_pl=_ad=_adf=_adr=_gq=_gqx=_dp=_dpf=nullptr;
     allocate(ploidy,num_allele);
 }
 
@@ -81,15 +82,15 @@ void Genotype::allocate(int ploidy, int num_allele)
     _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
-    _gt = ggutils::assign_bcf_int32_missing(_num_gt);
-    _pl = ggutils::assign_bcf_int32_missing(_num_pl);
-    _ad = ggutils::assign_bcf_int32_missing(_num_ad);
-    _adf = ggutils::assign_bcf_int32_missing(_num_ad);
-    _adr = ggutils::assign_bcf_int32_missing(_num_ad);
-    _gq = ggutils::assign_bcf_int32_missing(_num_gq);
-    _gqx = ggutils::assign_bcf_int32_missing(_num_gqx);
-    _dp = ggutils::assign_bcf_int32_missing(_num_dp);
-    _dpf = ggutils::assign_bcf_int32_missing(_num_dpf);
+    _gt = ggutils::assign_bcf_int32_missing(_gt,_num_gt);
+    _pl = ggutils::assign_bcf_int32_missing(_pl,_num_pl);
+    _ad = ggutils::assign_bcf_int32_missing(_ad,_num_ad);
+    _adf = ggutils::assign_bcf_int32_missing(_adf,_num_ad);
+    _adr = ggutils::assign_bcf_int32_missing(_adr,_num_ad);
+    _gq = ggutils::assign_bcf_int32_missing(_gq,_num_gq);
+    _gqx = ggutils::assign_bcf_int32_missing(_gqx,_num_gqx);
+    _dp = ggutils::assign_bcf_int32_missing(_dp,_num_dp);
+    _dpf = ggutils::assign_bcf_int32_missing(_dpf,_num_dpf);
     _gl.assign(_num_pl, 0.);
     _adf_found=false;
     _adr_found=false;
@@ -168,7 +169,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 
     if (bcf_get_format_int32(header, record, "GQ", &_gq, &_num_gq) == -2)
     {
-        _gq = ggutils::assign_bcf_int32_missing(1);
+        _gq = ggutils::assign_bcf_int32_missing(_gq,1);
         float *tmp_gq = nullptr;
         if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
@@ -189,79 +190,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
 }
 
-Genotype Genotype::marginalise(int index)
-{
-    const int reference_allele = 0;
-    const int primary_allele = 1;
-    const int symbolic_allele = 2;
-    const int num_new_allele = 3;
-    assert(index > 0 && index < _num_allele);
-    Genotype ret(_ploidy, num_new_allele);
-    ret.set_depth_to_zero();
-
-    for (int j = 0; j < _ploidy; j++)
-    {
-        if (bcf_gt_allele(_gt[j]) == reference_allele)
-        {
-            ret._gt[j] = bcf_gt_unphased(reference_allele);
-        }
-        else if (bcf_gt_allele(_gt[j]) == index)
-        {
-            ret._gt[j] = bcf_gt_unphased(primary_allele);
-        }
-        else
-        {
-            ret._gt[j] = bcf_gt_unphased(symbolic_allele);
-        }
-    }
-    if(_num_dp>0)
-    {
-        assert(_num_dpf>0);
-        memcpy(ret._dp, _dp, sizeof(int32_t) * _num_dp);
-        memcpy(ret._dpf, _dpf, sizeof(int32_t) * _num_dpf);
-    }
-
-    memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);
-    memcpy(ret._gqx, _gqx, sizeof(int32_t) * _num_gqx);
-
-    //marginalises FORMAT/AD
-    ret._ad[reference_allele] = _ad[reference_allele];
-    ret._ad[primary_allele] = _ad[index];
-    ret._ad[symbolic_allele] = 0;
-
-    if (_adf_found) {
-        ret._adf[reference_allele] = _adf[reference_allele];
-        ret._adf[primary_allele] = _adf[index];
-        ret._adf[symbolic_allele] = 0;
-    }
-
-    if (_adr_found) {
-        ret._adr[reference_allele] = _adr[reference_allele];
-        ret._adr[primary_allele] = _adr[index];
-        ret._adr[symbolic_allele] = 0;
-    }
-    for (int j = 1; j < _num_allele; j++)
-    {
-        if (index != j)//j is an alternate allele that is not i
-        {
-            ret._ad[symbolic_allele] += _ad[j];
-            if (_adf_found) {
-                ret._adf[symbolic_allele] += _adf[j];
-            }
-            if (_adr_found) {
-                ret._adr[symbolic_allele] += _adr[j];
-            }
-        }
-    }
-
-    //FIXME: dummy values for the time being because PLs are complicated.
-    for (int j = 0; j < ret._num_pl; j++)
-    {
-        ret._pl[j] =ggutils::phred(ret._gl[j]);
-    }
-
-    return (ret);
-}
+//
 
 void Genotype::setDepthFromAD()
 {
@@ -344,7 +273,7 @@ void Genotype::set_depth_to_zero()
     std::fill(_adr,_adr+_num_adr,0);
 }
 
-Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
+void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
 {
     int num_new_allele = indices.size()+1;
     for(size_t i=0;i<indices.size();i++)
@@ -352,18 +281,18 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
         assert(indices[i]>0 && indices[i]<_num_allele);
     }
 
-    Genotype ret(_ploidy, num_new_allele);
-    ret.set_depth_to_zero();
+    out.allocate(_ploidy, num_new_allele);
+    out.set_depth_to_zero();
 
     if(_num_dp>0)
     {
         assert(_num_dpf>0);
-        memcpy(ret._dp, _dp, sizeof(int32_t) * _num_dp);
-        memcpy(ret._dpf, _dpf, sizeof(int32_t) * _num_dpf);
+        memcpy(out._dp, _dp, sizeof(int32_t) * _num_dp);
+        memcpy(out._dpf, _dpf, sizeof(int32_t) * _num_dpf);
     }
 
-    memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);
-    memcpy(ret._gqx, _gqx, sizeof(int32_t) * _num_gqx);
+    memcpy(out._gq, _gq, sizeof(int32_t) * _num_gq);
+    memcpy(out._gqx, _gqx, sizeof(int32_t) * _num_gqx);
 
     std::vector<int> allele_map;
     allele_map.push_back(0);
@@ -379,35 +308,33 @@ Genotype Genotype::collapse_alleles_into_ref(vector<int> & indices)
 
     for(int i=0;i<_num_allele;i++)
     {
-        ret._ad[allele_map[i]]+=_ad[i];
+        out._ad[allele_map[i]]+=_ad[i];
         if(_adf_found)
-            ret._adf[allele_map[i]]+=_adf[i];
+            out._adf[allele_map[i]]+=_adf[i];
         if(_adr_found)
-            ret._adr[allele_map[i]]+=_adr[i];
+            out._adr[allele_map[i]]+=_adr[i];
 
 	if(_ploidy==1)
-	    ret._gl[allele_map[i]]+=_gl[i];
+	    out._gl[allele_map[i]]+=_gl[i];
 	else if(_ploidy==2)
 	    for(int j=i;j<_num_allele;j++)
-		ret._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
+		out._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
 	else
 	    ggutils::die("Genotype::collapse_alleles_into_ref invalid ploidy");
     }
-    ret.PLfromGL();
+    out.PLfromGL();
 
     bool is_phased = _ploidy==1 ? bcf_gt_is_phased(_gt[0]) : bcf_gt_is_phased(_gt[1]) && bcf_gt_is_phased(_gt[0]);
 
     for(int i=0;i<_ploidy;i++)
     {
 	if(bcf_gt_is_missing(_gt[i]))
-	    ret._gt[i] = bcf_gt_missing;
+	    out._gt[i] = bcf_gt_missing;
         else if(is_phased)
-            ret._gt[i] = bcf_gt_phased(allele_map[bcf_gt_allele(_gt[i])]);
+            out._gt[i] = bcf_gt_phased(allele_map[bcf_gt_allele(_gt[i])]);
         else
-            ret._gt[i] = bcf_gt_unphased(allele_map[bcf_gt_allele(_gt[i])]);
+            out._gt[i] = bcf_gt_unphased(allele_map[bcf_gt_allele(_gt[i])]);
     }
-
-    return(ret);
 }
 
 void Genotype::PLfromGL()
@@ -552,6 +479,7 @@ int Genotype::get_mq()
 }
 
 int Genotype::get_ploidy() {return _ploidy;};
+int Genotype::get_num_allele() {return _num_allele;};
 
 int Genotype::get_gt(int index)
 {
@@ -574,3 +502,77 @@ int Genotype::get_pl(int g0)
     assert(g0<_num_allele);
     return(_pl[g0]);
 }
+
+//Genotype Genotype::marginalise(int index)
+//{
+//    const int reference_allele = 0;
+//    const int primary_allele = 1;
+//    const int symbolic_allele = 2;
+//    const int num_new_allele = 3;
+//    assert(index > 0 && index < _num_allele);
+//    Genotype ret(_ploidy, num_new_allele);
+//    ret.set_depth_to_zero();
+//
+//    for (int j = 0; j < _ploidy; j++)
+//    {
+//        if (bcf_gt_allele(_gt[j]) == reference_allele)
+//        {
+//            ret._gt[j] = bcf_gt_unphased(reference_allele);
+//        }
+//        else if (bcf_gt_allele(_gt[j]) == index)
+//        {
+//            ret._gt[j] = bcf_gt_unphased(primary_allele);
+//        }
+//        else
+//        {
+//            ret._gt[j] = bcf_gt_unphased(symbolic_allele);
+//        }
+//    }
+//    if(_num_dp>0)
+//    {
+//        assert(_num_dpf>0);
+//        memcpy(ret._dp, _dp, sizeof(int32_t) * _num_dp);
+//        memcpy(ret._dpf, _dpf, sizeof(int32_t) * _num_dpf);
+//    }
+//
+//    memcpy(ret._gq, _gq, sizeof(int32_t) * _num_gq);
+//    memcpy(ret._gqx, _gqx, sizeof(int32_t) * _num_gqx);
+//
+//    //marginalises FORMAT/AD
+//    ret._ad[reference_allele] = _ad[reference_allele];
+//    ret._ad[primary_allele] = _ad[index];
+//    ret._ad[symbolic_allele] = 0;
+//
+//    if (_adf_found) {
+//        ret._adf[reference_allele] = _adf[reference_allele];
+//        ret._adf[primary_allele] = _adf[index];
+//        ret._adf[symbolic_allele] = 0;
+//    }
+//
+//    if (_adr_found) {
+//        ret._adr[reference_allele] = _adr[reference_allele];
+//        ret._adr[primary_allele] = _adr[index];
+//        ret._adr[symbolic_allele] = 0;
+//    }
+//    for (int j = 1; j < _num_allele; j++)
+//    {
+//        if (index != j)//j is an alternate allele that is not i
+//        {
+//            ret._ad[symbolic_allele] += _ad[j];
+//            if (_adf_found) {
+//                ret._adf[symbolic_allele] += _adf[j];
+//            }
+//            if (_adr_found) {
+//                ret._adr[symbolic_allele] += _adr[j];
+//            }
+//        }
+//    }
+//
+//    //FIXME: dummy values for the time being because PLs are complicated.
+//    for (int j = 0; j < ret._num_pl; j++)
+//    {
+//        ret._pl[j] =ggutils::phred(ret._gl[j]);
+//    }
+//
+//    return (ret);
+//}

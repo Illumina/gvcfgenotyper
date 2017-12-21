@@ -36,7 +36,7 @@ public:
     Genotype marginalise(int index);
 
     //Removes alleles in indices, adding their AD and PL values to the REF values.
-    Genotype collapse_alleles_into_ref(vector<int> & indices);
+    void collapse_alleles_into_ref(vector<int> & indices,Genotype & out);
 
     //Copies FORMAT fields from this object into a vcf_data_t object, ploidy is the ploidy of the vcf_data_t format.
     int propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format);
@@ -64,12 +64,13 @@ public:
     int get_gt(int index);
     int get_mq();
     int get_ploidy();
+    int get_num_allele();
     int get_pl(int g0,int g1);
     int get_pl(int g0);
     float get_qual();
     bool is_dp_missing();
-    int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl, *_adf, *_adr, *_gqx;
-    int _num_allele, _num_pl, _ploidy, _num_gt, _num_ad, _num_adf, _num_adr,  _num_gq, _num_gqx, _num_dp, _num_dpf, _num_gl;
+    int *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
+    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0, _num_gl=0;
     std::vector<float> _gl;
 private:
     //Assigns memory according to ploidy/num_allele.
