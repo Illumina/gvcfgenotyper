@@ -29,11 +29,9 @@ public:
     Genotype(int ploidy, int num_allele);
 
     //Constructs a Genotype with alleles from alleles_to_map and format/info values taken from sample_variants (which is a subset of alleles_to_map).
-    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map);
+    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
+             multiAllele & alleles_to_map);
     ~Genotype();
-
-    //Marginalises over all alleles != index, creating a symbolic X allele which holds all the depth and probability mass for marginalised out alleles. This is being deprecated.
-    Genotype marginalise(int index);
 
     //Removes alleles in indices, adding their AD and PL values to the REF values.
     void collapse_alleles_into_ref(vector<int> & indices,Genotype & out);
@@ -53,6 +51,7 @@ public:
 
     //Zeroes DP and AD* values.
     void set_depth_to_zero();
+    void set_gt_to_homref();
 
     int get_gq();
     int get_gqx();
@@ -69,7 +68,7 @@ public:
     int get_pl(int g0);
     float get_qual();
     bool is_dp_missing();
-    int *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
+    int32_t *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
     int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0, _num_gl=0;
     std::vector<float> _gl;
 private:

@@ -83,7 +83,7 @@ int GVCFMerger::get_next_variant()
     assert(min_rec != nullptr);
 
     _record_collapser.setPosition(min_rec->rid, min_rec->pos);
-    for (auto it = _readers.begin(); it != _readers.end(); it++)
+    for(auto it = _readers.begin(); it != _readers.end(); it++)
     {
         auto variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
         for (auto rec = variants.first; rec != variants.second; rec++)
@@ -352,9 +352,11 @@ void GVCFMerger::build_header()
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=FT,Number=A,Type=Integer,Description=\"variant was PASS filter in original sample gvcf\">");
     bcf_hdr_append(_output_header,
-                   "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification.\">");
+                   "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in "
+                           "the VCF specification.\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
-    bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for "
+            "variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
 
 
     ggutils::copy_contigs(_readers[0].get_header(), _output_header);

@@ -1,7 +1,7 @@
 #include <htslib/vcf.h>
 #include "Normaliser.hh"
 
-#define DEBUG
+//#define DEBUG
 
 Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
 {

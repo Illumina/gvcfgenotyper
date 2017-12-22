@@ -63,7 +63,6 @@ bool Genotype::is_dp_missing()
 
 Genotype::Genotype(int ploidy, int num_allele)
 {
-    _gt=_pl=_ad=_adf=_adr=_gq=_gqx=_dp=_dpf=nullptr;
     allocate(ploidy,num_allele);
 }
 
@@ -82,7 +81,8 @@ void Genotype::allocate(int ploidy, int num_allele)
     _num_gqx = 1;
     _num_dp = 1;
     _num_dpf = 1;
-    _gt = ggutils::assign_bcf_int32_missing(_gt,_num_gt);
+    _gt = (int32_t *)realloc(_gt,_ploidy*sizeof(int32_t));
+    std::fill(_gt,_gt+_ploidy,bcf_gt_missing);
     _pl = ggutils::assign_bcf_int32_missing(_pl,_num_pl);
     _ad = ggutils::assign_bcf_int32_missing(_ad,_num_ad);
     _adf = ggutils::assign_bcf_int32_missing(_adf,_num_ad);
@@ -122,7 +122,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     {
         //std::cerr << "WARNING: missing FORMAT/PL at " << record->pos+1 <<std::endl;
         //std::cerr<<_pl[0]<<std::endl;
-        //assert(_pl[0]==bcf_int32_missing);//FIXME: I don't understand why some times this is *not* bcf_int32_missing. Probably need to look at the htslib code to understand.
+        //assert(_pl[0]==bcf_int32_missing);//FIXME: I don't understand why some times this is *not* bcf_int32_missing.
+        // Probably need to look at the htslib code to understand.
         std::fill(_pl,_pl+_num_gl,bcf_int32_missing);
         _num_pl=_num_gl;
         status=_num_gl;
@@ -381,7 +382,15 @@ int Genotype::propagate_format_fields(size_t sample_index,size_t ploidy,ggutils:
     return(1);
 }
 
-Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map)
+void Genotype::set_gt_to_homref()
+{
+    _gt[0] = bcf_gt_unphased(0);
+    if(_ploidy==2) _gt[1]=bcf_gt_unphased(0);
+}
+
+Genotype::Genotype(bcf_hdr_t *sample_header,
+                   pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
+                   multiAllele & alleles_to_map)
 {
     int ploidy=0;
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
@@ -389,6 +398,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
     assert(ploidy==1 || ploidy==2);
     allocate(ploidy,alleles_to_map.num_alleles()+1);
     set_depth_to_zero();
+    set_gt_to_homref();
     assert(_num_allele>1);
     std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
     int dst_genotype_count=0;
@@ -398,7 +408,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
         Genotype g(sample_header, *it);
         if(g._ploidy!=ploidy)
         {
-            std::cerr<<"WARNING: inconsistent ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
+            std::cerr<<"WARNING: inconsistent ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid);
+            std::cerr<< ":" << (*it)->pos + 1 << std::endl;
         }
         else
         {
@@ -406,15 +417,16 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
             assert(dst_allele_index < _num_allele && dst_allele_index > 0);
             _qual = max(_qual, g.get_qual()); //FIXME: QUAL should be estimated from PL
 
-            //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter, but there will be situations where this is not the case due variants shifting position.
+            //FIXME: Some of these values are overwriting on each iteration. Ideally they should be the same so it does not matter,
+            // but there will be situations where this is not the case due variants shifting position.
             _mq = g.get_mq();
             *_dp = g.get_dp();
             *_gq = g.get_gq();
             *_gqx = g.get_gqx();
             *_dpf = g.get_dpf();
             _ad[dst_allele_index] = g.get_ad(1);
-            _adf[dst_allele_index] = g.get_ad(1);
-            _adr[dst_allele_index] = g.get_ad(1);
+            _adf[dst_allele_index] = g.get_adf(1);
+            _adr[dst_allele_index] = g.get_adr(1);
             _ad[0] = g.get_ad(0);
             _adf[0] = g.get_adf(0);
             _adr[0] = g.get_adr(0);
@@ -429,8 +441,6 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
                 _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.get_pl(0, 1);
                 _pl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.get_pl(1, 1);
             }
-            _gt[0] = bcf_gt_unphased(0);
-            if (_ploidy == 2) _gt[1] = bcf_gt_unphased(0);
 
             for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
             {
@@ -448,7 +458,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header, pair<std::deque<bcf1_t *>::iterator
                     {
                         if (dst_genotype_count >= 2)
                         {
-                            std::cerr<<"WARNING: inconsistent alleles for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
+                            std::cerr<<"WARNING: conflicting alleles/genotypes for sample "<<sample_header->samples[0]<<" ";
+                            std::cerr<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
                         } else
                         {
                             _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);

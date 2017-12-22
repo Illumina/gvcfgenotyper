@@ -87,7 +87,8 @@ TEST(VariantBuffer, test2)
     m.init(hdr);
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
-    auto record1 = generate_record(hdr,"chr1\t7832\trs112070696\tC\tCTAAATAAATAAA,CTAAATAAATAAATAAA\t559\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:150:15:42:0,11,11:0,4,5:0,7,6:PASS:601,226,169,225,0,169");
+    auto record1 = generate_record(hdr,"chr1\t7832\trs112070696\tC\tCTAAATAAATAAA,CTAAATAAATAAATAAA\t559\tPASS\t.\t"
+            "GT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:150:15:42:0,11,11:0,4,5:0,7,6:PASS:601,226,169,225,0,169");
     m.setPosition(record1->rid,record1->pos);
     vector<bcf1_t *> buffer;
     norm.unarise(record1,buffer);
@@ -123,7 +124,9 @@ TEST(GVCFReader, readMNP)
 }
 
 // //GVCFReader should match this VID output
-// //bcftools norm -m -any data/NA12877.tiny.vcf.gz | bcftools norm -f data/tiny.ref.fa | bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected 
+// //bcftools norm -m -any data/NA12877.tiny.vcf.gz |
+// bcftools norm -f data/tiny.ref.fa |
+// bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected
 TEST(GVCFReader, readAGVCF)
 {
     std::string expected_output_file = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz.expected";
@@ -181,53 +184,6 @@ TEST(GVCFReader, readAGVCF)
     else
     {
         remove(tn);
-    }
-}
-
-//regression test checking that Genotype correctly propagates FORMAT fields
-TEST(Genotype,format)
-{
-    int rid=1;
-    int pos=97473;
-    auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
-    auto record1 = generate_record(hdr,rid,pos+1,"G,GA,GAA");
-    int qual = 786;
-    record1->qual = qual;
-    int32_t ad[3] = {2,24,17};
-    int32_t adf[3] = {2,12,10};
-    int32_t adr[3] = {0,12,7};
-    int32_t pl[6] = {405,132,56,188,0,121};
-    int32_t gt[2] = {bcf_gt_unphased(1), bcf_gt_unphased(2)};
-    float gq = 58;
-    bcf_update_format_float(hdr, record1, "GQ", &gq, 1);
-    bcf_update_format_int32(hdr, record1, "AD", &ad, 3);
-    bcf_update_format_int32(hdr, record1, "ADR", &adr, 3);
-    bcf_update_format_int32(hdr, record1, "ADF", &adf, 3);
-    bcf_update_format_int32(hdr, record1, "PL", &pl, 6);
-    bcf_update_genotypes(hdr, record1, gt, 2);
-//    print_variant(hdr, record1);
-    vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
-    size_t idx = 0;
-    for (auto it = buffer.begin(); it != buffer.end(); it++)
-    {
-        std::cerr<<"idx="<<idx<<std::endl;
-        ggutils::print_variant(hdr,*it);
-        Genotype g(hdr,*it);
-        ASSERT_FLOAT_EQ(g.get_gq(),gq);
-
-        ASSERT_EQ(g.get_ad(0),ad[0]);
-        ASSERT_EQ(g.get_ad(1),ad[1+idx]);
-
-        ASSERT_EQ(g.get_adf(0),adf[0]);
-        ASSERT_EQ(g.get_adf(1),adf[1+idx]);
-
-        ASSERT_EQ(g.get_adr(0),adr[0]);
-        ASSERT_EQ(g.get_adr(1),adr[1+idx]);
-
-        ++idx;
     }
 }
 
