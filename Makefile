@@ -54,7 +54,7 @@ build/%.o: src/c/%.c
 	$(CC) -MT $@ -MM $(CFLAGS) $(IFLAGS) $< -o $@.d
 
 bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp build/version.hh $(OBJS) $(HTSLIB)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS) src/cpp/gvcfgenotyper.cpp 
+	$(CXX) $(CXXFLAGS) -o $@  $(IFLAGS) $(LFLAGS) $(CXXFLAGS) src/cpp/gvcfgenotyper.cpp $(OBJS) $(HTSLIB)
 bin/test_gvcfgenotyper: build/version.hh $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
 	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS) build/gtest.a build/gtest_main.a
 .PHONY: test
@@ -63,4 +63,4 @@ test: bin/test_gvcfgenotyper bin/gvcfgenotyper
 	bash -e src/bash/run_smoke_tests.sh
 .PHONY: clean
 clean:
-	rm build/* bin/gvcfgenotyper
+	rm -rf build/* bin/*
