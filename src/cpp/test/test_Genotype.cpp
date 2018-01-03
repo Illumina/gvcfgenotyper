@@ -15,8 +15,8 @@ extern "C"
 
 TEST(Genotype,resolveAlleleConflict)
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/regression/GG-19.vcf.gz";
-    std::string ref_file_name = g_testenv->getBasePath() + "/../test/regression/GG-19.fa";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/regression/GG-26.vcf.gz";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/regression/GG-26.fa";
     int buffer_size = 200;
     GVCFReader reader(gvcf_file_name, ref_file_name, buffer_size);
     bcf_hdr_t *hdr = reader.get_header();
