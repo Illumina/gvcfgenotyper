@@ -82,3 +82,55 @@ TEST(Genotype,format)
         ++idx;
     }
 }
+
+TEST(Genotype,CallGenotypeDiploid)
+{
+auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chr1\t10002558\t.\tG\tA\t499\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/0:102:30:35:0:0,35:0,15:0,20:-55.2:PASS:370,105,0");
+    Genotype g1(hdr,record1);
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(0)),0);
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(1)),0);
+    g1.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(0)),1);
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(1)),1);
+
+    auto record2 = generate_record(hdr, "chr1\t10002558\t.\tG\tA\t499\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/0:102:30:35:0:0,35:0,15:0,20:-55.2:PASS:370,0,105");
+    Genotype g2(hdr,record2);
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(0)),0);
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(1)),0);
+    g2.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(0)),0);
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(1)),1);
+
+    auto record3 = generate_record(hdr, "chr1\t10002558\t.\tG\tA\t499\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t1/1:102:30:35:0:0,35:0,15:0,20:-55.2:PASS:0,370,105");
+    Genotype g3(hdr,record3);
+    ASSERT_EQ(bcf_gt_allele(g3.get_gt(0)),1);
+    ASSERT_EQ(bcf_gt_allele(g3.get_gt(1)),1);
+    g3.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g3.get_gt(0)),0);
+    ASSERT_EQ(bcf_gt_allele(g3.get_gt(1)),0);
+
+    auto record4 = generate_record(hdr,"chr1\t10587268\t.\tC\tCAAA,CAA\t276\tPASS\tMQ=58\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/0:28:11:27:1,15,9:0,9,4:1,6,5:PASS:288,79,31,144,0,103");
+    Genotype g4(hdr,record4);
+    ASSERT_EQ(bcf_gt_allele(g4.get_gt(0)),0);
+    ASSERT_EQ(bcf_gt_allele(g4.get_gt(1)),0);
+    g4.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g4.get_gt(0)),1);
+    ASSERT_EQ(bcf_gt_allele(g4.get_gt(1)),2);
+}
+
+TEST(Genotype,CallGenotypeHaploid)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr, "chrX\t10027690\t.\tG\tA\t315\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0:342:21:20:2:0,20:0,13:0,7:-30.7:PASS:349,0");
+    Genotype g1(hdr, record1);
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(0)), 0);
+    g1.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g1.get_gt(0)), 1);
+
+    auto record2 = generate_record(hdr, "chrX\t52891584\t.\tC\tA,T\t282\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t1:35:30:32:1:0,16,16:0,5,10:0,11,6:-30.6:PASS:316,35,0");
+    Genotype g2(hdr, record2);
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(0)), 1);
+    g2.CallGenotype();
+    ASSERT_EQ(bcf_gt_allele(g2.get_gt(0)), 2);
+}

@@ -35,7 +35,7 @@ add_custom_target(
     DEPENDS  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/src/cpp/lib/" "${PROJECT_SOURCE_DIR}/src/c/")
+include_directories("${PROJECT_SOURCE_DIR}/src/cpp/lib/" "${PROJECT_SOURCE_DIR}/src/c/" "${PROJECT_SOURCE_DIR}/src/cpp/test/")
 include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.6/")
 
 file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/cpp/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/c/*.c")
