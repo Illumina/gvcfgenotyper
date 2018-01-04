@@ -46,7 +46,7 @@ TEST(multiAllele,test1)
 TEST(GVCFMerger, platinumGenomeTinyTest)
 {
     std::vector<std::string> files;
-    std::string test_base = g_testenv->getBasePath() + "/data/test2/";
+    std::string test_base = g_testenv->getBasePath() + "/../test/test2/";
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir(test_base.c_str())) != NULL)
@@ -68,7 +68,7 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
 
     int buffer_size = 200;
 
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     std::string output_file_name = "test.out";//std::tmpnam(NULL);
     std::cerr << "Outputting to " << output_file_name << std::endl;
     GVCFMerger g(files, output_file_name, "z", ref_file_name, buffer_size);
@@ -78,7 +78,7 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
 TEST(GVCFMerger, likelihood)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t85677\t.\tT\tA\t191\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/1:224:30:42:0:22,20:13,11:9,9:-26:PASS:226,0,257");
 

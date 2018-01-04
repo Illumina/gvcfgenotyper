@@ -35,11 +35,11 @@ add_custom_target(
     DEPENDS  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("${PROJECT_SOURCE_DIR}/src/cpp/lib/" "${PROJECT_SOURCE_DIR}/src/c/")
 include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.6/")
 
-file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/lib/*.c" "${PROJECT_SOURCE_DIR}/src/lib/tools/*.cpp")
-add_executable(gvcfgenotyper src/gvcfgenotyper.cpp ${SRC} src/lib/multiAllele.cpp)
+file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/cpp/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/c/*.c")
+add_executable(gvcfgenotyper src/cpp/gvcfgenotyper.cpp ${SRC} )
 
 target_link_libraries(gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(gvcfgenotyper libhts.a)
@@ -50,7 +50,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/external/googletest-release-1.8.0)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 file(GLOB TEST_SRC "${PROJECT_SOURCE_DIR}/src/test/*.cpp")
-add_executable(test_gvcfgenotyper src/test_gvcfgenotyper.cpp ${SRC} ${TEST_SRC} src/lib/multiAllele.cpp)
+add_executable(test_gvcfgenotyper src/cpp/test/test_gvcfgenotyper.cpp ${SRC} ${TEST_SRC})
 target_link_libraries(test_gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(test_gvcfgenotyper libhts.a)
 target_link_libraries(test_gvcfgenotyper gtest gtest_main)
@@ -63,7 +63,7 @@ if ( ZLIB_FOUND )
     target_link_libraries( test_gvcfgenotyper ${ZLIB_LIBRARIES} )    
 endif( ZLIB_FOUND )
 
-file (COPY ${PROJECT_SOURCE_DIR}/data DESTINATION ${PROJECT_BINARY_DIR})
+file (COPY ${PROJECT_SOURCE_DIR}/src DESTINATION ${PROJECT_BINARY_DIR})
 file (COPY ${PROJECT_SOURCE_DIR}/src/bash DESTINATION ${PROJECT_BINARY_DIR})
 
 enable_testing()

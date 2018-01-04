@@ -6,10 +6,8 @@ merging and genotyping tool for illumina gvcfs
 
 ```
 git clone git@git.illumina.com:Bioinformatics/gvcfgenotyper.git
-mkdir release
-cd release/
-cmake ../
 make
+bin/gvcfgenotyper
 ```
 
 ### Running:
@@ -45,8 +43,8 @@ make
 make test
 
 ##run google tests
-./test_gvcfgenotyper
+bin/test_gvcfgenotyper
 
 ##run smoke tests
-bash -e bash/smoke_tests.sh
+bash -e src/bash/smoke_tests.sh
 ```

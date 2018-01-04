@@ -85,7 +85,7 @@ TEST(VariantBuffer, test2)
     multiAllele m;
     auto hdr = get_header();
     m.init(hdr);
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t7832\trs112070696\tC\tCTAAATAAATAAA,CTAAATAAATAAATAAA\t559\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:150:15:42:0,11,11:0,4,5:0,7,6:PASS:601,226,169,225,0,169");
     m.setPosition(record1->rid,record1->pos);
@@ -104,8 +104,8 @@ TEST(VariantBuffer, test2)
 
 TEST(GVCFReader, readMNP)
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/mnp.genome.vcf";
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/tiny.ref.fa";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/mnp.genome.vcf";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     GVCFReader reader(gvcf_file_name, ref_file_name, 1000);
     const bcf_hdr_t *hdr = reader.get_header();
     bcf1_t *line = reader.pop();
@@ -126,9 +126,9 @@ TEST(GVCFReader, readMNP)
 // //bcftools norm -m -any data/NA12877.tiny.vcf.gz | bcftools norm -f data/tiny.ref.fa | bcftools query -i 'ALT!="."' -f '%CHROM:%POS:%REF:%ALT\n' > data/NA12877.tiny.vcf.gz.expected 
 TEST(GVCFReader, readAGVCF)
 {
-    std::string expected_output_file = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz.expected";
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/tiny.ref.fa";
+    std::string expected_output_file = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz.expected";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     char tn[] = "/tmp/tmpvcf-XXXXXXX";
     int fd = mkstemp(tn);
     if (fd < 1)
@@ -190,7 +190,7 @@ TEST(Genotype,format)
     int rid=1;
     int pos=97473;
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,rid,pos+1,"G,GA,GAA");
     int qual = 786;

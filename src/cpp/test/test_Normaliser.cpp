@@ -11,7 +11,7 @@ TEST(Normaliser, qual)
     int rid=1;
     int pos=4151;
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,rid,pos+1,"A,ATTT");
     int qual = 221;
@@ -35,7 +35,7 @@ TEST(Normaliser, qual)
 
 TEST(Normaliser, mnp_decompose1)
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
     bcf1_t *record1 = bcf_init1();
     record1->rid = 2;
@@ -80,7 +80,7 @@ TEST(Normaliser, mnp_decompose1)
 
 TEST(Normaliser, mnp_decompose2)
 {
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
     bcf1_t *record1 = bcf_init1();
     record1->rid = 1;
@@ -149,8 +149,8 @@ TEST(Normaliser, mnp_decompose3)
 
 TEST(Normaliser, unarise1)
 {
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/tiny.ref.fa";
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
     Normaliser norm(ref_file_name, hdr);
 
@@ -186,8 +186,8 @@ TEST(Normaliser, unarise1)
 
 TEST(Normaliser, unarise2)
 {
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/tiny.ref.fa";
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
     Normaliser norm(ref_file_name, hdr);
 
@@ -221,8 +221,8 @@ TEST(Normaliser, unarise2)
 
 TEST(Normaliser, unarise3)
 {
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/tiny.ref.fa";
-    std::string gvcf_file_name = g_testenv->getBasePath() + "/data/NA12877.tiny.vcf.gz";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
+    std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
     Normaliser norm(ref_file_name, hdr);
 
@@ -260,7 +260,7 @@ TEST(Normaliser, unarise4)
 {
     int rid=20,pos=83250;
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/chr20.100kb.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/chr20.100kb.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,rid,pos+1,"TGTGTGTGTG,TC");
     record1->qual = 100;
@@ -284,7 +284,7 @@ TEST(Normaliser, unarise4)
 TEST(Normaliser, unarise6)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:49:7:54:2,15,16:1,12,0:1,3,16:PASS:429,123,50,137,0,295");
     multiAllele m;
@@ -307,7 +307,7 @@ TEST(Normaliser, unarise6)
 TEST(Normaliser, unarise7)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t95593\t.\tAAAAAAG\tAAA,A\t738\tLowGQX\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:151:0:29:1,15,14:1,7,8:0,8,6:LowGQX:816,279,187,308,0,231");
     std::cerr <<"Input:"<<std::endl;
@@ -324,7 +324,7 @@ TEST(Normaliser, unarise7)
 TEST(Normaliser, unarise8)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t62430033\t.\tC\tT,A\t391\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t1/2:142:30:28:2:0,16,12:0,7,3:0,9,9:-41.5:PASS:370,214,166,242,0,206");
     std::cerr <<"Input:"<<std::endl;
@@ -341,7 +341,7 @@ TEST(Normaliser, unarise8)
 TEST(Normaliser, unarise9)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tT,G\t0\tLowGQX\tSNVHPOL=2;MQ=33\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/2:9:0:9:0:7,1,1:5,1,1:2,0,0:0:LowGQX:14,11,149,0,117,138");
     multiAllele m;
@@ -368,7 +368,7 @@ TEST(Normaliser, unarise9)
 TEST(Normaliser, unarise10)
 {
     auto hdr = get_header();
-    std::string ref_file_name = g_testenv->getBasePath() + "/data/test2/test2.ref.fa";
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name, hdr);
 
     auto record1 = generate_record(hdr,"chr1\t4\trs863224454;rs863224781\tGCA\tCTG,CCA\t2\tLowGQX\tRU=.,.;REFREP=.,.;IDREP=.,.;MQ=60;OLD_VARIANT=chr5:148407707:GACG/GCTG/GCCA;clinvar=1|likely_pathogenic,2|uncertain_significance;GMAF=A|0.009385,A|0.009385;CSQT=1|SH3TC2|NM_024577.3|missense_variant,2|SH3TC2|NM_024577.3|missense_variant\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/1:5:0:56:4,3,3:1,1,1:3,2,2:LowGQX:43,8,8,16,0,29");
