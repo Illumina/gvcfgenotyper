@@ -1,27 +1,7 @@
 #include <htslib/vcf.h>
 #include "Normaliser.hh"
 
-// remove all INFO fields
-/*static void remove_info(bcf1_t *line)
-{
-    if (!(line->unpacked & BCF_UN_INFO))
-    { 
-        bcf_unpack(line, BCF_UN_INFO); 
-    }
-    
-    for (int i = 0; i < line->n_info; i++)
-    {
-        bcf_info_t *inf = &line->d.info[i];
-        if (inf->vptr_free)
-        {
-            free(inf->vptr - inf->vptr_off);
-            inf->vptr_free = 0;
-        }
-        line->d.shared_dirty |= BCF1_DIRTY_INF;
-        inf->vptr = nullptr;
-    }
-    line->n_info = 0;
-}*/
+//#define DEBUG
 
 Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
 {
@@ -164,6 +144,9 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
 {
     assert(bcf_record_to_split->n_allele>2);
     bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
+    Genotype src(_hdr,bcf_record_to_split);
+    Genotype dst(src.get_ploidy(),src.get_num_allele());
+
     std::vector< std::pair<int,int> > new_positions; //stores the position + rank of each variant post-normalisation
     char **new_alleles = (char **)malloc(sizeof(char *)*bcf_record_to_split->n_allele);
     for (int i = 1; i < bcf_record_to_split->n_allele; i++)
@@ -180,7 +163,6 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
     }
 
     std::set< std::pair<int,int> > unique_positions(new_positions.begin(),new_positions.end());
-
     for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
     {
         int counter=1;
@@ -195,12 +177,12 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
             }
         }
         assert(alleles_at_this_position.size()>0);
-        Genotype g(_hdr,bcf_record_to_split);
 
         bcf1_t *tmp_record = bcf_dup(bcf_record_to_split);
         bcf_unpack(tmp_record, BCF_UN_ALL);
         bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
-        g.collapse_alleles_into_ref(alleles_at_this_position).update_bcf1_t(_hdr,tmp_record);
+        src.collapse_alleles_into_ref(alleles_at_this_position,dst);
+        dst.update_bcf1_t(_hdr,tmp_record);
         for (int i = 1; i < tmp_record->n_allele; i++)
         {
             bcf1_t *out_record = bcf_dup(tmp_record);
@@ -217,6 +199,9 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
 
 void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
 {
+#ifdef DEBUG
+    ggutils::print_variant(_hdr,bcf_record_to_marginalise);
+#endif
     //bi-allelic snp. Nothing to do, just copy the variant into the buffer.
     if(ggutils::is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
     {

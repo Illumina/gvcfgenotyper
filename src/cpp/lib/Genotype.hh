@@ -29,14 +29,12 @@ public:
     Genotype(int ploidy, int num_allele);
 
     //Constructs a Genotype with alleles from alleles_to_map and format/info values taken from sample_variants (which is a subset of alleles_to_map).
-    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,multiAllele & alleles_to_map);
+    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
+             multiAllele & alleles_to_map);
     ~Genotype();
 
-    //Marginalises over all alleles != index, creating a symbolic X allele which holds all the depth and probability mass for marginalised out alleles. This is being deprecated.
-    Genotype marginalise(int index);
-
     //Removes alleles in indices, adding their AD and PL values to the REF values.
-    Genotype collapse_alleles_into_ref(vector<int> & indices);
+    void collapse_alleles_into_ref(vector<int> & indices,Genotype & out);
 
     //Copies FORMAT fields from this object into a vcf_data_t object, ploidy is the ploidy of the vcf_data_t format.
     int propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format);
@@ -48,12 +46,16 @@ public:
     //Updates FORMAT/DP by summing FORMAT/AD. This is be cause FORMAT/DP is not assigned at indels.
     void setDepthFromAD();
 
-    //This phreds the _gl values and copies them to _pl.
+    //These phreds the _gl values and copies them to _pl and vice versa.
     void PLfromGL();
+    void GLfromPL();
 
     //Zeroes DP and AD* values.
     void set_depth_to_zero();
+    void set_gt_to_homref();
 
+    //takes a haploid call and makes it diploid. For genotypes, 0 -> 0/0 and 1 -> 1/1 etc.
+    void make_diploid();
     int get_gq();
     int get_gqx();
     int get_dp();
@@ -64,12 +66,13 @@ public:
     int get_gt(int index);
     int get_mq();
     int get_ploidy();
+    int get_num_allele();
     int get_pl(int g0,int g1);
     int get_pl(int g0);
     float get_qual();
     bool is_dp_missing();
-    int *_gt, *_ad, *_gq, *_dp, *_dpf, *_pl, *_adf, *_adr, *_gqx;
-    int _num_allele, _num_pl, _ploidy, _num_gt, _num_ad, _num_adf, _num_adr,  _num_gq, _num_gqx, _num_dp, _num_dpf, _num_gl;
+    int32_t *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
+    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0;
     std::vector<float> _gl;
 private:
     //Assigns memory according to ploidy/num_allele.

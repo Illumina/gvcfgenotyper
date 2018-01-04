@@ -22,11 +22,11 @@ namespace ggutils
         return (ret);
     }
 
-    int32_t *assign_bcf_int32_missing(size_t n)
+    int32_t *assign_bcf_int32_missing(int32_t *ptr,size_t n)
     {
-        int32_t *ret = (int32_t *)malloc(sizeof(int32_t) * n);
-        std::fill(ret,ret+n,bcf_int32_missing);
-        return(ret);
+        ptr = (int32_t *)realloc(ptr,sizeof(int32_t) * n);
+        std::fill(ptr,ptr+n,bcf_int32_missing);
+        return(ptr);
     }
 
     bool fileexists(const string &fname)

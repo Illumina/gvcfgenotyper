@@ -52,7 +52,7 @@ namespace ggutils
 
     int32_t *zeros(int n);
 
-    int32_t *assign_bcf_int32_missing(size_t n);
+    int32_t *assign_bcf_int32_missing(int32_t *ptr,size_t n);
 
     bool fileexists(const string &fname);
 
