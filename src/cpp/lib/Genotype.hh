@@ -46,13 +46,16 @@ public:
     //Updates FORMAT/DP by summing FORMAT/AD. This is be cause FORMAT/DP is not assigned at indels.
     void setDepthFromAD();
 
-    //This phreds the _gl values and copies them to _pl.
+    //These phreds the _gl values and copies them to _pl and vice versa.
     void PLfromGL();
+    void GLfromPL();
 
     //Zeroes DP and AD* values.
     void set_depth_to_zero();
     void set_gt_to_homref();
 
+    //takes a haploid call and makes it diploid. For genotypes, 0 -> 0/0 and 1 -> 1/1 etc.
+    void make_diploid();
     int get_gq();
     int get_gqx();
     int get_dp();
@@ -69,7 +72,7 @@ public:
     float get_qual();
     bool is_dp_missing();
     int32_t *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
-    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0, _num_gl=0;
+    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0;
     std::vector<float> _gl;
 private:
     //Assigns memory according to ploidy/num_allele.
