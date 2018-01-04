@@ -4,6 +4,30 @@
 #include <htslib/vcf.h>
 
 
+void Genotype::set_dp(int val)
+{
+    _dp = (int32_t *)realloc(_dp,sizeof(int32_t));
+    *_dp = val;
+}
+
+void Genotype::set_dpf(int val)
+{
+    _dpf = (int32_t *)realloc(_dpf,sizeof(int32_t));
+    *_dpf = val;
+}
+
+void Genotype::set_gq(int val)
+{
+    _gq = (int32_t *)realloc(_gq,sizeof(int32_t));
+    *_gq = val;
+}
+
+void Genotype::set_gqx(int val)
+{
+    _gqx = (int32_t *)realloc(_gqx,sizeof(int32_t));
+    *_gqx = val;
+}
+
 int Genotype::get_gq()
 {
     return(*_gq);
@@ -17,13 +41,9 @@ int Genotype::get_gqx()
 int Genotype::get_dp()
 {
     if(_num_dp>0)
-    {
         return(*_dp);
-    }
     else
-    {
         return(bcf_int32_missing);
-    }
 }
 
 int Genotype::get_ad(int index)
@@ -47,13 +67,9 @@ int Genotype::get_adr(int index)
 int Genotype::get_dpf()
 {
     if(_num_dpf>0)
-    {
         return(*_dpf);
-    }
     else
-    {
         return(bcf_int32_missing);
-    }
 }
 
 bool Genotype::is_dp_missing()
@@ -154,12 +170,18 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     if (status != 1)
     {
         if (status == -3)
-            setDepthFromAD();
+            set_depth_from_ad();
         else
             ggutils::die("problem extracting FORMAT/DP");
     }
     ggutils::bcf1_get_one_info_int(header,record,"MQ",_mq);
-    bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
+    status = bcf_get_format_int32(header, record, "DPF", &_dpf, &_num_dpf);
+    if (status != 1)
+    {
+        _dpf = (int32_t *)malloc(sizeof(int32_t));
+        *_dpf = bcf_int32_missing;
+        _num_dpf=1;
+    }
     bcf_get_format_int32(header, record, "GQX", &_gqx, &_num_gqx);
 
     if (bcf_get_format_int32(header, record, "GQ", &_gq, &_num_gq) == -2)
@@ -183,25 +205,25 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 void Genotype::GLfromPL()
 {
     _gl.assign(_num_pl, 1.);
+    float den = 0.;
     for (int i = 0; i < _num_pl; i++)
+    {
         _gl[i] =ggutils::unphred(_pl[i]);
+        den += _gl[i];
+    }
+    for (int i = 0; i < _num_pl; i++) _gl[i] /= den;
 }
 
 
-void Genotype::setDepthFromAD()
+void Genotype::set_depth_from_ad()
 {
     if(_num_dp==0)
     {
         _dp = (int *)malloc(sizeof(int));
-        _dpf = (int *)malloc(sizeof(int));
-        _num_dp=_num_dpf=1;
+        _num_dp=1;
     }
-    _dpf[0] = bcf_int32_missing;
     _dp[0] = 0;
-    for (int i = 0; i < _num_ad; i++)
-    {
-        _dp[0] += _ad[i];
-    }
+    for (int i = 0; i < _num_ad; i++) _dp[0] += _ad[i];
 }
 
 Genotype::~Genotype()
@@ -243,16 +265,10 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
 
     if(_num_dp>0)
     {
-        assert(_num_dpf>0);
         bcf_update_format_int32(header, record, "DP", _dp, _num_dp);
         bcf_update_format_int32(header, record, "DPF", _dpf, _num_dpf);
     }
-    else
-    {
-        assert(_num_dpf==0);
-        bcf_update_format_int32(header, record, "DP", NULL,0);
-        bcf_update_format_int32(header, record, "DPF", NULL,0);
-    }
+
     bcf_update_format_int32(header, record, "AD", _ad, _num_ad);
     bcf_update_format_int32(header, record, "ADR", _adr, _num_adr);
     bcf_update_format_int32(header, record, "ADF", _adf, _num_adf);
@@ -281,11 +297,9 @@ void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
     out.set_depth_to_zero();
 
     if(_num_dp>0)
-    {
-        assert(_num_dpf>0);
         memcpy(out._dp, _dp, sizeof(int32_t) * _num_dp);
+    if(_num_dpf>0)
         memcpy(out._dpf, _dpf, sizeof(int32_t) * _num_dpf);
-    }
 
     memcpy(out._gq, _gq, sizeof(int32_t) * _num_gq);
     memcpy(out._gqx, _gqx, sizeof(int32_t) * _num_gqx);
@@ -350,7 +364,7 @@ int Genotype::propagate_format_fields(size_t sample_index,size_t ploidy,ggutils:
     format->gq[sample_index] = get_gq();
     format->gqx[sample_index] = get_gqx();
 
-    if(is_dp_missing()) setDepthFromAD();
+    if(is_dp_missing()) set_depth_from_ad();
 
     format->dp[sample_index] = get_dp();
     format->dpf[sample_index] = get_dpf();
@@ -437,7 +451,6 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         *_gqx = *_gqx==bcf_int32_missing ? g.get_gqx() : max(get_gqx(),g.get_gqx());
         *_dpf = *_dpf==bcf_int32_missing ? g.get_dpf() : *_dpf;
 
-        *_dp = max(get_dp(),g.get_dp());
         _ad[0]  = max(get_ad(0),g.get_ad(0));
         _adf[0] = max(get_adf(0),g.get_adf(0));
         _adr[0] = max(get_adr(0),g.get_adr(0));
@@ -487,6 +500,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             }
         }
     }
+    set_depth_from_ad();
 
     //This is a sanity check which should possibly reside within unit testing.
     if(_ploidy==2 && (_gt[0]==bcf_gt_missing) != (_gt[1]==bcf_gt_missing))

@@ -21,12 +21,12 @@ HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
 
 #special builds for debugging and profiling
-debug: CXXFLAGS += -g -O1 -Wall
+debug: CXXFLAGS = -std=c++11 -g -O1 -Wall
 debug: CFLAGS = -g -O1 
 debug: all
 
-profile: CXXFLAGS += -pg -O2 
-profile: CFLAGS =  -pg -O2 
+profile: CXXFLAGS = -std=c++11 -pg
+profile: CFLAGS =  -pg
 profile: all
 
 ##generates a version
