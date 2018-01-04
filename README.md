@@ -1,4 +1,5 @@
-#gvcfgenotyper 
+# gvcfgenotyper 
+
 A utility for merging and genotyping Illumina-style GVCFs. This software is not commercially supported.
 
 This source code is provided under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/#). Copyright (c) 2018, Illumina, Inc. All rights reserved.
