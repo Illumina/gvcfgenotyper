@@ -16,22 +16,22 @@ TEST(multiAllele,test1)
     auto rec5 = generate_record(hdr,rid,pos,"CTGG,CAAAAAAAATGG,C");
 
     multiAllele m;
-    m.init(hdr);
-    m.setPosition(rid,pos-1);
-    ASSERT_EQ(m.allele(rec1),1);
-    ASSERT_EQ(m.allele(rec1),1);
-    ASSERT_EQ(m.allele(rec2),2);
-    ASSERT_EQ(m.allele(rec1),1);
-    ASSERT_EQ(m.allele(rec3),0);
-    ASSERT_EQ(m.allele(rec2),2);
-    ASSERT_EQ(m.allele(rec4),3);
-    ASSERT_EQ(m.allele(rec5),4);
+    m.Init(hdr);
+    m.SetPosition(rid, pos - 1);
+    ASSERT_EQ(m.Allele(rec1),1);
+    ASSERT_EQ(m.Allele(rec1),1);
+    ASSERT_EQ(m.Allele(rec2),2);
+    ASSERT_EQ(m.Allele(rec1),1);
+    ASSERT_EQ(m.Allele(rec3),0);
+    ASSERT_EQ(m.Allele(rec2),2);
+    ASSERT_EQ(m.Allele(rec4),3);
+    ASSERT_EQ(m.Allele(rec5),4);
 
     bcf1_t *v = bcf_init1();
-    m.collapse(v);
+    m.Collapse(v);
     ggutils::print_variant(hdr,v);
 
-    m.get_max();
+    m.GetMax();
 
     auto truth = generate_record(hdr,rid,pos,"CTGG,GTGG,ATGG,C,CAAAAAAAATGG");     //chr1:100:CTGG:GTGG,ATGG,C,CAAAAAAAATGG
     ASSERT_TRUE( ggutils::bcf1_all_equal(truth,v));
@@ -85,20 +85,20 @@ TEST(GVCFMerger, likelihood)
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     multiAllele m;
-    m.init(hdr);
-    m.setPosition(record1->rid,record1->pos);
-    m.allele(record1);
+    m.Init(hdr);
+    m.SetPosition(record1->rid, record1->pos);
+    m.Allele(record1);
 
     ggutils::print_variant(hdr,record1);
 
     ggutils::vcf_data_t d(2,2,2);
     Genotype g(hdr,record1);
-    g.propagate_format_fields(0,2,&d);
+    g.PropagateFormatFields(0, 2, &d);
     ASSERT_EQ(d.pl[0],226);
     ASSERT_EQ(d.pl[1],0);
     ASSERT_EQ(d.pl[2],257);
 
-    g.propagate_format_fields(1,2,&d);
+    g.PropagateFormatFields(1, 2, &d);
     ASSERT_EQ(d.pl[3],226);
     ASSERT_EQ(d.pl[4],0);
     ASSERT_EQ(d.pl[5],257);

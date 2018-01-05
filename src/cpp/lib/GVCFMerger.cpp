@@ -53,8 +53,8 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _info_adr = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_ac = (int32_t *) malloc(n_allele * sizeof(int32_t));
 
-    build_header();
-    _record_collapser.init(_output_header);
+    BuildHeader();
+    _record_collapser.Init(_output_header);
     _output_record = bcf_init1();
 
     _num_ps_written = 0;
@@ -65,12 +65,12 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
 int GVCFMerger::get_next_variant()
 {
     assert(_readers.size() == _num_gvcfs);
-    assert(!all_readers_empty());
+    assert(!AreAllReadersEmpty());
     bcf1_t *min_rec = nullptr;
     //int min_index = -1;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        bcf1_t *rec = _readers[i].front();
+        bcf1_t *rec = _readers[i].Front();
         if (rec != nullptr)
         {
             if (min_rec == nullptr || ggutils::bcf1_less_than(rec, min_rec))
@@ -82,15 +82,15 @@ int GVCFMerger::get_next_variant()
     }
     assert(min_rec != nullptr);
 
-    _record_collapser.setPosition(min_rec->rid, min_rec->pos);
+    _record_collapser.SetPosition(min_rec->rid, min_rec->pos);
     for(auto it = _readers.begin(); it != _readers.end(); it++)
     {
-        auto variants = it->get_all_variants_in_interval(min_rec->rid, min_rec->pos);
+        auto variants = it->GetAllVariantsInInterval(min_rec->rid, min_rec->pos);
         for (auto rec = variants.first; rec != variants.second; rec++)
         {
             if(ggutils::get_variant_rank(*rec) == ggutils::get_variant_rank(min_rec))
             {
-                _record_collapser.allele(*rec);
+                _record_collapser.Allele(*rec);
             }
         }
     }
@@ -98,11 +98,11 @@ int GVCFMerger::get_next_variant()
     return(1);
 }
 
-bool GVCFMerger::all_readers_empty()
+bool GVCFMerger::AreAllReadersEmpty()
 {
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        if (!_readers[i].empty())
+        if (!_readers[i].IsEmpty())
         {
             return (false);
         }
@@ -110,7 +110,7 @@ bool GVCFMerger::all_readers_empty()
     return (true);
 }
 
-void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
+void GVCFMerger::SetOutputBuffersToMissing(int num_alleles)
 {
     format->resize(num_alleles);
     format->set_missing();
@@ -125,10 +125,10 @@ void GVCFMerger::set_output_buffers_to_missing(int num_alleles)
 
 }
 
-void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_block)
+void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_block)
 {
     int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
-    int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.get_ploidy(),_output_record->n_allele);
+    int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.ploidy(),_output_record->n_allele);
 
     int *pl_ptr = format->pl + sample_index*num_pl_per_sample;
     format->dp[sample_index] = homref_block.dp();
@@ -139,7 +139,7 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
         format->ad[sample_index * _output_record->n_allele+i] = 0;
     if (homref_block.dp() > 0)
     {
-        if(homref_block.get_ploidy()==2)
+        if(homref_block.ploidy()==2)
         {
             format->gt[2 * sample_index] = format->gt[2 * sample_index + 1] = bcf_gt_unphased(0);
         }
@@ -155,36 +155,38 @@ void GVCFMerger::genotype_homref_variant(int sample_index,DepthBlock & homref_bl
     pl_ptr[0] = 0;
 }
 
-void GVCFMerger::genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
+void GVCFMerger::GenotypeAltVariant(int sample_index,
+                                    pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants)
 {
     int default_ploidy=2;
-    Genotype g(_readers[sample_index].get_header(), sample_variants,_record_collapser);
-    g.propagate_format_fields(sample_index,default_ploidy,format);
-    _mean_mq += g.get_mq();
+    Genotype g(_readers[sample_index].GetHeader(), sample_variants,_record_collapser);
+    g.PropagateFormatFields(sample_index, default_ploidy, format);
+    _mean_mq += g.mq();
     _num_mq++;
-    _output_record->qual += g.get_qual();
+    _output_record->qual += g.qual();
 }
 
-void GVCFMerger::genotype_sample(int sample_index)
+void GVCFMerger::GenotypeSample(int sample_index)
 {
     DepthBlock homref_block;//working structure to store homref info.
-    auto sample_variants = _readers[sample_index].get_all_variants_up_to(_record_collapser.get_max());
+    auto sample_variants = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
 
     //this sample has variants at this position, we need to populate its FORMAT field
     if (sample_variants.first!=sample_variants.second)
     {
-        genotype_alt_variant(sample_index,sample_variants);
+        GenotypeAltVariant(sample_index, sample_variants);
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
     {
-        _readers[sample_index].get_depth(_output_record->rid, _output_record->pos, ggutils::get_end_of_variant(_output_record), homref_block);
-        genotype_homref_variant(sample_index,homref_block);
+        _readers[sample_index].GetDepth(_output_record->rid, _output_record->pos,
+                                        ggutils::get_end_of_variant(_output_record), homref_block);
+        GenotypeHomrefVariant(sample_index, homref_block);
     }
 }
 
 bcf1_t *GVCFMerger::next()
 {
-    if (all_readers_empty())
+    if (AreAllReadersEmpty())
     {
         return (nullptr);
     }
@@ -192,13 +194,13 @@ bcf1_t *GVCFMerger::next()
     bcf_clear(_output_record);
     get_next_variant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
-    _record_collapser.collapse(_output_record);
+    _record_collapser.Collapse(_output_record);
     _output_record->qual = 0;
 #ifdef DEBUG
     ggutils::print_variant(_output_header,_output_record);
 #endif
     //fill in the format information for every sample.
-    set_output_buffers_to_missing(_output_record->n_allele);
+    SetOutputBuffersToMissing(_output_record->n_allele);
 
     // count the number of written PS tags
     _num_ps_written = 0;
@@ -207,15 +209,15 @@ bcf1_t *GVCFMerger::next()
 
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        genotype_sample(i);
-        _readers[i].flush_buffer(_record_collapser.get_max());
+        GenotypeSample(i);
+        _readers[i].FlushBuffer(_record_collapser.GetMax());
     }
     _num_variants++;
-    update_format_info();
+    UpdateFormatAndInfo();
     return(_output_record);
 }
 
-void GVCFMerger::update_format_info()
+void GVCFMerger::UpdateFormatAndInfo()
 {
     assert(bcf_update_genotypes(_output_header, _output_record,format->gt, _num_gvcfs * 2)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQ",format->gq, _num_gvcfs)==0);
@@ -292,18 +294,18 @@ void GVCFMerger::write_vcf()
         bcf_write1(_output_file, _output_header, _output_record);
         num_written++;
     }
-    assert(all_readers_empty());
+    assert(AreAllReadersEmpty());
     std::cerr << "Wrote " << num_written << " variants" << std::endl;
 }
 
-void GVCFMerger::build_header()
+void GVCFMerger::BuildHeader()
 {
     _output_header = bcf_hdr_init("w");
     bool force_samples = false;
     int repeat_count = 0;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        const bcf_hdr_t *hr = _readers[i].get_header();
+        const bcf_hdr_t *hr = _readers[i].GetHeader();
         for (int j = 0; j < bcf_hdr_nsamples(hr); j++)
         {
             string sample_name = hr->samples[j];
@@ -359,6 +361,6 @@ void GVCFMerger::build_header()
             "variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
 
 
-    ggutils::copy_contigs(_readers[0].get_header(), _output_header);
+    ggutils::copy_contigs(_readers[0].GetHeader(), _output_header);
     bcf_hdr_write(_output_file, _output_header);
 }

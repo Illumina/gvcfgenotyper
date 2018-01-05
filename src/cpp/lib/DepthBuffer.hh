@@ -24,19 +24,15 @@ public:
     // which invalidates db
     void push_back(const DepthBlock& db);
 
-    DepthBlock *pop();
+    DepthBlock *Pop();
+    DepthBlock *Back();
+    DepthBlock *Front();
+    DepthBlock Intersect(const DepthBlock &db);
+    int FlushBuffer();
+    int FlushBuffer(const int rid, const int pos);
+    int Interpolate(const int rid, const int start, const int end, DepthBlock &db);//interpolates depth for an interval a<=x<
 
-    DepthBlock *back();
-
-    DepthBlock *front();
-
-    DepthBlock intersect(const DepthBlock &db);
-
-    int flush_buffer();
-
-    int flush_buffer(const int rid, const int pos);
-
-    int interpolate(const int rid, const int start, const int end, DepthBlock &db);//interpolates depth for an interval a<=x<
+    //accessors/mutators
     size_t size();
 
 private:

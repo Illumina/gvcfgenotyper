@@ -36,54 +36,55 @@ public:
     ~Genotype();
 
     //Removes alleles in indices, adding their AD and PL values to the REF values.
-    void collapse_alleles_into_ref(vector<int> & indices,Genotype & out);
+    void CollapseAllelesIntoRef(vector<int> &indices, Genotype &out);
 
     //Copies FORMAT fields from this object into a vcf_data_t object, ploidy is the ploidy of the vcf_data_t format.
-    int propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format);
+    int PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils::vcf_data_t *format);
 
     //Copies FORMAT/INFO fields from this object into record.
-    //Copies FORMAT/INFO fields from this object into record.
-    int update_bcf1_t(bcf_hdr_t *header, bcf1_t *record);
+    int UpdateBcfRecord(bcf_hdr_t *header, bcf1_t *record);
 
     //Updates FORMAT/DP by summing FORMAT/AD. This is be cause FORMAT/DP is not assigned at indels.
-    void set_depth_from_ad();
+    void SetDepthFromAd();
 
     //These phreds the _gl values and copies them to _pl and vice versa.
-    void PLfromGL();
-    void GLfromPL();
+    void SetPlFromGl();
+    void SetGlFromPl();
 
     //Zeroes DP and AD* values.
-    void set_depth_to_zero();
-    void set_gt_to_homref();
+    void SetDepthToZero();
+    void SetGtToHomRef();
 
     //takes a haploid call and makes it diploid. For genotypes, 0 -> 0/0 and 1 -> 1/1 etc.
-    void make_diploid();
+    void MakeDiploid();
+    //sets FORMAT/GT to argmax(GL)
+    void CallGenotype();
+    bool IsDpMissing();
 
-    void CallGenotype();//sets FORMAT/GT to argmax(GL)
+    //accessors/mutators
+    int gq();
+    int gqx();
+    int dp();
+    int dpf();
+    int ad(int index);
+    int adr(int index);
+    int adf(int index);
+    int gt(int index);
+    int mq();
+    int ploidy();
+    int num_allele();
+    int pl(int g0, int g1);
+    int pl(int g0);
+    float gl(int g0, int g1);
+    float gl(int g0);
+    float qual();
 
-    int get_gq();
-    int get_gqx();
-    int get_dp();
-    int get_dpf();
-    int get_ad(int index);
-    int get_adr(int index);
-    int get_adf(int index);
-    int get_gt(int index);
-    int get_mq();
-    int get_ploidy();
-    int get_num_allele();
-    int get_pl(int g0,int g1);
-    int get_pl(int g0);
-    float get_gl(int g0,int g1);
-    float get_gl(int g0);
-    float get_qual();
+    void SetDp(int val);
+    void SetDpf(int val);
+    void SetGq(int val);
+    void SetGqx(int val);
 
-    void set_dp(int val);
-    void set_dpf(int val);
-    void set_gq(int val);
-    void set_gqx(int val);
 
-    bool is_dp_missing();
     int32_t *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
     int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0;
     std::vector<float> _gl;

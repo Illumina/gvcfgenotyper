@@ -29,27 +29,24 @@ public:
                );
     }
 
-    DepthBlock intersect(const DepthBlock &db);
+    DepthBlock Intersect(const DepthBlock &db);
+    DepthBlock Intersect(int rid, int start, int end);
+    int IntersectSize(int rid, int a, int b) const;
+    int IntersectSize(const DepthBlock &db) const;
 
-    DepthBlock intersect(int rid, int start, int end);
+    void SetToMissing();//set all values to bcftools missing
+    void SetToZero();//zero all values
+    void Add(const DepthBlock &db);
+    void Divide(int n);
 
-    int intersect_size(int rid, int a, int b) const;
-
-    int intersect_size(const DepthBlock &db) const;
-    int get_ploidy();
-    int size() const;
-
-    void set_missing();//set all values to bcftools missing
-    void zero();//zero all values
-    void add(const DepthBlock &db);
     int rid() const { return _rid; }
     int start() const { return _start; }
     int end() const { return _end; }
     int dp() const { return _dp; }
     int gq() const { return _gq; }
     int dpf() const { return _dpf; }
-
-    void divide(int n);
+    int ploidy();
+    int size() const;
 
 private:
     int _rid, _start, _end, _dp, _dpf, _gq, _ploidy;

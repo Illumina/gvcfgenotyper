@@ -26,22 +26,21 @@ public:
     int get_next_variant();
 
 private:
-    void genotype_homref_variant(int sample_index,DepthBlock & depth);
-    void genotype_alt_variant(int sample_index,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
-    void genotype_sample(int sample_index);
-    void update_format_info();
-    void build_header();
-    void set_output_buffers_to_missing(int num_alleles);
+    void GenotypeHomrefVariant(int sample_index, DepthBlock &depth);
+    void GenotypeAltVariant(int sample_index,
+                            pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants);
+    void GenotypeSample(int sample_index);
+    void UpdateFormatAndInfo();
+    void BuildHeader();
+    void SetOutputBuffersToMissing(int num_alleles);
+    bool AreAllReadersEmpty();
+
+    multiAllele _record_collapser;
     vector<GVCFReader> _readers;
     size_t _num_gvcfs;
-    bool all_readers_empty();
-    multiAllele _record_collapser;
-
-//stuff for output
     bcf1_t *_output_record;
     htsFile *_output_file;
     bcf_hdr_t *_output_header;
-    //int32_t *_format_gt, *_format_gq, *_format_dp, *_format_dpf, *_format_ad, *_format_ps,*_format_pl,*_format_adf,*_format_adr,*_format_gqx;
     ggutils::vcf_data_t *format;//stores all our format fields.
     int32_t *_info_adf, *_info_adr, *_info_ac;
     int _mean_mq,_num_mq,_num_variants;

@@ -3,27 +3,27 @@
 #include "StringUtil.hh"
 //#define DEBUG
 
-int GVCFReader::flush_buffer(bcf1_t *record)
+int GVCFReader::FlushBuffer(bcf1_t *record)
 {
     assert(record!=nullptr);
-    _depth_buffer.flush_buffer(record->rid, record->pos - 1);
-    int num_flushed = _variant_buffer.flush_buffer(record);
-    fill_buffer();
+    _depth_buffer.FlushBuffer(record->rid, record->pos - 1);
+    int num_flushed = _variant_buffer.FlushBuffer(record);
+    FillBuffer();
     return (num_flushed);
 }
 
-int GVCFReader::flush_buffer(int chrom, int pos)
+int GVCFReader::FlushBuffer(int chrom, int pos)
 {
-    _depth_buffer.flush_buffer(chrom, pos);
-    int num_flushed = _variant_buffer.flush_buffer(chrom, pos);
-    fill_buffer();
+    _depth_buffer.FlushBuffer(chrom, pos);
+    int num_flushed = _variant_buffer.FlushBuffer(chrom, pos);
+    FillBuffer();
     return (num_flushed);
 }
 
-int GVCFReader::flush_buffer()
+int GVCFReader::FlushBuffer()
 {
-    _depth_buffer.flush_buffer();
-    return (_variant_buffer.flush_buffer());
+    _depth_buffer.FlushBuffer();
+    return (_variant_buffer.FlushBuffer());
 }
 
 GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &reference_genome_fasta, const int buffer_size,
@@ -53,19 +53,19 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     _bcf_header = _bcf_reader->readers[0].header;
 
     _normaliser = new Normaliser(reference_genome_fasta, _bcf_header);
-    fill_buffer();
+    FillBuffer();
 
     // flush variant buffer to get rid of variants overlapping 
     // the interval start
     if(region.find(":")!=std::string::npos)
     {
         string chr;
-        int64_t start, end = 0;
+        int64_t start=0, end = 0;
         stringutil::parsePos(region, chr, start, end);
         if (!region.empty())
         {
             int rid = bcf_hdr_name2id(_bcf_header, chr.c_str());
-            flush_buffer(rid, start);
+            FlushBuffer(rid, start);
         }
     }
 }
@@ -80,40 +80,40 @@ GVCFReader::~GVCFReader()
     delete _normaliser;
 }
 
-size_t GVCFReader::fill_buffer()
+size_t GVCFReader::FillBuffer()
 {
 
-    if (_variant_buffer.size() < 2)
+    if (_variant_buffer.Size() < 2)
     {
-        read_lines(2);
+        ReadLines(2);
     }
-    while (_variant_buffer.size() > 1 && _variant_buffer.back()->rid == _variant_buffer.front()->rid &&
-           (_variant_buffer.back()->pos - _variant_buffer.front()->pos) < _buffer_size)
+    while (_variant_buffer.Size() > 1 && _variant_buffer.Back()->rid == _variant_buffer.Front()->rid &&
+           (_variant_buffer.Back()->pos - _variant_buffer.Front()->pos) < _buffer_size)
     {
-        int num_read = read_lines(1);
+        int num_read = ReadLines(1);
         if (num_read == 0)
         {
             break;
         }
     }
 
-    return (_variant_buffer.size());
+    return (_variant_buffer.Size());
 }
 
-int GVCFReader::read_until(int rid, int pos)
+int GVCFReader::ReadUntil(int rid, int pos)
 {
     int num_read = 0;
 //    bcf1_t *rec=_variant_buffer.back();
-    DepthBlock *db = _depth_buffer.back();
+    DepthBlock *db = _depth_buffer.Back();
     while (db == nullptr)
     {
-        read_lines(1);
-        db = _depth_buffer.back();
+        ReadLines(1);
+        db = _depth_buffer.Back();
     }
 
     while (db != nullptr && bcf_sr_has_line(_bcf_reader, 0) && (db->rid() < rid || (db->rid() == rid && db->end() < pos)))
     {
-        if (read_lines(1) < 1)
+        if (ReadLines(1) < 1)
         {
             break;
         }
@@ -121,13 +121,13 @@ int GVCFReader::read_until(int rid, int pos)
         {
             num_read++;
         }
-        db = _depth_buffer.back();
+        db = _depth_buffer.Back();
     }
 
     return (num_read);
 }
 
-int GVCFReader::read_lines(const unsigned num_lines)
+int GVCFReader::ReadLines(const unsigned num_lines)
 {
     if (num_lines == 0)
     {
@@ -145,11 +145,11 @@ int GVCFReader::read_lines(const unsigned num_lines)
             bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
-            vector<bcf1_t *> atomised_variants; 
-            _normaliser->unarise(_bcf_record,atomised_variants);
+            vector<bcf1_t *> atomised_variants;
+            _normaliser->Unarise(_bcf_record, atomised_variants);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
-                _variant_buffer.push_back(_bcf_header,*v);
+                _variant_buffer.PushBack(_bcf_header, *v);
             }
             num_read++;
         }
@@ -182,29 +182,29 @@ int GVCFReader::read_lines(const unsigned num_lines)
     return (num_read);
 }
 
-bcf1_t *GVCFReader::front()
+bcf1_t *GVCFReader::Front()
 {
-    fill_buffer();
-    return (_variant_buffer.front());
+    FillBuffer();
+    return (_variant_buffer.Front());
 }
 
-bcf1_t *GVCFReader::pop()
+bcf1_t *GVCFReader::Pop()
 {
-    int num_read = fill_buffer();
+    int num_read = FillBuffer();
 
-    if (_variant_buffer.empty() && num_read == 0)
+    if (_variant_buffer.IsEmpty() && num_read == 0)
     {
         return (nullptr);
     }
 
-    return (_variant_buffer.pop());
+    return (_variant_buffer.Pop());
 }
 
-bool GVCFReader::empty()
+bool GVCFReader::IsEmpty()
 {
-    if (_variant_buffer.empty())
+    if (_variant_buffer.IsEmpty())
     {
-        return (fill_buffer() == 0);
+        return (FillBuffer() == 0);
     }
     else
     {
@@ -212,39 +212,40 @@ bool GVCFReader::empty()
     }
 }
 
-bcf_hdr_t *GVCFReader::get_header()
+bcf_hdr_t *GVCFReader::GetHeader()
 {
     return (_bcf_header);
 }
 
 //gets dp/dpf/gq (possibly interpolated) for a give interval a<=x<b
-void GVCFReader::get_depth(int rid, int start, int stop, DepthBlock &db)
+void GVCFReader::GetDepth(int rid, int start, int stop, DepthBlock &db)
 {
-    read_until(rid, stop);
-    if (_depth_buffer.interpolate(rid, start, stop, db) < 0)
+    ReadUntil(rid, stop);
+    if (_depth_buffer.Interpolate(rid, start, stop, db) < 0)
     {
         ggutils::die("GVCFReader::get_depth problem with depth buffer");
     }
 }
 
-size_t GVCFReader::get_num_variants()
+size_t GVCFReader::GetNumVariants()
 {
-    return (_variant_buffer.size());
+    return (_variant_buffer.Size());
 }
 
-size_t GVCFReader::get_num_depth()
+size_t GVCFReader::GetNumDepthBlocks()
 {
     return (_depth_buffer.size());
 }
 
 //gets all variants in interval start<=x<=stop
-pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::get_all_variants_in_interval(int chrom,int stop)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::GetAllVariantsInInterval(int chrom,
+                                                                                                         int stop)
 {
-    return(_variant_buffer.get_all_variants_in_interval(chrom,stop));
+    return(_variant_buffer.GetAllVariantsInInterval(chrom, stop));
 }
 
-pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator>  GVCFReader::get_all_variants_up_to(bcf1_t *record)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator>  GVCFReader::GetAllVariantsUpTo(bcf1_t *record)
 {
-    return(_variant_buffer.get_all_variants_up_to(record));
+    return(_variant_buffer.GetAllVariantsUpTo(record));
 }
 

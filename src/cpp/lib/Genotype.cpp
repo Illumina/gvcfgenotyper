@@ -4,37 +4,37 @@
 #include <htslib/vcf.h>
 
 
-void Genotype::set_dp(int val)
+void Genotype::SetDp(int val)
 {
     _dp = (int32_t *)realloc(_dp,sizeof(int32_t));
     *_dp = val;
 }
 
-void Genotype::set_dpf(int val)
+void Genotype::SetDpf(int val)
 {
     _dpf = (int32_t *)realloc(_dpf,sizeof(int32_t));
     *_dpf = val;
 }
 
-void Genotype::set_gq(int val)
+void Genotype::SetGq(int val)
 {
     _gq = (int32_t *)realloc(_gq,sizeof(int32_t));
     *_gq = val;
 }
 
-void Genotype::set_gqx(int val)
+void Genotype::SetGqx(int val)
 {
     _gqx = (int32_t *)realloc(_gqx,sizeof(int32_t));
     *_gqx = val;
 }
 
-int Genotype::get_gq()
+int Genotype::gq()
 {
     assert(_num_gq==1);
     return(*_gq);
 }
 
-int Genotype::get_gqx()
+int Genotype::gqx()
 {
     assert(_num_gqx==1 || _num_gqx==0);
     if(_num_gqx==1)
@@ -43,7 +43,7 @@ int Genotype::get_gqx()
         return(bcf_int32_missing);
 }
 
-int Genotype::get_dp()
+int Genotype::dp()
 {
     if(_num_dp>0)
         return(*_dp);
@@ -51,25 +51,25 @@ int Genotype::get_dp()
         return(bcf_int32_missing);
 }
 
-int Genotype::get_ad(int index)
+int Genotype::ad(int index)
 {
     assert(index<_num_ad);
     return(_ad[index]);
 }
 
-int Genotype::get_adf(int index)
+int Genotype::adf(int index)
 {
     assert(index<_num_adf);
     return(_adf[index]);
 }
 
-int Genotype::get_adr(int index)
+int Genotype::adr(int index)
 {
     assert(index<_num_adr);
     return(_adr[index]);
 }
 
-int Genotype::get_dpf()
+int Genotype::dpf()
 {
     if(_num_dpf>0)
         return(*_dpf);
@@ -77,7 +77,7 @@ int Genotype::get_dpf()
         return(bcf_int32_missing);
 }
 
-bool Genotype::is_dp_missing()
+bool Genotype::IsDpMissing()
 {
     return(_num_dp==0);
 }
@@ -201,7 +201,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     if (status != 1)
     {
         if (status == -3)
-            set_depth_from_ad();
+            SetDepthFromAd();
         else
             ggutils::die("problem extracting FORMAT/DP");
     }
@@ -230,10 +230,10 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         }
         _num_gq = 1;
     }
-    GLfromPL();
+    SetGlFromPl();
 }
 
-void Genotype::GLfromPL()
+void Genotype::SetGlFromPl()
 {
     _gl.assign(_num_pl, 1.);
     float den = 0.;
@@ -246,7 +246,7 @@ void Genotype::GLfromPL()
 }
 
 
-void Genotype::set_depth_from_ad()
+void Genotype::SetDepthFromAd()
 {
     if(_num_dp==0)
     {
@@ -270,7 +270,7 @@ Genotype::~Genotype()
     free(_dp);
 }
 
-int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
+int Genotype::UpdateBcfRecord(bcf_hdr_t *header, bcf1_t *record)
 {
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
@@ -308,7 +308,7 @@ int Genotype::update_bcf1_t(bcf_hdr_t *header, bcf1_t *record)
     return (0);
 }
 
-void Genotype::set_depth_to_zero()
+void Genotype::SetDepthToZero()
 {
     std::fill(_dp,_dp+_num_dp,0);
     std::fill(_ad,_ad+_num_ad,0);
@@ -316,7 +316,7 @@ void Genotype::set_depth_to_zero()
     std::fill(_adr,_adr+_num_adr,0);
 }
 
-void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
+void Genotype::CollapseAllelesIntoRef(vector<int> &indices, Genotype &out)
 {
     int num_new_allele = indices.size()+1;
     for(size_t i=0;i<indices.size();i++)
@@ -325,7 +325,7 @@ void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
     }
 
     out.allocate(_ploidy, num_new_allele);
-    out.set_depth_to_zero();
+    out.SetDepthToZero();
 
     if(_num_dp>0)
         memcpy(out._dp, _dp, sizeof(int32_t) * _num_dp);
@@ -361,9 +361,9 @@ void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
 	    for(int j=i;j<_num_allele;j++)
 		out._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
 	else
-	    ggutils::die("Genotype::collapse_alleles_into_ref invalid ploidy");
+	    ggutils::die("Genotype::CollapseAllelesIntoRef invalid ploidy");
     }
-    out.PLfromGL();
+    out.SetPlFromGl();
 
     bool is_phased = _ploidy==1 ? bcf_gt_is_phased(_gt[0]) : bcf_gt_is_phased(_gt[1]) && bcf_gt_is_phased(_gt[0]);
 
@@ -378,7 +378,7 @@ void Genotype::collapse_alleles_into_ref(vector<int> & indices,Genotype & out)
     }
 }
 
-void Genotype::PLfromGL()
+void Genotype::SetPlFromGl()
 {
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
@@ -388,30 +388,30 @@ void Genotype::PLfromGL()
     }
 }
 
-int Genotype::propagate_format_fields(size_t sample_index,size_t ploidy,ggutils::vcf_data_t *format)
+int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils::vcf_data_t *format)
 {
     assert(sample_index<format->num_sample);
     //update scalars
-    format->gq[sample_index] = get_gq();
-    format->gqx[sample_index] = get_gqx();
+    format->gq[sample_index] = gq();
+    format->gqx[sample_index] = gqx();
 
-    if(is_dp_missing()) set_depth_from_ad();
+    if(IsDpMissing()) SetDepthFromAd();
 
-    format->dp[sample_index] = get_dp();
-    format->dpf[sample_index] = get_dpf();
+    format->dp[sample_index] = dp();
+    format->dpf[sample_index] = dpf();
 
     //update Number=R (eg FORMAT/AD)
     for(int i=0;i<_num_allele;i++)
     {
-        format->ad[sample_index * _num_allele + i] = get_ad(i);
-        format->adf[sample_index * _num_allele + i] = get_adf(i);
-        format->adr[sample_index * _num_allele + i] = get_adr(i);
+        format->ad[sample_index * _num_allele + i] = ad(i);
+        format->adf[sample_index * _num_allele + i] = adf(i);
+        format->adr[sample_index * _num_allele + i] = adr(i);
     }
-    format->gt[sample_index*ploidy] = get_gt(0);
+    format->gt[sample_index*ploidy] = gt(0);
 
     //update GT
     if(_ploidy==1)  format->gt[sample_index*ploidy+1] = bcf_int32_vector_end;
-    else  format->gt[sample_index*ploidy+1] = get_gt(1);
+    else  format->gt[sample_index*ploidy+1] = gt(1);
 
     //update PL
     size_t num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,_num_allele);
@@ -422,13 +422,13 @@ int Genotype::propagate_format_fields(size_t sample_index,size_t ploidy,ggutils:
     return(1);
 }
 
-void Genotype::set_gt_to_homref()
+void Genotype::SetGtToHomRef()
 {
     _gt[0] = bcf_gt_unphased(0);
     if(_ploidy==2) _gt[1]=bcf_gt_unphased(0);
 }
 
-void Genotype::make_diploid()
+void Genotype::MakeDiploid()
 {
     assert(_ploidy==1);
     _ploidy=2;
@@ -437,9 +437,9 @@ void Genotype::make_diploid()
     int _new_num_pl = _ploidy == 1 ? _num_allele : _num_allele * (1 + _num_allele) / 2;
     int32_t *_new_pl = (int32_t *)malloc(sizeof(int32_t)*_new_num_pl);
     std::fill(_new_pl,_new_pl+_new_num_pl,255);
-    for(int i=0;i<get_num_allele();i++)
+    for(int i=0;i< num_allele();i++)
         _new_pl[ggutils::get_gl_index(i,i)] = _pl[i];
-    GLfromPL();
+    SetGlFromPl();
     free(_pl);
     _pl = _new_pl;
 }
@@ -452,9 +452,9 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
     assert(ploidy==1 || ploidy==2);
-    allocate(ploidy,alleles_to_map.num_alleles()+1);
-    set_depth_to_zero();
-    set_gt_to_homref();
+    allocate(ploidy, alleles_to_map.GetNumAlleles()+1);
+    SetDepthToZero();
+    SetGtToHomRef();
     assert(_num_allele>1);
     std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
     int dst_genotype_count=0;
@@ -468,8 +468,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         {
             std::cerr<<"WARNING: conflicting ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid);
             std::cerr<< ":" << (*it)->pos + 1 << std::endl;
-            if(g.get_ploidy()==1)
-                g.make_diploid();
+            if(g.ploidy()==1)
+                g.MakeDiploid();
             else
                 ggutils::die("Unresolvable ploidy conflict.");
         }
@@ -477,32 +477,32 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         //FIXME: These values are overwriting on each iteration. Ideally they should be the same so it does not matter,
         // but there will be situations where this is not the case due variants shifting position. Hence with have to
         // add some hacks to handle conflicting values.
-        _qual = max(_qual, g.get_qual()); //FIXME: QUAL should be estimated from PL
-        _mq = max(get_mq(),g.get_mq());
-        *_gq = *_gq==bcf_int32_missing ? g.get_gq() : max(get_gq(),g.get_gq());
-        *_gqx = *_gqx==bcf_int32_missing ? g.get_gqx() : max(get_gqx(),g.get_gqx());
-        *_dpf = *_dpf==bcf_int32_missing ? g.get_dpf() : *_dpf;
+        _qual = max(_qual, g.qual()); //FIXME: QUAL should be estimated from PL
+        _mq = max(mq(), g.mq());
+        *_gq = *_gq==bcf_int32_missing ? g.gq() : max(gq(), g.gq());
+        *_gqx = *_gqx==bcf_int32_missing ? g.gqx() : max(gqx(), g.gqx());
+        *_dpf = *_dpf==bcf_int32_missing ? g.dpf() : *_dpf;
 
-        _ad[0]  = max(get_ad(0),g.get_ad(0));
-        _adf[0] = max(get_adf(0),g.get_adf(0));
-        _adr[0] = max(get_adr(0),g.get_adr(0));
+        _ad[0]  = max(ad(0), g.ad(0));
+        _adf[0] = max(adf(0), g.adf(0));
+        _adr[0] = max(adr(0), g.adr(0));
 
         //these are values specific to the alt allele in question.
-        int dst_allele_index = alleles_to_map.allele(*it);
+        int dst_allele_index = alleles_to_map.Allele(*it);
         assert(dst_allele_index < _num_allele && dst_allele_index > 0);
-        _ad[dst_allele_index] = g.get_ad(1);
-        _adf[dst_allele_index] = g.get_adf(1);
-        _adr[dst_allele_index] = g.get_adr(1);
+        _ad[dst_allele_index] = g.ad(1);
+        _adf[dst_allele_index] = g.adf(1);
+        _adr[dst_allele_index] = g.adr(1);
         if (ploidy == 1)
         {
-            _gl[0] = g.get_gl(0);
-            _gl[dst_allele_index] = g.get_gl(1);
+            _gl[0] = g.gl(0);
+            _gl[dst_allele_index] = g.gl(1);
         }
         else
         {
-            _gl[ggutils::get_gl_index(0, 0)] = g.get_gl(0, 0);
-            _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.get_gl(0, 1);
-            _gl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.get_gl(1, 1);
+            _gl[ggutils::get_gl_index(0, 0)] = g.gl(0, 0);
+            _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
+            _gl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.gl(1, 1);
         }
 
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
@@ -510,15 +510,15 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             assert(dst_genotype_count <= _ploidy);
             if (num_sample_variants == 1)//only one allele so this is a straightforward copy
             {
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 0)
+                if (bcf_gt_allele(g.gt(genotype_index)) == 0)
                     _gt[dst_genotype_count] = bcf_gt_unphased(0);
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
+                if (bcf_gt_allele(g.gt(genotype_index)) == 1)
                     _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
                 dst_genotype_count++;
             }
             else //there are multiple variants at this position. we need to do some careful genotype counting.
             {
-                if (bcf_gt_allele(g.get_gt(genotype_index)) == 1)
+                if (bcf_gt_allele(g.gt(genotype_index)) == 1)
                 {
                     if (dst_genotype_count >= 2)
                     {
@@ -535,8 +535,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             }
         }
     }
-    set_depth_from_ad();
-    PLfromGL();
+    SetDepthFromAd();
+    SetPlFromGl();
     if(recall_genotypes_from_gl) CallGenotype();
 
     //This is a sanity check which should possibly reside within unit testing.
@@ -547,26 +547,26 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
     }
 }
 
-float Genotype::get_qual()
+float Genotype::qual()
 {
     return(_qual);
 }
 
-int Genotype::get_mq()
+int Genotype::mq()
 {
     return(_mq);
 }
 
-int Genotype::get_ploidy() {return _ploidy;};
-int Genotype::get_num_allele() {return _num_allele;};
+int Genotype::ploidy() {return _ploidy;};
+int Genotype::num_allele() {return _num_allele;};
 
-int Genotype::get_gt(int index)
+int Genotype::gt(int index)
 {
     assert(index<_ploidy);
     return(_gt[index]);
 };
 
-int Genotype::get_pl(int g0,int g1)
+int Genotype::pl(int g0, int g1)
 {
     assert(_ploidy==2);
     assert(g0>=0 && g1>=0);
@@ -574,7 +574,7 @@ int Genotype::get_pl(int g0,int g1)
     return(_pl[ggutils::get_gl_index(g0,g1)]);
 }
 
-int Genotype::get_pl(int g0)
+int Genotype::pl(int g0)
 {
     assert(_ploidy==1);
     assert(g0>=0);
@@ -582,7 +582,7 @@ int Genotype::get_pl(int g0)
     return(_pl[g0]);
 }
 
-float Genotype::get_gl(int g0,int g1)
+float Genotype::gl(int g0, int g1)
 {
     assert(_ploidy==2);
     assert(g0>=0 && g1>=0);
@@ -590,7 +590,7 @@ float Genotype::get_gl(int g0,int g1)
     return(_gl[ggutils::get_gl_index(g0,g1)]);
 }
 
-float Genotype::get_gl(int g0)
+float Genotype::gl(int g0)
 {
     assert(_ploidy==1);
     assert(g0>=0);

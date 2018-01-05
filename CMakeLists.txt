@@ -44,12 +44,11 @@ add_executable(gvcfgenotyper src/cpp/gvcfgenotyper.cpp ${SRC} )
 target_link_libraries(gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(gvcfgenotyper libhts.a)
 
-
 ## google test stuff
 add_subdirectory(${PROJECT_SOURCE_DIR}/external/googletest-release-1.8.0)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
-file(GLOB TEST_SRC "${PROJECT_SOURCE_DIR}/src/test/*.cpp")
+file(GLOB TEST_SRC "${PROJECT_SOURCE_DIR}/src/cpp/test/*.cpp")
 add_executable(test_gvcfgenotyper src/cpp/test/test_gvcfgenotyper.cpp ${SRC} ${TEST_SRC})
 target_link_libraries(test_gvcfgenotyper  ${PROJECT_SOURCE_DIR}/external/htslib-1.6/libhts.a)
 add_dependencies(test_gvcfgenotyper libhts.a)

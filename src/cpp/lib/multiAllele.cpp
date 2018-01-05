@@ -32,20 +32,20 @@ multiAllele::multiAllele()
     _hdr = nullptr;
 }
 
-void multiAllele::setPosition(int rid,int pos)
+void multiAllele::SetPosition(int rid, int pos)
 {
     assert(_hdr!= nullptr);
-    clear();
+    Clear();
     _rid = rid;
     _pos = pos;
 }
 
-void multiAllele::init(bcf_hdr_t *hdr)
+void multiAllele::Init(bcf_hdr_t *hdr)
 {
     _hdr = bcf_hdr_dup(hdr);
 }
 
-int multiAllele::clear()
+int multiAllele::Clear()
 {
     _rid = -1;
     _pos = -1;
@@ -60,11 +60,11 @@ int multiAllele::clear()
 
 multiAllele::~multiAllele()
 {
-    clear();
+    Clear();
     bcf_hdr_destroy(_hdr);
 }
 
-int multiAllele::allele(bcf1_t *record)
+int multiAllele::Allele(bcf1_t *record)
 {
     assert(_hdr!=nullptr);
     assert(_rid>=0 && _pos>=0);
@@ -91,7 +91,7 @@ int multiAllele::allele(bcf1_t *record)
     }
 }
 
-bcf1_t *multiAllele::get_max()
+bcf1_t *multiAllele::GetMax()
 {
     bcf1_t *ret = nullptr;
     for(auto rec=_records.begin();rec!=_records.end();rec++)    {
@@ -105,7 +105,7 @@ bcf1_t *multiAllele::get_max()
     return(ret);
 }
 
-void multiAllele::collapse(bcf1_t *output)
+void multiAllele::Collapse(bcf1_t *output)
 {
     assert(!_records.empty());
     output->pos = _pos;

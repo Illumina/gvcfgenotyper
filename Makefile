@@ -54,9 +54,9 @@ build/%.o: src/c/%.c
 	$(CC) -MT $@ -MM $(CFLAGS) $(IFLAGS) $< -o $@.d
 
 bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp build/version.hh $(OBJS) $(HTSLIB)
-	$(CXX) $(CXXFLAGS) -o $@  $(IFLAGS) $(LFLAGS) $(CXXFLAGS) src/cpp/gvcfgenotyper.cpp $(OBJS) $(HTSLIB)
+	$(CXX) $(CXXFLAGS) -o $@   src/cpp/gvcfgenotyper.cpp $(OBJS) $(HTSLIB) $(IFLAGS) $(LFLAGS)
 bin/test_gvcfgenotyper: build/version.hh $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
-	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) $(CXXFLAGS) build/gtest.a build/gtest_main.a
+	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) build/gtest.a build/gtest_main.a
 .PHONY: test
 test: bin/test_gvcfgenotyper bin/gvcfgenotyper
 	bin/test_gvcfgenotyper

@@ -26,7 +26,7 @@ TEST(Normaliser, qual)
     bcf_update_genotypes(hdr, record1, gt, 2);
     //print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ASSERT_FLOAT_EQ((*it)->qual,221);
@@ -171,7 +171,7 @@ TEST(Normaliser, unarise1)
 
 
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -206,8 +206,8 @@ TEST(Normaliser, unarise2)
     bcf_update_genotypes(hdr, record1, gt, 2);
     //print_variant(hdr, record1);
 
-    vector<bcf1_t *> buffer; 
-    norm.unarise(record1,buffer);
+    vector<bcf1_t *> buffer;
+    norm.Unarise(record1, buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -243,7 +243,7 @@ TEST(Normaliser, unarise3)
 
 
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -273,7 +273,7 @@ TEST(Normaliser, unarise4)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ggutils::print_variant(hdr,*it);
@@ -288,18 +288,18 @@ TEST(Normaliser, unarise6)
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:49:7:54:2,15,16:1,12,0:1,3,16:PASS:429,123,50,137,0,295");
     multiAllele m;
-    m.init(hdr);
-    m.setPosition(record1->rid,record1->pos);
+    m.Init(hdr);
+    m.SetPosition(record1->rid, record1->pos);
 
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ggutils::print_variant(hdr,*it);
-        m.allele(*it);
+        m.Allele(*it);
     }
 //    ggutils::print_variant(hdr,m.get_max());
 }
@@ -313,7 +313,7 @@ TEST(Normaliser, unarise7)
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
@@ -330,7 +330,7 @@ TEST(Normaliser, unarise8)
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
@@ -345,19 +345,19 @@ TEST(Normaliser, unarise9)
     Normaliser norm(ref_file_name, hdr);
     auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tT,G\t0\tLowGQX\tSNVHPOL=2;MQ=33\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/2:9:0:9:0:7,1,1:5,1,1:2,0,0:0:LowGQX:14,11,149,0,117,138");
     multiAllele m;
-    m.init(hdr);
-    m.setPosition(record1->rid,record1->pos);
+    m.Init(hdr);
+    m.SetPosition(record1->rid, record1->pos);
 
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     std::vector<bcf1_t *> buffer;
-    norm.unarise(record1,buffer);
+    norm.Unarise(record1, buffer);
     std::cerr <<"Output:"<<std::endl;
     std::deque<bcf1_t *> q;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ggutils::print_variant(hdr,*it);
-        m.allele(*it);
+        m.Allele(*it);
         q.push_back(*it);
     }
     std::cerr<<std::endl;
@@ -373,13 +373,13 @@ TEST(Normaliser, unarise10)
 
     auto record1 = generate_record(hdr,"chr1\t4\trs863224454;rs863224781\tGCA\tCTG,CCA\t2\tLowGQX\tRU=.,.;REFREP=.,.;IDREP=.,.;MQ=60;OLD_VARIANT=chr5:148407707:GACG/GCTG/GCCA;clinvar=1|likely_pathogenic,2|uncertain_significance;GMAF=A|0.009385,A|0.009385;CSQT=1|SH3TC2|NM_024577.3|missense_variant,2|SH3TC2|NM_024577.3|missense_variant\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/1:5:0:56:4,3,3:1,1,1:3,2,2:LowGQX:43,8,8,16,0,29");
     std::vector<bcf1_t *> buffer;
-    norm.unarise(record1, buffer);
+    norm.Unarise(record1, buffer);
     std::cerr << "Output:" << std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         Genotype g(hdr,*it);
-        ASSERT_TRUE(g.get_ad(0)>=0);
-        ASSERT_TRUE(g.get_ad(1)>=0);
+        ASSERT_TRUE(g.ad(0)>=0);
+        ASSERT_TRUE(g.ad(1)>=0);
         ggutils::print_variant(hdr, *it);
     }
 }
