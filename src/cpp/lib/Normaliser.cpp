@@ -79,7 +79,7 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
                 {
                     //creates a mapping from old alleles -> new alleles
                     Genotype new_genotype(old_genotype._ploidy, num_new_allele);
-                    new_genotype.set_depth_to_zero();
+                    new_genotype.SetDepthToZero();
                     vector<int> allele_remap(num_allele);
                     for (int new_allele = 0; new_allele < num_new_allele; new_allele++)
                     {
@@ -119,11 +119,11 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
                                                                    allele_remap[j])] += old_genotype._gl[ggutils::get_gl_index(i, j)];
                         }
                     }
-                    new_genotype.set_dp(old_genotype.get_dp());
-                    new_genotype.set_dpf(old_genotype.get_dpf());
-                    new_genotype.set_gq(old_genotype.get_gq());
-                    new_genotype.set_gqx(old_genotype.get_gqx());
-                    new_genotype.update_bcf1_t(header, new_var);
+                    new_genotype.SetDp(old_genotype.dp());
+                    new_genotype.SetDpf(old_genotype.dpf());
+                    new_genotype.SetGq(old_genotype.gq());
+                    new_genotype.SetGqx(old_genotype.gqx());
+                    new_genotype.UpdateBcfRecord(header, new_var);
                 }
                 output.push_back(new_var);
                 num_new_snps++;
@@ -141,12 +141,12 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
 //This function checks if a multi-allelic variant can be split into separate rows. This
 //is only the case when the alleles can be left-shifted such that they have different
 //starting positions.
-void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_variants)
+void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split_variants)
 {
     assert(bcf_record_to_split->n_allele>2);
     bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
     Genotype src(_hdr,bcf_record_to_split);
-    Genotype dst(src.get_ploidy(),src.get_num_allele());
+    Genotype dst(src.ploidy(), src.num_allele());
 
     std::vector< std::pair<int,int> > new_positions; //stores the position + rank of each variant post-normalisation
     char **new_alleles = (char **)malloc(sizeof(char *)*bcf_record_to_split->n_allele);
@@ -182,8 +182,8 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
         bcf1_t *tmp_record = bcf_dup(bcf_record_to_split);
         bcf_unpack(tmp_record, BCF_UN_ALL);
         bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
-        src.collapse_alleles_into_ref(alleles_at_this_position,dst);
-        dst.update_bcf1_t(_hdr,tmp_record);
+        src.CollapseAllelesIntoRef(alleles_at_this_position, dst);
+        dst.UpdateBcfRecord(_hdr, tmp_record);
         for (int i = 1; i < tmp_record->n_allele; i++)
         {
             bcf1_t *out_record = bcf_dup(tmp_record);
@@ -198,7 +198,7 @@ void Normaliser::multi_split(bcf1_t *bcf_record_to_split,vector<bcf1_t*>& split_
     free(new_alleles);
 }
 
-void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& atomised_variants )
+void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &atomised_variants)
 {
 #ifdef DEBUG
     ggutils::print_variant(_hdr,bcf_record_to_marginalise);
@@ -228,7 +228,7 @@ void Normaliser::unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t*>& ato
         }
         else
         {
-            multi_split(*it,atomised_variants);
+            MultiSplit(*it, atomised_variants);
             bcf_destroy(*it);
         }
     }

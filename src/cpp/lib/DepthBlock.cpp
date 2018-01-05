@@ -5,7 +5,7 @@
 DepthBlock::DepthBlock()
     : _rid(0),_start(0),_end(0)
 {
-    set_missing();
+    SetToMissing();
 }
 
 DepthBlock::DepthBlock(int rid, int start, int end, int dp, int dpf, int gq, int ploidy)
@@ -15,17 +15,17 @@ DepthBlock::DepthBlock(int rid, int start, int end, int dp, int dpf, int gq, int
     assert(end >= start);
 }
 
-void DepthBlock::set_missing()
+void DepthBlock::SetToMissing()
 {
     _dp = _gq = _dpf = bcf_int32_missing;
 }
 
-void DepthBlock::zero()
+void DepthBlock::SetToZero()
 {
     _dp = _gq = _dpf = 0;
 }
 
-void DepthBlock::add(const DepthBlock &db)
+void DepthBlock::Add(const DepthBlock &db)
 {
     if (_dp == bcf_int32_missing || _dpf == bcf_int32_missing || _gq == bcf_int32_missing)
     {
@@ -50,7 +50,7 @@ void DepthBlock::add(const DepthBlock &db)
     }
 }
 
-void DepthBlock::divide(int n)
+void DepthBlock::Divide(int n)
 {
     if (n > 1)
     {
@@ -65,7 +65,7 @@ int DepthBlock::size() const
     return (_end - _start + 1);
 }
 
-int DepthBlock::intersect_size(int rid, int start, int end) const
+int DepthBlock::IntersectSize(int rid, int start, int end) const
 {
     if (_rid != rid)
     {
@@ -80,19 +80,19 @@ int DepthBlock::intersect_size(int rid, int start, int end) const
     return (min(end, _end) - max(_start, start) + 1);
 }
 
-int DepthBlock::intersect_size(const DepthBlock &db) const
+int DepthBlock::IntersectSize(const DepthBlock &db) const
 {
-    return (intersect_size(db._rid, db._start, db._end));
+    return (IntersectSize(db._rid, db._start, db._end));
 }
 
-DepthBlock DepthBlock::intersect(const DepthBlock &db)
+DepthBlock DepthBlock::Intersect(const DepthBlock &db)
 {
-    return (intersect(db._rid, db._start, db._end));
+    return (Intersect(db._rid, db._start, db._end));
 }
 
-DepthBlock DepthBlock::intersect(int rid, int start, int end)
+DepthBlock DepthBlock::Intersect(int rid, int start, int end)
 {
-    if (!intersect_size(rid, start, end))
+    if (!IntersectSize(rid, start, end))
     {
         std::cerr << "DepthBlock " << _rid << ":" << _start + 1 << "-" << _end + 1 << " does not contain region: "
                   << rid << ":" << start + 1 << "-" << end + 1 << std::endl;
@@ -102,4 +102,4 @@ DepthBlock DepthBlock::intersect(int rid, int start, int end)
     return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq, _ploidy};
 }
 
-int DepthBlock::get_ploidy() {return _ploidy;}
+int DepthBlock::ploidy() {return _ploidy;}

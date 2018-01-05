@@ -22,15 +22,18 @@ public:
     multiAllele();
     ~multiAllele();
 
-    void init(bcf_hdr_t *hdr);
-    void setPosition(int rid,int pos);
-    int allele(bcf1_t *record);
-    void collapse(bcf1_t *output);
-    int get_pos() {return _pos;};
-    int get_rid() {return _rid;};
-    int num_alleles() {return _records.size();};
-    bcf1_t *get_max();//returns the maximum allele (as defined by bcf1_t_less_than)
-    int clear();//wipes the _records
+    void Init(bcf_hdr_t *hdr);
+    void SetPosition(int rid, int pos);
+    int Allele(bcf1_t *record);
+    void Collapse(bcf1_t *output);
+    int GetNumAlleles() {return _records.size();};
+    bcf1_t *GetMax();//returns the maximum allele (as defined by bcf1_t_less_than)
+    int Clear();//wipes the _records
+
+    //accessors/mutators
+    int pos() {return _pos;};
+    int rid() {return _rid;};
+
 private:
     int _rid,_pos;
     bcf_hdr_t *_hdr;

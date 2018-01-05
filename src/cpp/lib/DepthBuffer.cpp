@@ -2,9 +2,9 @@
 
 //interpolates depth for a given interval a<=x<b
 //returns 0 on success and -1 if the buffer didnt contain the interval
-int DepthBuffer::interpolate(const int rid, const int start, const int stop, DepthBlock &db)
+int DepthBuffer::Interpolate(const int rid, const int start, const int stop, DepthBlock &db)
 {
-    db.set_missing();
+    db.SetToMissing();
     auto dp_ptr = _buffer.begin();
     while (dp_ptr != _buffer.end() && (dp_ptr->end() < start || dp_ptr->rid() < rid))
     {
@@ -16,11 +16,11 @@ int DepthBuffer::interpolate(const int rid, const int start, const int stop, Dep
         return (-1);
     }
 
-    db = dp_ptr->intersect(rid, start, stop);
+    db = dp_ptr->Intersect(rid, start, stop);
     dp_ptr++;
-    while (dp_ptr != _buffer.end() && dp_ptr->intersect_size(rid, start, stop) > 0)
+    while (dp_ptr != _buffer.end() && dp_ptr->IntersectSize(rid, start, stop) > 0)
     {
-        db.add(dp_ptr->intersect(rid, start, stop));
+        db.Add(dp_ptr->Intersect(rid, start, stop));
         dp_ptr++;
     }
     return (0);
@@ -46,7 +46,7 @@ void DepthBuffer::push_back(const DepthBlock& db)
     }
 }
 
-int DepthBuffer::flush_buffer(const int rid, const int pos)
+int DepthBuffer::FlushBuffer(const int rid, const int pos)
 {
     int num_flushed = 0;
     while (!_buffer.empty() && _buffer.front().rid() < rid)
@@ -62,14 +62,14 @@ int DepthBuffer::flush_buffer(const int rid, const int pos)
     return (num_flushed);
 }
 
-int DepthBuffer::flush_buffer()
+int DepthBuffer::FlushBuffer()
 {
     int num_flushed=_buffer.size();
     _buffer.clear();
     return num_flushed;
 }
 
-DepthBlock *DepthBuffer::back()
+DepthBlock *DepthBuffer::Back()
 {
     if (_buffer.empty())
     {

@@ -7,10 +7,10 @@ VariantBuffer::VariantBuffer()
 
 VariantBuffer::~VariantBuffer()
 {
-    flush_buffer();
+    FlushBuffer();
 }
 
-bool VariantBuffer::has_variant(const bcf_hdr_t * hdr, bcf1_t *v)
+bool VariantBuffer::HasVariant(const bcf_hdr_t *hdr, bcf1_t *v)
 {
     if (_buffer.empty())
     {
@@ -33,10 +33,10 @@ bool VariantBuffer::has_variant(const bcf_hdr_t * hdr, bcf1_t *v)
     return (false);
 }
 
-int VariantBuffer::push_back(const bcf_hdr_t * hdr, bcf1_t *rec)
+int VariantBuffer::PushBack(const bcf_hdr_t *hdr, bcf1_t *rec)
 {
     bcf_unpack(rec, BCF_UN_ALL);
-    if (has_variant(hdr,rec))
+    if (HasVariant(hdr, rec))
     {
         _num_duplicated_records++;
         bcf_destroy(rec);
@@ -54,7 +54,7 @@ int VariantBuffer::push_back(const bcf_hdr_t * hdr, bcf1_t *rec)
     return (1);
 }
 
-int VariantBuffer::flush_buffer(bcf1_t *record)
+int VariantBuffer::FlushBuffer(bcf1_t *record)
 {
     assert(record!=nullptr);
     int num_flushed = 0;
@@ -67,7 +67,7 @@ int VariantBuffer::flush_buffer(bcf1_t *record)
     return (num_flushed);
 }
 
-int VariantBuffer::flush_buffer(int chrom, int pos)
+int VariantBuffer::FlushBuffer(int chrom, int pos)
 {
     int num_flushed = 0;
     while (!_buffer.empty() && _buffer.front()->rid < chrom)
@@ -85,7 +85,7 @@ int VariantBuffer::flush_buffer(int chrom, int pos)
     return (num_flushed);
 }
 
-int VariantBuffer::flush_buffer()
+int VariantBuffer::FlushBuffer()
 {
     int num_flushed = 0;
     while (!_buffer.empty())
@@ -97,18 +97,18 @@ int VariantBuffer::flush_buffer()
     return num_flushed;
 }
 
-size_t VariantBuffer::size()
+size_t VariantBuffer::Size()
 {
     return (_buffer.size());
 }
 
-bool VariantBuffer::empty()
+bool VariantBuffer::IsEmpty()
 {
     return (_buffer.empty());
 }
 
 
-bcf1_t *VariantBuffer::back()
+bcf1_t *VariantBuffer::Back()
 {
     if (_buffer.empty())
     {
@@ -123,7 +123,7 @@ bcf1_t *VariantBuffer::back()
     }
 }
 
-bcf1_t *VariantBuffer::front()
+bcf1_t *VariantBuffer::Front()
 {
     if (_buffer.empty())
     {
@@ -139,7 +139,7 @@ bcf1_t *VariantBuffer::front()
 }
 
 
-bcf1_t *VariantBuffer::pop()
+bcf1_t *VariantBuffer::Pop()
 {
     if (_buffer.empty())
     {
@@ -153,7 +153,8 @@ bcf1_t *VariantBuffer::pop()
     }
 }
 
-pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_in_interval(int chrom,int stop)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::GetAllVariantsInInterval(int chrom,
+                                                                                                            int stop)
 {
     auto a = _buffer.begin();
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator > ret(a, a);
@@ -169,7 +170,7 @@ pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffe
     return(ret);
 }
 
-pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::get_all_variants_up_to(bcf1_t * record)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> VariantBuffer::GetAllVariantsUpTo(bcf1_t *record)
 {
     auto a = _buffer.begin();
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> ret(a, a);
