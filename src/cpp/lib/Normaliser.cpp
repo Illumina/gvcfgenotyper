@@ -119,9 +119,10 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
                                                                    allele_remap[j])] += old_genotype._gl[ggutils::get_gl_index(i, j)];
                         }
                     }
-                    new_genotype._dp[0] = old_genotype._dp[0];
-                    new_genotype._dpf[0] = old_genotype._dpf[0];
-                    new_genotype._gq[0] = old_genotype._gq[0];
+                    new_genotype.set_dp(old_genotype.get_dp());
+                    new_genotype.set_dpf(old_genotype.get_dpf());
+                    new_genotype.set_gq(old_genotype.get_gq());
+                    new_genotype.set_gqx(old_genotype.get_gqx());
                     new_genotype.update_bcf1_t(header, new_var);
                 }
                 output.push_back(new_var);
