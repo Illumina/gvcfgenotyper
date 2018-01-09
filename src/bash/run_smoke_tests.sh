@@ -27,4 +27,5 @@ ls ./test/test3/NA1287?_S1.vcf.gz > gvcfs.txt
 diff ${tmpdir}/region_test2.observed ${DIR}/region_test2.expected
 echo set_region test passed
 
+
 rm -rf $tmpdir
