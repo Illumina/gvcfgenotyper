@@ -1,11 +1,13 @@
 .PHONY: all
 all: bin/gvcfgenotyper bin/test_gvcfgenotyper
 
+GIT_VERSION := $(shell git describe --abbrev=4 --always --tags)
+
 CC=gcc
 CXX=g++
 
-CXXFLAGS= -std=c++11 -O2
-CFLAGS = -O2
+CXXFLAGS= -std=c++11 -O2 -DGIT_VERSION=\"$(GIT_VERSION)\"
+CFLAGS = -O2 -DGIT_VERSION=\"$(GIT_VERSION)\"
 
 IFLAGS = -Isrc/cpp/lib/ -Isrc/c/
 LFLAGS = -lz -lm -lpthread
