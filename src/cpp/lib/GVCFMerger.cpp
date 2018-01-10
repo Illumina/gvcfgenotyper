@@ -324,8 +324,7 @@ void GVCFMerger::BuildHeader()
             bcf_hdr_add_sample(_output_header, sample_name.c_str());
         }
     }
-
-    bcf_hdr_append(_output_header, "##source=gvcfmerge-v0.0.0");
+    
     bcf_hdr_append(_output_header, "##INFO=<ID=GN,Number=G,Type=Integer,Description=\"count of each genotype.\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AD,Number=R,Type=Integer,Description=\"sum of allele depths for ALL individuals\">");
@@ -348,8 +347,8 @@ void GVCFMerger::BuildHeader()
                    "##FORMAT=<ID=DPF,Number=1,Type=Integer,Description=\"Basecalls filtered from input prior to site genotyping\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"Allelic depths for the ref and alt alleles in the order listed.\">");
-    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADF,Number=.,Type=Integer,Description=\"Allelic depths on the forward strand\"");
-    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADR,Number=.,Type=Integer,Description=\"Allelic depths on the reverse strand\"");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADF,Number=R,Type=Integer,Description=\"Allelic depths on the forward strand\"");
+    bcf_hdr_append(_output_header, "##FORMAT=<ID=ADR,Number=R,Type=Integer,Description=\"Allelic depths on the reverse strand\"");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=FT,Number=A,Type=Integer,Description=\"variant was PASS filter in original sample gvcf\">");
@@ -359,8 +358,8 @@ void GVCFMerger::BuildHeader()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for "
             "variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
-
-
+    bcf_hdr_append(_output_header, ("##gvcfgenotyper_version="+(string)GIT_VERSION).c_str());
     ggutils::copy_contigs(_readers[0].GetHeader(), _output_header);
+    
     bcf_hdr_write(_output_file, _output_header);
 }
