@@ -325,7 +325,7 @@ void GVCFMerger::BuildHeader()
         }
     }
 
-    bcf_hdr_append(_output_header, "##source=gvcfmerge-v0.0.0");
+    bcf_hdr_append(_output_header, ("##source=gvcfmerge-"+(string)GIT_VERSION).c_str());
     bcf_hdr_append(_output_header, "##INFO=<ID=GN,Number=G,Type=Integer,Description=\"count of each genotype.\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AD,Number=R,Type=Integer,Description=\"sum of allele depths for ALL individuals\">");
