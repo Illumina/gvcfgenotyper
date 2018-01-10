@@ -520,7 +520,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             {
                 if (bcf_gt_allele(g.gt(genotype_index)) == 1)
                 {
-		    if(dst_genotype_count>_ploidy)
+		    if(dst_genotype_count>=_ploidy)
                     {
                         std::cerr<<"WARNING: conflicting alleles/genotypes for sample "<<sample_header->samples[0]<<" ";
                         std::cerr<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
