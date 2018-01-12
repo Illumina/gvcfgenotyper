@@ -479,7 +479,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         // but there will be situations where this is not the case due variants shifting position. Hence with have to
         // add some hacks to handle conflicting values.
         _qual = max(_qual, g.qual()); //FIXME: QUAL should be estimated from PL
-        _mq = max(mq(), g.mq());
+        _mq = g.mq()==bcf_int32_missing ? bcf_int32_missing : max(mq(), g.mq());
         *_gq = *_gq==bcf_int32_missing ? g.gq() : max(gq(), g.gq());
         *_gqx = *_gqx==bcf_int32_missing ? g.gqx() : max(gqx(), g.gqx());
         *_dpf = *_dpf==bcf_int32_missing ? g.dpf() : *_dpf;

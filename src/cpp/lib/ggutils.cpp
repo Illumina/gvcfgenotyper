@@ -434,44 +434,44 @@ namespace ggutils
     int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);
-        output=bcf_float_missing;
         float *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_float_missing;
         return(ret);
     }
 
     int bcf1_get_one_format_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
-        output=bcf_float_missing;
         float *ptr=&output;
         int nval=1;
         int ret =   bcf_get_format_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_float_missing;
         return(ret);
     }
 
     int bcf1_get_one_info_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t & output)
     {
         bcf_unpack(record, BCF_UN_INFO);
-        output=bcf_int32_missing;
         int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
+        if(ret>1) die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
+        if(ret<0) output=bcf_int32_missing;
         return(ret);
     }
 
     int bcf1_get_one_format_int(const bcf_hdr_t *header, bcf1_t *record, const char *tag,int32_t &output)
     {
         bcf_unpack(record, BCF_UN_FMT);
-        output=bcf_int32_missing;
         int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_int32_missing;
         return(ret);
     }
 

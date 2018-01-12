@@ -167,6 +167,7 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,
     g.PropagateFormatFields(sample_index, default_ploidy, format);
     if(g.mq() != bcf_int32_missing)
     {
+        std::cerr<<g.mq()<<std::endl;//debug
         _mean_mq += g.mq();
         _num_mq++;
     }

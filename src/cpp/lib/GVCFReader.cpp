@@ -76,7 +76,8 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
         std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/ADR tag"<<std::endl;
     if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "PL")==-1)
         std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/PL tag" <<std::endl;
-
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "MQ")==-1)
+        std::cerr << "WARNING: " << input_gvcf << " has no MQ tag" <<std::endl;
 }
 
 bool GVCFReader::HasPl()
