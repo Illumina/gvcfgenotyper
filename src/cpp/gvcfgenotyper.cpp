@@ -16,7 +16,7 @@ static void usage()
             << std::endl;
     std::cerr << "    -r, --regions     <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
               << std::endl;
-    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
+//    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
     std::cerr << std::endl;
 }
 
