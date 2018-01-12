@@ -40,7 +40,7 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     }
     if (!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-        ggutils::die("problem opening input");
+      ggutils::die("problem opening "+input_gvcf);
     }
     if (buffer_size < 2)
     {
