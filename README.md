@@ -1,9 +1,8 @@
 # gvcfgenotyper 
 
-A utility for merging and genotyping Illumina-style GVCFs. This software is not commercially supported.
+A utility for merging and genotyping Illumina-style GVCFs.
 
 This source code is provided under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/#). Copyright (c) 2018, Illumina, Inc. All rights reserved.
-
 
 This tool provides basic genome VCF (GVCF) merging and genotyping functionality to provide a multisample BCF/VCF suitable for cohort analysis. Variants are normalised and decomposed on-the-fly before merging. Samples that do not have a particular variant have their homozygous reference confidence estimated from the GVCF depth blocks using some simple heuristics.
 
