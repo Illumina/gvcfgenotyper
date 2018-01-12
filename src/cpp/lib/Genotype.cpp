@@ -417,7 +417,7 @@ int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils:
     size_t num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,_num_allele);
     size_t num_pl_in_this_sample = ggutils::get_number_of_likelihoods(_ploidy,_num_allele);
     int *dst = format->pl+num_pl_per_sample*sample_index;
-    std::fill(dst,dst+num_pl_per_sample,bcf_float_vector_end);
+    std::fill(dst,dst+num_pl_per_sample,bcf_int32_vector_end);
     memcpy(dst,_pl,num_pl_in_this_sample*sizeof(int));
     return(1);
 }
@@ -507,7 +507,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
 
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
         {
-            assert(dst_genotype_count <= _ploidy);
+
             if (num_sample_variants == 1)//only one allele so this is a straightforward copy
             {
                 if (bcf_gt_allele(g.gt(genotype_index)) == 0)
@@ -520,7 +520,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             {
                 if (bcf_gt_allele(g.gt(genotype_index)) == 1)
                 {
-                    if (dst_genotype_count >= 2)
+		    if(dst_genotype_count>=_ploidy)
                     {
                         std::cerr<<"WARNING: conflicting alleles/genotypes for sample "<<sample_header->samples[0]<<" ";
                         std::cerr<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
