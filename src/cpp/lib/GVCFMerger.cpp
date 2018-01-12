@@ -165,8 +165,11 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,
     int default_ploidy=2;
     Genotype g(_readers[sample_index].GetHeader(), sample_variants,_record_collapser);
     g.PropagateFormatFields(sample_index, default_ploidy, format);
-    _mean_mq += g.mq();
-    _num_mq++;
+    if(g.mq() != bcf_int32_missing)
+    {
+        _mean_mq += g.mq();
+        _num_mq++;
+    }
     _output_record->qual += g.qual();
 }
 

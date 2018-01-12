@@ -492,18 +492,24 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         int dst_allele_index = alleles_to_map.Allele(*it);
         assert(dst_allele_index < _num_allele && dst_allele_index > 0);
         _ad[dst_allele_index] = g.ad(1);
-        _adf[dst_allele_index] = g.adf(1);
-        _adr[dst_allele_index] = g.adr(1);
-        if (ploidy == 1)
+        if(g.HasAdf() && g.HasAdr())
         {
-            _gl[0] = g.gl(0);
-            _gl[dst_allele_index] = g.gl(1);
+            _adf[dst_allele_index] = g.adf(1);
+            _adr[dst_allele_index] = g.adr(1);
         }
-        else
+        if(g.HasPl())
         {
-            _gl[ggutils::get_gl_index(0, 0)] = g.gl(0, 0);
-            _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
-            _gl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.gl(1, 1);
+            if (ploidy == 1)
+            {
+                _gl[0] = g.gl(0);
+                _gl[dst_allele_index] = g.gl(1);
+            }
+            else
+            {
+                _gl[ggutils::get_gl_index(0, 0)] = g.gl(0, 0);
+                _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
+                _gl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.gl(1, 1);
+            }
         }
 
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
@@ -585,6 +591,7 @@ int Genotype::pl(int g0)
 
 float Genotype::gl(int g0, int g1)
 {
+    if(_num_pl<=0) return(bcf_float_missing);
     assert(_ploidy==2);
     assert(g0>=0 && g1>=0);
     assert(g0<_num_allele && g1<_num_allele);
@@ -593,6 +600,7 @@ float Genotype::gl(int g0, int g1)
 
 float Genotype::gl(int g0)
 {
+    if(_num_pl<=0) return(bcf_float_missing);
     assert(_ploidy==1);
     assert(g0>=0);
     assert(g0<_num_allele);
