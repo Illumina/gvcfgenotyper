@@ -7,12 +7,15 @@ This source code is provided under the [Apache License 2.0](https://choosealicen
 This tool provides basic genome VCF (GVCF) merging and genotyping functionality to provide a multisample BCF/VCF suitable for cohort analysis. Variants are normalised and decomposed on-the-fly before merging. Samples that do not have a particular variant have their homozygous reference confidence estimated from the GVCF depth blocks using some simple heuristics.
 
 #### Caution:
+
 This software is in very early development, it is largely functional but may contain bugs.
 
 There are various flavours of GVCF in the wild, this tool only works with the format [produced by Illumina pipelines](https://sites.google.com/site/gvcftools/home/about-gvcf).
 
 
 ### Installation
+
+The only requirement is a C++11 compatible compiler.
 
 ```
 git clone git@git.illumina.com:Bioinformatics/gvcfgenotyper.git
