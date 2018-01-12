@@ -48,7 +48,8 @@ public:
     size_t GetNumDepthBlocks();
     bcf_hdr_t *GetHeader();
     int ReadUntil(int rid, int pos);
-
+    bool HasStrandAd();
+    bool HasPl();
 private:
     int _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
     bcf_srs_t *_bcf_reader;//htslib synced reader.

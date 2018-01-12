@@ -53,19 +53,21 @@ int Genotype::dp()
 
 int Genotype::ad(int index)
 {
-    assert(index<_num_ad);
+    assert(index<_num_ad && index>=0);
     return(_ad[index]);
 }
 
 int Genotype::adf(int index)
 {
-    assert(index<_num_adf);
+    if(_num_adf==0) return(bcf_int32_missing);
+    assert(index<_num_adf && index>=0);
     return(_adf[index]);
 }
 
 int Genotype::adr(int index)
 {
-    assert(index<_num_adr);
+    if(_num_adr==0) return(bcf_int32_missing);
+    assert(index<_num_adr && index>=0);
     return(_adr[index]);
 }
 
@@ -185,7 +187,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
     else
     {
-        std::cerr << "WARNING: gvcf without ADF supplied." << "\n";
         _adf_found = false;
     }
     if (bcf_get_format_int32(header, record, "ADR", &_adr, &_num_adr) == _num_allele)
@@ -194,7 +195,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
     else
     {
-        std::cerr << "WARNING: gvcf without ADR supplied." << "\n";
         _adr_found = false;
     }
     status = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
@@ -221,7 +221,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         float *tmp_gq = nullptr;
         if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
-            std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
+            //FIXME: we should be logging this in a separate file
+            //std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
         }
         else
         {
