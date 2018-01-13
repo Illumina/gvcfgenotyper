@@ -26,7 +26,7 @@ int GVCFReader::FlushBuffer()
     return (_variant_buffer.FlushBuffer());
 }
 
-GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &reference_genome_fasta, const int buffer_size,
+GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, const int buffer_size,
                        const string &region /*=""*/, const int is_file /*=0*/)
 {
     _bcf_record = nullptr;
@@ -52,7 +52,7 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     //header setup
     _bcf_header = _bcf_reader->readers[0].header;
 
-    _normaliser = new Normaliser(reference_genome_fasta, _bcf_header);
+    _normaliser = normaliser;
     FillBuffer();
 
     // flush variant buffer to get rid of variants overlapping 
@@ -97,7 +97,6 @@ GVCFReader::~GVCFReader()
         error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
     }
     bcf_sr_destroy(_bcf_reader);
-    delete _normaliser;
 }
 
 size_t GVCFReader::FillBuffer()
@@ -166,7 +165,7 @@ int GVCFReader::ReadLines(const unsigned num_lines)
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             vector<bcf1_t *> atomised_variants;
-            _normaliser->Unarise(_bcf_record, atomised_variants);
+            _normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
                 _variant_buffer.PushBack(_bcf_header, *v);

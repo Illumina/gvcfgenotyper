@@ -173,6 +173,10 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         status = _num_pl;
         _has_pl = false;
     }
+    else
+    {
+        _has_pl=true;
+    }
 
     if (status != _num_pl)
     {

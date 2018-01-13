@@ -11,6 +11,7 @@ extern "C" {
 
 GVCFMerger::~GVCFMerger()
 {
+    delete _normaliser;
     hts_close(_output_file);
     bcf_hdr_destroy(_output_header);
     delete format;
@@ -31,13 +32,14 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _has_pl = true;
     _has_strand_ad=true;
     _num_variants=0;
+    _normaliser = new Normaliser(reference_genome);
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" << std::endl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
         std::cerr << input_files[i] << std::endl;
-        _readers.emplace_back(input_files[i], reference_genome, buffer_size, region, is_file);
+        _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();
     }

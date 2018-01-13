@@ -32,19 +32,16 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
 class Normaliser
 {
 public:
-    Normaliser(const std::string &ref_fname, bcf_hdr_t *hdr);
-
+    Normaliser(const std::string &ref_fname);
     ~Normaliser();
-
     //breaks multi-allelics into pseudo-unary representation (primitive alleles and one-variant-per-row)
-    void Unarise(bcf1_t *rec, std::vector<bcf1_t *> &atomised_variants);
+    void Unarise(bcf1_t *rec, std::vector<bcf1_t *> &atomised_variants, bcf_hdr_t *hdr);
     //splits N multi-allelics into N separate records
-    void MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split_variants);
+    void MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split_variants, bcf_hdr_t *hdr);
 
 private:
     char _symbolic_allele[2];
     args_t *_norm_args;
-    bcf_hdr_t *_hdr;
 };
 
 

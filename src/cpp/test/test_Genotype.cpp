@@ -18,7 +18,8 @@ TEST(Genotype,resolveAlleleConflict)
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/regression/GG-26.vcf.gz";
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/regression/GG-26.fa";
     int buffer_size = 200;
-    GVCFReader reader(gvcf_file_name, ref_file_name, buffer_size);
+    Normaliser normaliser(ref_file_name);
+    GVCFReader reader(gvcf_file_name, &normaliser, buffer_size);
     bcf_hdr_t *hdr = reader.GetHeader();
     multiAllele m;
     m.Init(hdr);
@@ -43,7 +44,7 @@ TEST(Genotype,format)
     int pos=97473;
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,rid,pos+1,"G,GA,GAA");
     int qual = 786;
     record1->qual = qual;
@@ -61,7 +62,7 @@ TEST(Genotype,format)
     bcf_update_genotypes(hdr, record1, gt, 2);
 //    print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     size_t idx = 0;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {

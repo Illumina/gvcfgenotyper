@@ -1,4 +1,4 @@
-//This is a modified version of vcfnorm.c from bcftools. The originl copyright notice is below. Jared O'Connell <joconnell@illumina>
+//This is a modified version of vcfnorm.c from bcftools. The original copyright notice is below. Jared O'Connell <joconnell@illumina>
 
 /*  vcfnorm.c -- Left-align and normalize indels.
 
@@ -68,16 +68,16 @@ static inline int replace_iupac_codes(char *seq, int nseq)
 #define ERR_OK              0
 #define ERR_SYMBOLIC        1
 
-int realign(args_t *args, bcf1_t *line)
+int realign(args_t *args, bcf1_t *line,bcf_hdr_t *hdr)
 {
     bcf_unpack(line, BCF_UN_STR);
 
     // Sanity check REF
     int i, nref, reflen = strlen(line->d.allele[0]);
-    char *ref = faidx_fetch_seq(args->fai, (char *) args->hdr->id[BCF_DT_CTG][line->rid].key, line->pos,
+    char *ref = faidx_fetch_seq(args->fai, (char *) hdr->id[BCF_DT_CTG][line->rid].key, line->pos,
                                 line->pos + reflen - 1, &nref);
     if (!ref)
-    { error("faidx_fetch_seq failed at %s:%d\n", args->hdr->id[BCF_DT_CTG][line->rid].key, line->pos + 1); }
+    { error("faidx_fetch_seq failed at %s:%d\n", hdr->id[BCF_DT_CTG][line->rid].key, line->pos + 1); }
     replace_iupac_codes(ref, nref);
 
 
@@ -85,18 +85,18 @@ int realign(args_t *args, bcf1_t *line)
     if (replace_iupac_codes(line->d.allele[0], reflen))
     {
         args->nchanged++;
-        bcf_update_alleles(args->hdr, line, (const char **) line->d.allele, line->n_allele);
+        bcf_update_alleles(hdr, line, (const char **) line->d.allele, line->n_allele);
     }
     if (strcasecmp(ref, line->d.allele[0]))
     {
         if (args->check_ref == CHECK_REF_EXIT)
         {
-            error("Reference allele mismatch at %s:%d .. REF_SEQ:'%s' vs VCF:'%s'\n", bcf_seqname(args->hdr, line),
+            error("Reference allele mismatch at %s:%d .. REF_SEQ:'%s' vs VCF:'%s'\n", bcf_seqname(hdr, line),
                   line->pos + 1, ref, line->d.allele[0]);
         }
         if (args->check_ref & CHECK_REF_WARN)
         {
-            fprintf(stderr, "REF_MISMATCH\t%s\t%d\t%s\n", bcf_seqname(args->hdr, line), line->pos + 1,
+            fprintf(stderr, "REF_MISMATCH\t%s\t%d\t%s\n", bcf_seqname(hdr, line), line->pos + 1,
                     line->d.allele[0]);
         }
         free(ref);
@@ -143,10 +143,10 @@ int realign(args_t *args, bcf1_t *line)
         {
             int npad = line->pos >= args->aln_win ? args->aln_win : line->pos;
             free(ref);
-            ref = faidx_fetch_seq(args->fai, (char *) args->hdr->id[BCF_DT_CTG][line->rid].key, line->pos - npad,
+            ref = faidx_fetch_seq(args->fai, (char *) hdr->id[BCF_DT_CTG][line->rid].key, line->pos - npad,
                                   line->pos - 1, &nref);
             if (!ref)
-                error("faidx_fetch_seq failed at %s:%d\n", args->hdr->id[BCF_DT_CTG][line->rid].key,
+                error("faidx_fetch_seq failed at %s:%d\n", hdr->id[BCF_DT_CTG][line->rid].key,
                       line->pos - npad + 1);
             replace_iupac_codes(ref, nref);
             for (i = 0; i < line->n_allele; i++)
@@ -197,7 +197,7 @@ int realign(args_t *args, bcf1_t *line)
         kputsn(als[i].s, als[i].l, &args->tmp_als_str);
     }
     args->tmp_als_str.s[args->tmp_als_str.l] = 0;
-    bcf_update_alleles_str(args->hdr, line, args->tmp_als_str.s);
+    bcf_update_alleles_str(hdr, line, args->tmp_als_str.s);
     args->nchanged++;
 
     return ERR_OK;
@@ -218,7 +218,8 @@ static int diploid_to_haploid(int size, int nsmpl, int nals, uint8_t *vals)
 
 static void init_data(args_t *args)
 {
-    //    args->hdr = args->files->readers[0].header;
+    int nsample=1;
+    args->hdr = NULL;
     rbuf_init(&args->rbuf, 100);
     args->lines = (bcf1_t **) calloc(args->rbuf.m, sizeof(bcf1_t *));
     if (args->ref_fname)
@@ -230,8 +231,8 @@ static void init_data(args_t *args)
     if (args->mrows_op == MROWS_MERGE)
     {
         args->mrow_out = bcf_init1();
-        args->tmp_str = (kstring_t *) calloc(bcf_hdr_nsamples(args->hdr), sizeof(kstring_t));
-        args->diploid = (uint8_t *) malloc(bcf_hdr_nsamples(args->hdr));
+        args->tmp_str = (kstring_t *) calloc(nsample, sizeof(kstring_t));
+        args->diploid = (uint8_t *) malloc(nsample);
     }
 }
 

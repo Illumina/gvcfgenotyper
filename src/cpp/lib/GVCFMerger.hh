@@ -46,6 +46,7 @@ private:
     int _mean_mq,_num_mq,_num_variants;
     size_t _num_ps_written;
     bool _has_strand_ad,_has_pl;
+    Normaliser *_normaliser;
 };
 
 #endif
