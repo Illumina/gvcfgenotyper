@@ -38,7 +38,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     std::cerr << "Input GVCFs:" << std::endl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        std::cerr << input_files[i] << std::endl;
+      std::cerr << input_files[i] << " " << i+1<<"/"<<_num_gvcfs+1<<std::endl;
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();

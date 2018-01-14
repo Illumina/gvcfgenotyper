@@ -40,7 +40,7 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, c
     }
     if (!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-      ggutils::die("problem opening "+input_gvcf);
+      ggutils::die("problem opening "+input_gvcf+"\n"+bcf_sr_strerror(_bcf_reader->errnum));
     }
     if (buffer_size < 2)
     {
