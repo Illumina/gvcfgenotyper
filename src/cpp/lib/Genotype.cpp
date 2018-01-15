@@ -104,7 +104,6 @@ void Genotype::CallGenotype()
         {
             for(int j=i;j<_num_allele;j++)
             {
-                std::cerr<<_gl[ggutils::get_gl_index(i,j)]<<std::endl;//debug
                 if(_gl[ggutils::get_gl_index(i,j)]>_gl[ggutils::get_gl_index(maxi,maxj)])
                 {
                     maxi=i;
@@ -517,8 +516,16 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
                 {
                     int dst_allele_index2 = alleles_to_map.Allele(*allele2);
                     int src_allele_index2 = ggutils::find_allele(*it,*allele2,1);
-                    _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
-                    _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.pl(src_allele_index2, 1);
+                    if(src_allele_index2>=0)
+                    {
+                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
+                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.pl(src_allele_index2, 1);
+                    }
+                    else
+                    {
+                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = 0;
+                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = MAXPL;
+                    }
                 }
                 _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
                 _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.pl(0, 1);
