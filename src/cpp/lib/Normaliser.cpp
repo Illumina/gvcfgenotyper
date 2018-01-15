@@ -157,7 +157,7 @@ void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split
         new_alleles[1] = bcf_record_to_split->d.allele[i];
         bcf_update_alleles(hdr, tmp_record, (const char **) new_alleles, 2);
         if (realign(_norm_args, tmp_record,hdr) != ERR_OK)
-            ggutils::die("vcf record did not match the reference");
+	  ggutils::die("VCF record did not match the reference at sample "+(string)hdr->samples[0]);
         new_positions.push_back(pair<int,int>(tmp_record->pos,ggutils::get_variant_rank(tmp_record)));
         bcf_destroy(tmp_record);
     }
@@ -189,7 +189,7 @@ void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split
             bcf_unpack(out_record, BCF_UN_ALL);
             ggutils::bcf1_allele_swap(hdr,out_record,i,1);
             if (realign(_norm_args, out_record,hdr) != ERR_OK)
-                ggutils::die("vcf record did not match the reference");
+	      ggutils::die("VCF record did not match the reference at sample "+(string)hdr->samples[0]);
             split_variants.push_back(out_record);
         }
         bcf_destroy1(tmp_record);
@@ -220,9 +220,8 @@ void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &at
         if(decomposed_record->n_allele==2)//bi-allelic. no further decomposition needed.
         {
             if (realign(_norm_args, decomposed_record,hdr) != ERR_OK)
-            {
-                ggutils::die("vcf record did not match the reference");
-            }
+	      ggutils::die("VCF record did not match the reference at sample "+(string)hdr->samples[0]);
+
             atomised_variants.push_back(decomposed_record);
         }
         else

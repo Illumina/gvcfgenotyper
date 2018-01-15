@@ -234,6 +234,7 @@ static void init_data(args_t *args)
         args->tmp_str = (kstring_t *) calloc(nsample, sizeof(kstring_t));
         args->diploid = (uint8_t *) malloc(nsample);
     }
+    args->check_ref |= CHECK_REF_WARN;
 }
 
 void destroy_data(args_t *args)
