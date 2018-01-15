@@ -14,9 +14,9 @@ static void usage()
     std::cerr
             << "    -O, --output-type <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
             << std::endl;
-    std::cerr << "    -r, --regions     <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
+    std::cerr << "    -r, --region      <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
               << std::endl;
-    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
+//    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
     std::cerr << std::endl;
 }
 
