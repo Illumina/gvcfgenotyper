@@ -31,7 +31,8 @@ int main(int argc, char **argv)
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
-    
+    //This is a hidden flag that when true will drop variants with reference mismatches rather than exit with error (this is ill advised).
+    bool ignore_non_matching_ref=false;
     static struct option loptions[] = {
             {"list",        1, 0, 'l'},
             {"fasta-ref",   1, 0, 'f'},
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
             {"output-type", 1, 0, 'O'},
             {"region",      1, 0, 'r'},
             {"thread",      1, 0, '@'},
-
+	    {"ignore-non-matching-ref",0,0,1},
             {0,             0, 0, 0}
     };
 
@@ -62,14 +63,16 @@ int main(int argc, char **argv)
             case 'r':
                 region = optarg;
                 break;
-            case '@':
+	case '@':
                 n_threads = atoi(optarg);
                 break;
-            default:
-                if (optarg != NULL)
-                { ggutils::die("Unknown argument:" + (string) optarg + "\n"); }
-                else
-                { ggutils::die("unrecognised argument"); }
+	case 1:
+	    ignore_non_matching_ref=true;break;
+	default:
+	    if (optarg != NULL)
+		ggutils::die("Unknown argument:" + (string) optarg + "\n");
+	    else
+		    ggutils::die("unrecognised argument");
         }
     }
 
@@ -95,7 +98,7 @@ int main(int argc, char **argv)
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
-    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file);
+    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file,ignore_non_matching_ref);
 
     g.write_vcf();
     return (0);

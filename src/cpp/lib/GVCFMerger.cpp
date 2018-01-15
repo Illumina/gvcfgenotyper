@@ -27,18 +27,19 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
                        const string &reference_genome,
                        int buffer_size,
                        const string &region /*= ""*/,
-                       const int is_file /*= 0*/)
+                       const int is_file /*= 0*/,
+		       bool ignore_non_matching_ref)
 {
     _has_pl = true;
     _has_strand_ad=true;
     _num_variants=0;
-    _normaliser = new Normaliser(reference_genome);
+    _normaliser = new Normaliser(reference_genome,ignore_non_matching_ref);
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" << std::endl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-      std::cerr << input_files[i] << " " << i+1<<"/"<<_num_gvcfs+1<<std::endl;
+      std::cerr << input_files[i] << " " << i+1<<"/"<<_num_gvcfs<<std::endl;
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();
