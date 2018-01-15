@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "ggutils.hh"
 
 namespace ggutils
@@ -538,7 +539,9 @@ namespace ggutils
                     format_pl[allele_map[i]] = tmp_pl[i];
                 else
                     for(int j=i;j<record->n_allele;j++)
-                        format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
+                    {
+                        format_pl[ggutils::get_gl_index(allele_map[i], allele_map[j])] = tmp_pl[ggutils::get_gl_index(i, j)];
+                    }
             }
             bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
         }
@@ -616,5 +619,25 @@ namespace ggutils
         free(dp);
         free(dpf);
         free(ps);
+    }
+
+    int find_allele(bcf1_t *target,bcf1_t *query,int index)
+    {
+        assert(index>0 && index<query->n_allele);
+        size_t rlen,alen;
+        char *q_ref=query->d.allele[0];
+        char *q_alt=query->d.allele[index];
+        ggutils::right_trim(q_ref,q_alt,rlen,alen);
+        for(int i=1;i<target->n_allele;i++)
+        {
+            size_t target_rlen,target_alen;
+            char *t_ref=target->d.allele[0];
+            char *t_alt=target->d.allele[i];
+            ggutils::right_trim(t_ref,t_alt,target_rlen,target_alen);
+            if(rlen==target_rlen && alen==target_alen)
+                if(strncmp(q_ref,t_ref,rlen)==0 && strncmp(q_alt,t_alt,alen)==0)
+                    return(i);
+        }
+        return(-1);
     }
 }
