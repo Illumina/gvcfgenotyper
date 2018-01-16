@@ -509,6 +509,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             if (ploidy == 1)
             {
                 _gl[dst_allele_index] = g.gl(1);
+                _pl[dst_allele_index] = g.pl(1);
             }
             else
             {

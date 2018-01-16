@@ -516,6 +516,8 @@ namespace ggutils
 
         //GT
         int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);
+	if(ploidy==2 && gt[1]==bcf_int32_vector_end) ploidy=1;
+	    
         assert(ploidy==1 || ploidy==2);
         bool phased = ploidy==1 ? bcf_gt_is_phased(gt[0]) : bcf_gt_is_phased(gt[0])&&bcf_gt_is_phased(gt[1]);
         for(int i=0;i<ploidy;i++)
@@ -531,7 +533,11 @@ namespace ggutils
         int status = bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl);
         if(status>0)
         {
-            assert(status==(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele));
+            if(status!=(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele))
+	    {
+		ggutils::print_variant(header,record);
+		ggutils::die("problem with sample "+(string)header->samples[0]);
+	    }
             vector<int> tmp_pl(format_pl,format_pl+num_pl);
             for(int i=0;i<record->n_allele;i++)
             {

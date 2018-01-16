@@ -174,3 +174,43 @@ TEST(Genotype,SplitAndRebuild1)
         for(int j=i;j<3;j++)
             ASSERT_EQ(g1.pl(i,j),g2.pl(i,j));
 }
+
+TEST(Genotype,SplitAndRebuild2)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tC,G\t60\tSiteConflict\tMQ=51\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t2:17:8:6:10:0,3,3:0,0,2:0,3,1:-7.3:SiteConflict:95,17,0");
+    auto record2 = bcf_dup(record1);
+    Genotype original_g(hdr,record1);
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name);
+    multiAllele m;
+    m.Init(hdr);
+    m.SetPosition(record1->rid, record1->pos);
+
+    std::cerr <<"Input:"<<std::endl;
+    ggutils::print_variant(hdr,record1);
+    std::vector<bcf1_t *> buffer;
+    norm.Unarise(record1, buffer,hdr);
+    std::cerr <<"Output:"<<std::endl;
+    std::deque<bcf1_t *> q;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+        Genotype new_g(hdr,*it);
+        ggutils::print_variant(hdr,*it);
+        m.Allele(*it);
+        q.push_back(*it);
+        ASSERT_EQ(new_g.pl(0),original_g.pl(0));
+    }
+    std::cerr<<std::endl;
+
+    std::pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> variants(q.begin(),q.end());
+    Genotype g2(hdr,variants,m);
+    ASSERT_EQ(g2.ploidy(),1);
+    ASSERT_EQ(g2.ploidy(),original_g.ploidy());
+    g2.UpdateBcfRecord(hdr,record2);
+    ggutils::print_variant(hdr,record2);
+
+    Genotype g1(hdr,record1);
+    for(int i=0;i<g2.num_allele();i++)
+	ASSERT_EQ(g1.pl(i),g2.pl(i));
+}

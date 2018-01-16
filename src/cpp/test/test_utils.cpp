@@ -165,7 +165,7 @@ TEST(UtilTest,getters)
     ASSERT_FLOAT_EQ(sb,1.01);
 }
 
-TEST(UtilTest,bcf1AlleleSwap)
+TEST(UtilTest,bcf1AlleleSwapDiploid)
 {
     auto hdr = get_header();
     auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:0,1,2,3,4,5,6,7,8,9:1.01");
@@ -188,6 +188,26 @@ TEST(UtilTest,bcf1AlleleSwap)
 
         bcf_destroy1(record2);
     }
+    free(pl);
+    free(pl_new);
+}
+
+TEST(UtilTest,bcf1AlleleSwapHaploid)
+{
+    auto hdr = get_header();
+    auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tC,G\t60\tSiteConflict\tMQ=51\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t2:17:8:6:10:0,3,3:0,0,2:0,3,1:-7.3:SiteConflict:95,17,0");
+
+    int32_t *pl=nullptr,*pl_new=nullptr,num_pl=0,num_pl_new=0;
+    bcf_get_format_int32(hdr,record1,"PL",&pl,&num_pl);
+    ggutils::print_variant(hdr,record1);
+    bcf1_t *record2=bcf_dup(record1);
+    bcf_unpack(record2,BCF_UN_ALL);
+    ggutils::bcf1_allele_swap(hdr,record2,2,1);
+    ggutils::print_variant(hdr,record2);
+    bcf_get_format_int32(hdr,record2,"PL",&pl_new,&num_pl_new);
+    ASSERT_EQ(pl[0],pl_new[0]);
+    ASSERT_EQ(pl[1],pl_new[2]);
+    ASSERT_EQ(pl[2],pl_new[1]);
     free(pl);
     free(pl_new);
 }
