@@ -26,7 +26,7 @@ int GVCFReader::FlushBuffer()
     return (_variant_buffer.FlushBuffer());
 }
 
-GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &reference_genome_fasta, const int buffer_size,
+GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, const int buffer_size,
                        const string &region /*=""*/, const int is_file /*=0*/)
 {
     _bcf_record = nullptr;
@@ -40,7 +40,7 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     }
     if (!(bcf_sr_add_reader(_bcf_reader, input_gvcf.c_str())))
     {
-      ggutils::die("problem opening "+input_gvcf);
+      ggutils::die("problem opening "+input_gvcf+"\n"+bcf_sr_strerror(_bcf_reader->errnum));
     }
     if (buffer_size < 2)
     {
@@ -52,7 +52,7 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
     //header setup
     _bcf_header = _bcf_reader->readers[0].header;
 
-    _normaliser = new Normaliser(reference_genome_fasta, _bcf_header);
+    _normaliser = normaliser;
     FillBuffer();
 
     // flush variant buffer to get rid of variants overlapping 
@@ -68,6 +68,26 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, const std::string &referen
             FlushBuffer(rid, start);
         }
     }
+
+    //Checking and warning if a few tags are not present. This is how we support legacy GVCFs without crashing.
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADF")==-1)
+        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/ADF tag"<<std::endl;
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADR")==-1)
+        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/ADR tag"<<std::endl;
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "PL")==-1)
+        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/PL tag" <<std::endl;
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "MQ")==-1)
+        std::cerr << "WARNING: " << input_gvcf << " has no MQ tag" <<std::endl;
+}
+
+bool GVCFReader::HasPl()
+{
+    return(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "PL")!=-1);
+}
+
+bool GVCFReader::HasStrandAd()
+{
+    return(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADF")!=-1 && bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADR")!=-1);
 }
 
 GVCFReader::~GVCFReader()
@@ -77,7 +97,6 @@ GVCFReader::~GVCFReader()
         error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
     }
     bcf_sr_destroy(_bcf_reader);
-    delete _normaliser;
 }
 
 size_t GVCFReader::FillBuffer()
@@ -146,7 +165,7 @@ int GVCFReader::ReadLines(const unsigned num_lines)
             bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
             bcf_update_id(_bcf_header, _bcf_record, nullptr);
             vector<bcf1_t *> atomised_variants;
-            _normaliser->Unarise(_bcf_record, atomised_variants);
+            _normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
             for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
             {
                 _variant_buffer.PushBack(_bcf_header, *v);

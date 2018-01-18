@@ -3,12 +3,12 @@
 
 //#define DEBUG
 
-Normaliser::Normaliser(const string &ref_fname, bcf_hdr_t *hdr)
+Normaliser::Normaliser(const string &ref_fname,bool ignore_non_matching_ref)
 {
-    _hdr = hdr;
-    _norm_args = init_vcfnorm(_hdr, (char *)ref_fname.c_str());
+    _norm_args = init_vcfnorm(nullptr, (char *)ref_fname.c_str());
     _symbolic_allele[0]='X';
     _symbolic_allele[1]='\0';
+    _ignore_non_matching_ref=ignore_non_matching_ref;
 }
 
 // delete/free of symbolic alleles/_hdr
@@ -138,14 +138,28 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
     }
 }
 
-//This function checks if a multi-allelic variant can be split into separate rows. This
-//is only the case when the alleles can be left-shifted such that they have different
-//starting positions.
-void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split_variants)
+//Performs left-alignment and trimming using code from bcftools' vcfnorm.c
+bool Normaliser::Realign(bcf1_t *record, bcf_hdr_t *header)
+{
+    if (realign(_norm_args, record,header) != ERR_OK) {
+        if(_ignore_non_matching_ref)
+        {
+            std::cerr<<"WARNING: VCF record did not match the reference at sample "+(string)header->samples[0]<<std::endl;
+            return(false);
+        }
+        else
+        {
+            ggutils::die("VCF record did not match the reference at sample "+(string)header->samples[0]);
+        }
+    }
+    return(true);
+}
+
+void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split_variants, bcf_hdr_t *hdr)
 {
     assert(bcf_record_to_split->n_allele>2);
     bcf_unpack(bcf_record_to_split, BCF_UN_ALL);
-    Genotype src(_hdr,bcf_record_to_split);
+    Genotype src(hdr,bcf_record_to_split);
     Genotype dst(src.ploidy(), src.num_allele());
 
     std::vector< std::pair<int,int> > new_positions; //stores the position + rank of each variant post-normalisation
@@ -156,14 +170,14 @@ void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split
         bcf_unpack(tmp_record, BCF_UN_ALL);
         new_alleles[0] = bcf_record_to_split->d.allele[0];
         new_alleles[1] = bcf_record_to_split->d.allele[i];
-        bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles, 2);
-        if (realign(_norm_args, tmp_record) != ERR_OK)
-            ggutils::die("vcf record did not match the reference");
-        new_positions.push_back(pair<int,int>(tmp_record->pos,ggutils::get_variant_rank(tmp_record)));
+        bcf_update_alleles(hdr, tmp_record, (const char **) new_alleles, 2);
+        if(Realign(tmp_record,hdr))
+            new_positions.push_back(pair<int,int>(tmp_record->pos,ggutils::get_variant_rank(tmp_record)));
         bcf_destroy(tmp_record);
     }
 
     std::set< std::pair<int,int> > unique_positions(new_positions.begin(),new_positions.end());
+
     for(auto pos=unique_positions.begin();pos!=unique_positions.end();pos++)
     {
         int counter=1;
@@ -181,27 +195,33 @@ void Normaliser::MultiSplit(bcf1_t *bcf_record_to_split, vector<bcf1_t *> &split
 
         bcf1_t *tmp_record = bcf_dup(bcf_record_to_split);
         bcf_unpack(tmp_record, BCF_UN_ALL);
-        bcf_update_alleles(_hdr, tmp_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
-        src.CollapseAllelesIntoRef(alleles_at_this_position, dst);
-        dst.UpdateBcfRecord(_hdr, tmp_record);
+        bcf_update_alleles(hdr, tmp_record, (const char **) new_alleles,1+(int)alleles_at_this_position.size());
+
+        if(unique_positions.size()>1)
+        {
+            src.CollapseAllelesIntoRef(alleles_at_this_position, dst);
+            dst.UpdateBcfRecord(hdr, tmp_record);
+        }
+        else
+        {
+            src.UpdateBcfRecord(hdr,tmp_record);
+        }
         for (int i = 1; i < tmp_record->n_allele; i++)
         {
             bcf1_t *out_record = bcf_dup(tmp_record);
             bcf_unpack(out_record, BCF_UN_ALL);
-            ggutils::bcf1_allele_swap(_hdr,out_record,i,1);
-            if (realign(_norm_args, out_record) != ERR_OK)
-                ggutils::die("vcf record did not match the reference");
-            split_variants.push_back(out_record);
+            ggutils::bcf1_allele_swap(hdr,out_record,i,1);
+            if(Realign(out_record,hdr))split_variants.push_back(out_record);
         }
         bcf_destroy1(tmp_record);
     }
     free(new_alleles);
 }
 
-void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &atomised_variants)
+void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &atomised_variants, bcf_hdr_t *hdr)
 {
 #ifdef DEBUG
-    ggutils::print_variant(_hdr,bcf_record_to_marginalise);
+    ggutils::print_variant(hdr,bcf_record_to_marginalise);
 #endif
     //bi-allelic snp. Nothing to do, just copy the variant into the buffer.
     if(ggutils::is_snp(bcf_record_to_marginalise) && bcf_record_to_marginalise->n_allele==2)
@@ -213,22 +233,19 @@ void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &at
     //FIXME: We would like to get rid of this special-case MNP decomposition and replace it with a more general decomposition step.
     //FIXME: For now this at least allows us to behave well for SNPs that are hidden in MNPS.
     vector<bcf1_t *> decomposed_variants;
-    mnp_decompose(bcf_record_to_marginalise, _hdr, decomposed_variants);
+    mnp_decompose(bcf_record_to_marginalise, hdr, decomposed_variants);
 
     for (auto it = decomposed_variants.begin(); it != decomposed_variants.end(); ++it)
     {
         bcf1_t *decomposed_record = *it;
         if(decomposed_record->n_allele==2)//bi-allelic. no further decomposition needed.
         {
-            if (realign(_norm_args, decomposed_record) != ERR_OK)
-            {
-                ggutils::die("vcf record did not match the reference");
-            }
-            atomised_variants.push_back(decomposed_record);
+            if(Realign(decomposed_record,hdr))
+                atomised_variants.push_back(decomposed_record);
         }
         else
         {
-            MultiSplit(*it, atomised_variants);
+            MultiSplit(*it, atomised_variants,hdr);
             bcf_destroy(*it);
         }
     }

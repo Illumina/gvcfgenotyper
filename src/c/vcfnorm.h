@@ -46,13 +46,11 @@ typedef struct
 
 args_t *init_vcfnorm(bcf_hdr_t *hdr,  char *ref);
 
-void split_multiallelic_to_biallelics(args_t *args, bcf1_t *line);
-
 void write_vcf_line(args_t *args, bcf1_t *line, htsFile *out);
 
 //void flush_buffer(args_t *args, htsFile *file, int n);
 void destroy_data(args_t *args);
 
-int realign(args_t *args, bcf1_t *line);
+int realign(args_t *args, bcf1_t *line,bcf_hdr_t *hdr);
 
 #endif

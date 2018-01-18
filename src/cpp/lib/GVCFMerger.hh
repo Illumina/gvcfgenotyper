@@ -1,3 +1,4 @@
+
 #ifndef GVCFMERGER_H
 #define GVCFMERGER_H
 
@@ -18,8 +19,14 @@ extern "C" {
 class GVCFMerger
 {
 public:
-    GVCFMerger(const vector<string> &input_files, const string &output_filename, const string &output_mode,
-               const string &reference_genome, int buffer_size, const string &region = "", const int is_file = 0);
+    GVCFMerger(const vector<string> &input_files,
+	       const string &output_filename,
+	       const string &output_mode,
+               const string &reference_genome,
+	       int buffer_size,
+	       const string &region = "",
+	       const int is_file = 0,
+	       bool ignore_non_matching_ref=false);
     ~GVCFMerger();
     void write_vcf();
     bcf1_t *next();
@@ -45,6 +52,8 @@ private:
     int32_t *_info_adf, *_info_adr, *_info_ac;
     int _mean_mq,_num_mq,_num_variants;
     size_t _num_ps_written;
+    bool _has_strand_ad,_has_pl;
+    Normaliser *_normaliser;
 };
 
 #endif

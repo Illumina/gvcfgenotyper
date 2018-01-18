@@ -1,3 +1,4 @@
+#include <htslib/vcf.h>
 #include "ggutils.hh"
 
 namespace ggutils
@@ -437,7 +438,8 @@ namespace ggutils
         float *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_info_float:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_float_missing;
         return(ret);
     }
 
@@ -447,7 +449,8 @@ namespace ggutils
         float *ptr=&output;
         int nval=1;
         int ret =   bcf_get_format_float(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_format_float:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_float_missing;
         return(ret);
     }
 
@@ -457,7 +460,8 @@ namespace ggutils
         int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_info_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
+        if(ret>1) die("bcf1_get_one_info_int: "+(string)tag+"more than one value returned");
+        if(ret<0) output=bcf_int32_missing;
         return(ret);
     }
 
@@ -467,7 +471,8 @@ namespace ggutils
         int32_t *ptr=&output;
         int nval=1;
         int ret = bcf_get_format_int32(header,record,tag,&ptr,&nval);
-        if(ret>1)  die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
+        if(ret>1) die("bcf1_get_one_format_int:"+(string)tag+" more than one value returned");
+        if(ret<0) output=bcf_int32_missing;
         return(ret);
     }
 
@@ -511,6 +516,8 @@ namespace ggutils
 
         //GT
         int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);
+	if(ploidy==2 && gt[1]==bcf_int32_vector_end) ploidy=1;
+	    
         assert(ploidy==1 || ploidy==2);
         bool phased = ploidy==1 ? bcf_gt_is_phased(gt[0]) : bcf_gt_is_phased(gt[0])&&bcf_gt_is_phased(gt[1]);
         for(int i=0;i<ploidy;i++)
@@ -523,17 +530,27 @@ namespace ggutils
         bcf_update_genotypes(header,record,gt,ploidy);
 
         //PL
-        assert(bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl)==(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele));
-        vector<int> tmp_pl(format_pl,format_pl+num_pl);
-        for(int i=0;i<record->n_allele;i++)
-	{
-	    if(ploidy==1)
-		format_pl[allele_map[i]] = tmp_pl[i];
-	    else
-		for(int j=i;j<record->n_allele;j++)
-		    format_pl[ggutils::get_gl_index(allele_map[i],allele_map[j])] = tmp_pl[ggutils::get_gl_index(i,j)];
-	}
-        bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
+        int status = bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl);
+        if(status>0)
+        {
+            if(status!=(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele))
+	    {
+		ggutils::print_variant(header,record);
+		ggutils::die("problem with sample "+(string)header->samples[0]);
+	    }
+            vector<int> tmp_pl(format_pl,format_pl+num_pl);
+            for(int i=0;i<record->n_allele;i++)
+            {
+                if(ploidy==1)
+                    format_pl[allele_map[i]] = tmp_pl[i];
+                else
+                    for(int j=i;j<record->n_allele;j++)
+                    {
+                        format_pl[ggutils::get_gl_index(allele_map[i], allele_map[j])] = tmp_pl[ggutils::get_gl_index(i, j)];
+                    }
+            }
+            bcf_update_format_int32(header,record,"PL",format_pl,num_pl);
+        }
 
         //memory cleanup
         for(int i=0;i<record->n_allele;i++) free(new_alleles[i]);
@@ -608,5 +625,25 @@ namespace ggutils
         free(dp);
         free(dpf);
         free(ps);
+    }
+
+    int find_allele(bcf1_t *target,bcf1_t *query,int index)
+    {
+        assert(index>0 && index<query->n_allele);
+        size_t rlen,alen;
+        char *q_ref=query->d.allele[0];
+        char *q_alt=query->d.allele[index];
+        ggutils::right_trim(q_ref,q_alt,rlen,alen);
+        for(int i=1;i<target->n_allele;i++)
+        {
+            size_t target_rlen,target_alen;
+            char *t_ref=target->d.allele[0];
+            char *t_alt=target->d.allele[i];
+            ggutils::right_trim(t_ref,t_alt,target_rlen,target_alen);
+            if(rlen==target_rlen && alen==target_alen)
+                if(strncmp(q_ref,t_ref,rlen)==0 && strncmp(q_alt,t_alt,alen)==0)
+                    return(i);
+        }
+        return(-1);
     }
 }

@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <htslib/vcf.h>
 
+#define MAXPL 255
 
 void Genotype::SetDp(int val)
 {
@@ -53,19 +54,21 @@ int Genotype::dp()
 
 int Genotype::ad(int index)
 {
-    assert(index<_num_ad);
+    assert(index<_num_ad && index>=0);
     return(_ad[index]);
 }
 
 int Genotype::adf(int index)
 {
-    assert(index<_num_adf);
+    if(_num_adf==0) return(bcf_int32_missing);
+    assert(index<_num_adf && index>=0);
     return(_adf[index]);
 }
 
 int Genotype::adr(int index)
 {
-    assert(index<_num_adr);
+    if(_num_adr==0) return(bcf_int32_missing);
+    assert(index<_num_adr && index>=0);
     return(_adr[index]);
 }
 
@@ -171,6 +174,10 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         status = _num_pl;
         _has_pl = false;
     }
+    else
+    {
+        _has_pl=true;
+    }
 
     if (status != _num_pl)
     {
@@ -185,7 +192,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
     else
     {
-        std::cerr << "WARNING: gvcf without ADF supplied." << "\n";
         _adf_found = false;
     }
     if (bcf_get_format_int32(header, record, "ADR", &_adr, &_num_adr) == _num_allele)
@@ -194,7 +200,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     }
     else
     {
-        std::cerr << "WARNING: gvcf without ADR supplied." << "\n";
         _adr_found = false;
     }
     status = bcf_get_format_int32(header, record, "DP", &_dp, &_num_dp);
@@ -221,7 +226,8 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         float *tmp_gq = nullptr;
         if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
-            std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
+            //FIXME: we should be logging this in a separate file
+            //std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
         }
         else
         {
@@ -272,11 +278,11 @@ Genotype::~Genotype()
 
 int Genotype::UpdateBcfRecord(bcf_hdr_t *header, bcf1_t *record)
 {
-    float max_gl = *std::max_element(_gl.begin(), _gl.end());
-    for (int i = 0; i < _num_pl; i++)
-    {
-        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : 255;
-    }
+//    float max_gl = *std::max_element(_gl.begin(), _gl.end());
+//    for (int i = 0; i < _num_pl; i++)
+//    {
+//        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : MAXPL;
+//    }
 
     assert(bcf_update_genotypes(header, record, _gt, _num_gt)==0);
 
@@ -355,13 +361,13 @@ void Genotype::CollapseAllelesIntoRef(vector<int> &indices, Genotype &out)
         if(_adr_found)
             out._adr[allele_map[i]]+=_adr[i];
 
-	if(_ploidy==1)
-	    out._gl[allele_map[i]]+=_gl[i];
-	else if(_ploidy==2)
-	    for(int j=i;j<_num_allele;j++)
-		out._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
-	else
-	    ggutils::die("Genotype::CollapseAllelesIntoRef invalid ploidy");
+        if(_ploidy==1)
+            out._gl[allele_map[i]]+=_gl[i];
+        else if(_ploidy==2)
+            for(int j=i;j<_num_allele;j++)
+                out._gl[ggutils::get_gl_index(allele_map[i],allele_map[j])] += _gl[ggutils::get_gl_index(i,j)];
+        else
+            ggutils::die("Genotype::CollapseAllelesIntoRef invalid ploidy");
     }
     out.SetPlFromGl();
 
@@ -369,8 +375,8 @@ void Genotype::CollapseAllelesIntoRef(vector<int> &indices, Genotype &out)
 
     for(int i=0;i<_ploidy;i++)
     {
-	if(bcf_gt_is_missing(_gt[i]))
-	    out._gt[i] = bcf_gt_missing;
+        if(bcf_gt_is_missing(_gt[i]))
+            out._gt[i] = bcf_gt_missing;
         else if(is_phased)
             out._gt[i] = bcf_gt_phased(allele_map[bcf_gt_allele(_gt[i])]);
         else
@@ -383,8 +389,8 @@ void Genotype::SetPlFromGl()
     float max_gl = *std::max_element(_gl.begin(), _gl.end());
     for (int i = 0; i < _num_pl; i++)
     {
-        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : 255; //fixes -0.0
-        _pl[i] = _pl[i] > 255 ? 255 : _pl[i]; //sets a ceiling of 255 on PL
+        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : MAXPL; //fixes -0.0
+        _pl[i] = _pl[i] > MAXPL ? MAXPL : _pl[i]; //sets a ceiling of MAXPL on PL
     }
 }
 
@@ -436,7 +442,7 @@ void Genotype::MakeDiploid()
     _gt[1] = bcf_gt_unphased(bcf_gt_allele(_gt[0]));
     int _new_num_pl = _ploidy == 1 ? _num_allele : _num_allele * (1 + _num_allele) / 2;
     int32_t *_new_pl = (int32_t *)malloc(sizeof(int32_t)*_new_num_pl);
-    std::fill(_new_pl,_new_pl+_new_num_pl,255);
+    std::fill(_new_pl,_new_pl+_new_num_pl,MAXPL);
     for(int i=0;i< num_allele();i++)
         _new_pl[ggutils::get_gl_index(i,i)] = _pl[i];
     SetGlFromPl();
@@ -456,7 +462,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
     SetDepthToZero();
     SetGtToHomRef();
     assert(_num_allele>1);
-    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),255);
+    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),MAXPL);
     int dst_genotype_count=0;
     _qual = 0;
     _mq = 0;
@@ -478,7 +484,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         // but there will be situations where this is not the case due variants shifting position. Hence with have to
         // add some hacks to handle conflicting values.
         _qual = max(_qual, g.qual()); //FIXME: QUAL should be estimated from PL
-        _mq = max(mq(), g.mq());
+        _mq = g.mq()==bcf_int32_missing ? bcf_int32_missing : max(mq(), g.mq());
         *_gq = *_gq==bcf_int32_missing ? g.gq() : max(gq(), g.gq());
         *_gqx = *_gqx==bcf_int32_missing ? g.gqx() : max(gqx(), g.gqx());
         *_dpf = *_dpf==bcf_int32_missing ? g.dpf() : *_dpf;
@@ -486,23 +492,45 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         _ad[0]  = max(ad(0), g.ad(0));
         _adf[0] = max(adf(0), g.adf(0));
         _adr[0] = max(adr(0), g.adr(0));
+        _gl[0] = g.ploidy()==1 ? g.gl(0) : g.gl(0,0);
+        _pl[0] = g.ploidy()==1 ? g.pl(0) : g.pl(0,0);
 
         //these are values specific to the alt allele in question.
         int dst_allele_index = alleles_to_map.Allele(*it);
         assert(dst_allele_index < _num_allele && dst_allele_index > 0);
         _ad[dst_allele_index] = g.ad(1);
-        _adf[dst_allele_index] = g.adf(1);
-        _adr[dst_allele_index] = g.adr(1);
-        if (ploidy == 1)
+        if(g.HasAdf() && g.HasAdr())
         {
-            _gl[0] = g.gl(0);
-            _gl[dst_allele_index] = g.gl(1);
+            _adf[dst_allele_index] = g.adf(1);
+            _adr[dst_allele_index] = g.adr(1);
         }
-        else
+        if(g.HasPl())
         {
-            _gl[ggutils::get_gl_index(0, 0)] = g.gl(0, 0);
-            _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
-            _gl[ggutils::get_gl_index(dst_allele_index, dst_allele_index)] = g.gl(1, 1);
+            if (ploidy == 1)
+            {
+                _gl[dst_allele_index] = g.gl(1);
+                _pl[dst_allele_index] = g.pl(1);
+            }
+            else
+            {
+                for (auto allele2 = sample_variants.first; allele2 != sample_variants.second; allele2++)
+                {
+                    int dst_allele_index2 = alleles_to_map.Allele(*allele2);
+                    int src_allele_index2 = ggutils::find_allele(*it,*allele2,1);
+                    if(src_allele_index2>=0)
+                    {
+                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
+                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.pl(src_allele_index2, 1);
+                    }
+                    else
+                    {
+                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = 0;
+                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = MAXPL;
+                    }
+                }
+                _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
+                _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.pl(0, 1);
+            }
         }
 
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
@@ -520,7 +548,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             {
                 if (bcf_gt_allele(g.gt(genotype_index)) == 1)
                 {
-		    if(dst_genotype_count>=_ploidy)
+                    if(dst_genotype_count>=_ploidy)
                     {
                         std::cerr<<"WARNING: conflicting alleles/genotypes for sample "<<sample_header->samples[0]<<" ";
                         std::cerr<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
@@ -536,8 +564,11 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         }
     }
     SetDepthFromAd();
-    SetPlFromGl();
-    if(recall_genotypes_from_gl) CallGenotype();
+    if(recall_genotypes_from_gl)
+    {
+        SetPlFromGl();
+        CallGenotype();
+    }
 
     //This is a sanity check which should possibly reside within unit testing.
     if(_ploidy==2 && (_gt[0]==bcf_gt_missing) != (_gt[1]==bcf_gt_missing))
@@ -584,6 +615,7 @@ int Genotype::pl(int g0)
 
 float Genotype::gl(int g0, int g1)
 {
+    if(_num_pl<=0) return(bcf_float_missing);
     assert(_ploidy==2);
     assert(g0>=0 && g1>=0);
     assert(g0<_num_allele && g1<_num_allele);
@@ -592,6 +624,7 @@ float Genotype::gl(int g0, int g1)
 
 float Genotype::gl(int g0)
 {
+    if(_num_pl<=0) return(bcf_float_missing);
     assert(_ploidy==1);
     assert(g0>=0);
     assert(g0<_num_allele);

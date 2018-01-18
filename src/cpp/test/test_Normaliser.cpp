@@ -12,7 +12,7 @@ TEST(Normaliser, qual)
     int pos=4151;
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,rid,pos+1,"A,ATTT");
     int qual = 221;
     record1->qual = qual;
@@ -26,7 +26,7 @@ TEST(Normaliser, qual)
     bcf_update_genotypes(hdr, record1, gt, 2);
     //print_variant(hdr, record1);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ASSERT_FLOAT_EQ((*it)->qual,221);
@@ -152,7 +152,7 @@ TEST(Normaliser, unarise1)
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
 
     bcf1_t *record1 = generate_record(hdr,3,100,"A,C");
     int32_t ad[3] = {11, 19};
@@ -171,7 +171,7 @@ TEST(Normaliser, unarise1)
 
 
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -189,7 +189,7 @@ TEST(Normaliser, unarise2)
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
 
     bcf1_t *record1 = generate_record(hdr,3,100,"A,C,G");
     int32_t ad[3] = {0, 17, 10};
@@ -207,7 +207,7 @@ TEST(Normaliser, unarise2)
     //print_variant(hdr, record1);
 
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -224,7 +224,7 @@ TEST(Normaliser, unarise3)
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/NA12877.tiny.vcf.gz";
     bcf_hdr_t *hdr = bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
 
     bcf1_t *record1 = generate_record(hdr,3,100,"ATT,ATG,CTT");
     int32_t ad[3] = {0, 17, 10};
@@ -243,7 +243,7 @@ TEST(Normaliser, unarise3)
 
 
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     htsFile *output_file = hts_open("test.out", "wv");
     bcf_hdr_write(output_file, hdr);
 
@@ -261,7 +261,7 @@ TEST(Normaliser, unarise4)
     int rid=20,pos=83250;
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/chr20.100kb.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,rid,pos+1,"TGTGTGTGTG,TC");
     record1->qual = 100;
     int32_t ad[2] = {17, 10};
@@ -273,7 +273,7 @@ TEST(Normaliser, unarise4)
     bcf_update_format_int32(hdr, record1, "PL", &pl, 3);
     bcf_update_genotypes(hdr, record1, gt, 2);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
         ggutils::print_variant(hdr,*it);
@@ -285,7 +285,7 @@ TEST(Normaliser, unarise6)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t5420\t.\tCAAAAAA\tC,A\t423\tPASS\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:49:7:54:2,15,16:1,12,0:1,3,16:PASS:429,123,50,137,0,295");
     multiAllele m;
     m.Init(hdr);
@@ -294,7 +294,7 @@ TEST(Normaliser, unarise6)
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
@@ -308,12 +308,12 @@ TEST(Normaliser, unarise7)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t95593\t.\tAAAAAAG\tAAA,A\t738\tLowGQX\t.\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:151:0:29:1,15,14:1,7,8:0,8,6:LowGQX:816,279,187,308,0,231");
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
@@ -325,12 +325,12 @@ TEST(Normaliser, unarise8)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t62430033\t.\tC\tT,A\t391\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t1/2:142:30:28:2:0,16,12:0,7,3:0,9,9:-41.5:PASS:370,214,166,242,0,206");
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     std::cerr <<"Output:"<<std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {
@@ -342,7 +342,7 @@ TEST(Normaliser, unarise9)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tT,G\t0\tLowGQX\tSNVHPOL=2;MQ=33\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/2:9:0:9:0:7,1,1:5,1,1:2,0,0:0:LowGQX:14,11,149,0,117,138");
     multiAllele m;
     m.Init(hdr);
@@ -351,7 +351,7 @@ TEST(Normaliser, unarise9)
     std::cerr <<"Input:"<<std::endl;
     ggutils::print_variant(hdr,record1);
     std::vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     std::cerr <<"Output:"<<std::endl;
     std::deque<bcf1_t *> q;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
@@ -369,11 +369,11 @@ TEST(Normaliser, unarise10)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
 
     auto record1 = generate_record(hdr,"chr1\t4\trs863224454;rs863224781\tGCA\tCTG,CCA\t2\tLowGQX\tRU=.,.;REFREP=.,.;IDREP=.,.;MQ=60;OLD_VARIANT=chr5:148407707:GACG/GCTG/GCCA;clinvar=1|likely_pathogenic,2|uncertain_significance;GMAF=A|0.009385,A|0.009385;CSQT=1|SH3TC2|NM_024577.3|missense_variant,2|SH3TC2|NM_024577.3|missense_variant\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/1:5:0:56:4,3,3:1,1,1:3,2,2:LowGQX:43,8,8,16,0,29");
     std::vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     std::cerr << "Output:" << std::endl;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
     {

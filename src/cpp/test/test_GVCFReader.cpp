@@ -86,12 +86,12 @@ TEST(VariantBuffer, test2)
     auto hdr = get_header();
     m.Init(hdr);
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t7832\trs112070696\tC\tCTAAATAAATAAA,CTAAATAAATAAATAAA\t559\tPASS\t.\t"
             "GT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/2:150:15:42:0,11,11:0,4,5:0,7,6:PASS:601,226,169,225,0,169");
     m.SetPosition(record1->rid, record1->pos);
     vector<bcf1_t *> buffer;
-    norm.Unarise(record1, buffer);
+    norm.Unarise(record1, buffer,hdr);
     VariantBuffer v;
     int count=0;
     for (auto it = buffer.begin(); it != buffer.end(); it++)
@@ -107,7 +107,8 @@ TEST(GVCFReader, readMNP)
 {
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/mnp.genome.vcf";
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
-    GVCFReader reader(gvcf_file_name, ref_file_name, 1000);
+    Normaliser normaliser(ref_file_name);
+    GVCFReader reader(gvcf_file_name, &normaliser, 1000);
     const bcf_hdr_t *hdr = reader.GetHeader();
     bcf1_t *line = reader.Pop();
     int32_t *dp = nullptr, nval = 0;
@@ -142,7 +143,8 @@ TEST(GVCFReader, readAGVCF)
 
     std::ofstream ofs(tn, std::ofstream::out);
     int buffer_size = 200;
-    GVCFReader reader(gvcf_file_name, ref_file_name, buffer_size);
+    Normaliser normaliser(ref_file_name);
+    GVCFReader reader(gvcf_file_name, &normaliser, buffer_size);
     const bcf_hdr_t *hdr = reader.GetHeader();
     bcf1_t *line = reader.Pop();
     int32_t *dp = nullptr, nval = 0;

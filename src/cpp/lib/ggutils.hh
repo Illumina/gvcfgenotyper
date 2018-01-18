@@ -124,8 +124,6 @@ namespace ggutils
 
     float unphred(int pl);
 
-    int factorial(int x);
-
     int choose(int n, int k);
 
     //these are simple htslib wrappers shortcuts to get scalar ints/floats (not appropriate for arrays)
@@ -143,4 +141,6 @@ namespace ggutils
     //returns the string length of the right trimmed ref/alt (see https://academic.oup.com/bioinformatics/article/31/13/2202/196142)
     void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen);
 
+    //Finds the index'th allele in from query in target. Retuns the allele index if found or -1 if missing.
+    int find_allele(bcf1_t *target,bcf1_t *query,int index);
 }

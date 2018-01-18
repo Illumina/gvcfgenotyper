@@ -11,6 +11,7 @@ extern "C" {
 
 GVCFMerger::~GVCFMerger()
 {
+    delete _normaliser;
     hts_close(_output_file);
     bcf_hdr_destroy(_output_header);
     delete format;
@@ -26,16 +27,22 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
                        const string &reference_genome,
                        int buffer_size,
                        const string &region /*= ""*/,
-                       const int is_file /*= 0*/)
+                       const int is_file /*= 0*/,
+		       bool ignore_non_matching_ref)
 {
+    _has_pl = true;
+    _has_strand_ad=true;
     _num_variants=0;
+    _normaliser = new Normaliser(reference_genome,ignore_non_matching_ref);
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
     std::cerr << "Input GVCFs:" << std::endl;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        std::cerr << input_files[i] << std::endl;
-        _readers.emplace_back(input_files[i], reference_genome, buffer_size, region, is_file);
+      std::cerr << input_files[i] << " " << i+1<<"/"<<_num_gvcfs<<std::endl;
+        _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
+        _has_pl &= _readers.back().HasPl();
+        _has_strand_ad &= _readers.back().HasStrandAd();
     }
     assert(_readers.size() == _num_gvcfs);
 
@@ -161,8 +168,11 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,
     int default_ploidy=2;
     Genotype g(_readers[sample_index].GetHeader(), sample_variants,_record_collapser);
     g.PropagateFormatFields(sample_index, default_ploidy, format);
-    _mean_mq += g.mq();
-    _num_mq++;
+    if(g.mq() != bcf_int32_missing)
+    {
+        _mean_mq += g.mq();
+        _num_mq++;
+    }
     _output_record->qual += g.qual();
 }
 
@@ -232,9 +242,12 @@ void GVCFMerger::UpdateFormatAndInfo()
     assert(bcf_update_format_int32(_output_header, _output_record, "DP",format->dp, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "DPF",format->dpf, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "AD",format->ad, _num_gvcfs * _output_record->n_allele)==0);
-    assert(bcf_update_format_int32(_output_header, _output_record, "ADF",format->adf, _num_gvcfs * _output_record->n_allele)==0);
-    assert(bcf_update_format_int32(_output_header, _output_record, "ADR",format->adr, _num_gvcfs * _output_record->n_allele)==0);
-    assert(bcf_update_format_int32(_output_header, _output_record, "PL",format->pl, format->num_pl)==0);
+    if(_has_strand_ad)
+    {
+        assert(bcf_update_format_int32(_output_header, _output_record, "ADF",format->adf, _num_gvcfs * _output_record->n_allele)==0);
+        assert(bcf_update_format_int32(_output_header, _output_record, "ADR",format->adr, _num_gvcfs * _output_record->n_allele)==0);
+    }
+    if(_has_pl) assert(bcf_update_format_int32(_output_header, _output_record, "PL",format->pl, format->num_pl)==0);
 
     // Write INFO/MQ
     if (_num_mq>0)
@@ -257,20 +270,23 @@ void GVCFMerger::UpdateFormatAndInfo()
     }
 
     // Calculate INFO/ADF + INFO/ADR
-    for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele)
+    if(_has_strand_ad)
     {
-        for (size_t j=0;j<_output_record->n_allele;++j)
+        for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele)
         {
-            assert( (format->adr[i+j]==bcf_int32_missing) == (format->adf[i+j]==bcf_int32_missing) );
-            if(format->adf[i+j]!=bcf_int32_missing)
+            for (size_t j=0;j<_output_record->n_allele;++j)
             {
-                _info_adf[j] += format->adf[i+j];
-                _info_adr[j] += format->adr[i+j];
+                assert( (format->adr[i+j]==bcf_int32_missing) == (format->adf[i+j]==bcf_int32_missing) );
+                if(format->adf[i+j]!=bcf_int32_missing)
+                {
+                    _info_adf[j] += format->adf[i+j];
+                    _info_adr[j] += format->adr[i+j];
+                }
             }
         }
+        bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
+        bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
     }
-    bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
-    bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
 }
 
 void GVCFMerger::write_vcf()
@@ -358,7 +374,7 @@ void GVCFMerger::BuildHeader()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for "
             "variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
-    bcf_hdr_append(_output_header, ("##gvcfgenotyper_version="+(string)GIT_VERSION).c_str());
+    bcf_hdr_append(_output_header, ("##gvcfgenotyper_version="+(string)GG_VERSION).c_str());
     ggutils::copy_contigs(_readers[0].GetHeader(), _output_header);
     
     bcf_hdr_write(_output_file, _output_header);

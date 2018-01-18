@@ -79,7 +79,7 @@ TEST(GVCFMerger, likelihood)
 {
     auto hdr = get_header();
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
-    Normaliser norm(ref_file_name, hdr);
+    Normaliser norm(ref_file_name);
     auto record1 = generate_record(hdr,"chr1\t85677\t.\tT\tA\t191\tPASS\t.\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/1:224:30:42:0:22,20:13,11:9,9:-26:PASS:226,0,257");
 
     std::cerr <<"Input:"<<std::endl;
@@ -102,5 +102,4 @@ TEST(GVCFMerger, likelihood)
     ASSERT_EQ(d.pl[3],226);
     ASSERT_EQ(d.pl[4],0);
     ASSERT_EQ(d.pl[5],257);
-
 }

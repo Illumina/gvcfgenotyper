@@ -1,13 +1,17 @@
 .PHONY: all
 all: bin/gvcfgenotyper bin/test_gvcfgenotyper
 
-GIT_VERSION := $(shell git describe --abbrev=4 --always --tags)
+ifneq "$(wildcard .git)" ""
+GIT_VERSION = $(shell git describe --always)
+endif
+VERSION= -DGG_VERSION=\"$(GIT_VERSION)\"
 
 CC=gcc
 CXX=g++
 
-CXXFLAGS= -std=c++11 -O2 -DGIT_VERSION=\"$(GIT_VERSION)\"
-CFLAGS = -O2 -DGIT_VERSION=\"$(GIT_VERSION)\"
+CXXFLAGS= -std=c++11 -O2 $(VERSION)
+CFLAGS = -O2 $(VERSION)
+
 
 IFLAGS = -Isrc/cpp/lib/ -Isrc/c/
 LFLAGS = -lz -lm -lpthread
@@ -23,20 +27,14 @@ HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
 
 #special builds for debugging and profiling
-debug: CXXFLAGS = -std=c++11 -g -O1 -Wall
-debug: CFLAGS = -g -O1 
+debug: CXXFLAGS = -std=c++11 -g -O1 -Wall $(VERSION)
+debug: CFLAGS = -g -O1 $(VERSION)
 debug: all
 
-profile: CXXFLAGS = -std=c++11 -pg
-profile: CFLAGS =  -pg
+profile: CXXFLAGS = -std=c++11 -pg $(VERSION)
+profile: CFLAGS =  -pg $(VERSION)
 profile: all
 
-##generates a version
-ifneq "$(wildcard .git)" ""
-VERSION = $(shell git describe --always)
-endif
-build/version.hh: 
-	echo '#define GG_VERSION "$(VERSION)"' > $@
 
 OBJS=$(shell for i in src/cpp/lib/*.cpp;do echo build/$$(basename $${i%cpp})o;done)
 OBJS+=$(shell for i in src/c/*.c;do echo build/$$(basename $${i%c})o;done)
@@ -55,9 +53,9 @@ build/%.o: src/c/%.c
 	$(CC)  $(CFLAGS) $(IFLAGS) -c -o $@ $<
 	$(CC) -MT $@ -MM $(CFLAGS) $(IFLAGS) $< -o $@.d
 
-bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp build/version.hh $(OBJS) $(HTSLIB)
+bin/gvcfgenotyper: src/cpp/gvcfgenotyper.cpp  $(OBJS) $(HTSLIB)
 	$(CXX) $(CXXFLAGS) -o $@   src/cpp/gvcfgenotyper.cpp $(OBJS) $(HTSLIB) $(IFLAGS) $(LFLAGS)
-bin/test_gvcfgenotyper: build/version.hh $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
+bin/test_gvcfgenotyper:  $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest_main.a
 	$(CXX) $(CXXFLAGS) $(TESTFLAGS) -o $@ $(TESTOBJS) $(OBJS) $(IFLAGS) $(HTSLIB) $(LFLAGS) build/gtest.a build/gtest_main.a
 .PHONY: test
 test: bin/test_gvcfgenotyper bin/gvcfgenotyper

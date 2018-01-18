@@ -23,7 +23,7 @@ extern "C" {
 class GVCFReader
 {
 public:
-    GVCFReader(const std::string &input_gvcf, const std::string &reference_genome_fasta, const int buffer_size,
+    GVCFReader(const std::string &input_gvcf,Normaliser *normaliser, const int buffer_size,
                const string &region = "", const int is_file = 0);
 
     ~GVCFReader();
@@ -48,7 +48,8 @@ public:
     size_t GetNumDepthBlocks();
     bcf_hdr_t *GetHeader();
     int ReadUntil(int rid, int pos);
-
+    bool HasStrandAd();
+    bool HasPl();
 private:
     int _buffer_size;//ensure buffer has at least _buffer_size/2 variants avaiable (except at end of file)
     bcf_srs_t *_bcf_reader;//htslib synced reader.

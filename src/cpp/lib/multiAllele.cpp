@@ -4,12 +4,13 @@
 #include <GVCFMerger.hh>
 #include <htslib/vcf.h>
 
-inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)
+inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src,int index)
 {
-    bcf_unpack(src,BCF_UN_ALL);
     assert(src->n_allele>1);
+    assert(index>0 && index<src->n_allele);
+    bcf_unpack(src,BCF_UN_ALL);
     size_t rlen,alen;
-    ggutils::right_trim(src->d.allele[0],src->d.allele[1], rlen,alen);
+    ggutils::right_trim(src->d.allele[0],src->d.allele[index], rlen,alen);
 
     bcf1_t *dst = bcf_init();
     bcf_clear(dst);
@@ -19,7 +20,7 @@ inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src)
     kstring_t str = {0,0,nullptr};
     kputsn(src->d.allele[0],rlen,&str);
     kputc(',', &str);
-    kputsn(src->d.allele[1],alen,&str);
+    kputsn(src->d.allele[index],alen,&str);
     bcf_update_alleles_str(hdr,dst,str.s);
     free(str.s);
     return(dst);
@@ -64,7 +65,7 @@ multiAllele::~multiAllele()
     bcf_hdr_destroy(_hdr);
 }
 
-int multiAllele::Allele(bcf1_t *record)
+int multiAllele::Allele(bcf1_t *record,int index)
 {
     assert(_hdr!=nullptr);
     assert(_rid>=0 && _pos>=0);
@@ -73,7 +74,7 @@ int multiAllele::Allele(bcf1_t *record)
         return(0);
     }
 
-    bcf1_t *tmp = copy_alleles(_hdr,record);
+    bcf1_t *tmp = copy_alleles(_hdr,record,index);
     auto location = _records.begin();
     while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp))
     {
