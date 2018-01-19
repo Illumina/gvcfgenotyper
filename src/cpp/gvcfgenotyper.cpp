@@ -1,6 +1,8 @@
 #include "GVCFMerger.hh"
 #include <getopt.h>
 
+#include "spdlog.h"
+
 static void usage()
 {
     std::cerr << "\nAbout:   GVCF merging and genotyping for Illumina GVCFs" << std::endl;
@@ -28,6 +30,7 @@ int main(int argc, char **argv)
     string region = "";
     int n_threads = 0;
     string output_file = "";
+    string log_file = "gvcfgenotyper.log";
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
@@ -38,9 +41,10 @@ int main(int argc, char **argv)
             {"fasta-ref",   1, 0, 'f'},
             {"output-file", 1, 0, 'o'},
             {"output-type", 1, 0, 'O'},
+            {"log-file",    1, 0, 'g'},
             {"region",      1, 0, 'r'},
             {"thread",      1, 0, '@'},
-	    {"ignore-non-matching-ref",0,0,1},
+	        {"ignore-non-matching-ref",0,0,1},
             {0,             0, 0, 0}
     };
 
@@ -60,19 +64,22 @@ int main(int argc, char **argv)
             case 'O':
                 output_type = optarg;
                 break;
+            case 'g':
+                log_file = optarg;
+                break;
             case 'r':
                 region = optarg;
                 break;
-	case '@':
+            case '@':
                 n_threads = atoi(optarg);
                 break;
-	case 1:
-	    ignore_non_matching_ref=true;break;
-	default:
-	    if (optarg != NULL)
-		ggutils::die("Unknown argument:" + (string) optarg + "\n");
-	    else
-		    ggutils::die("unrecognised argument");
+            case 1:
+	            ignore_non_matching_ref=true;break;
+	        default:
+	            if (optarg != NULL)
+		            ggutils::die("Unknown argument:" + (string) optarg + "\n");
+	            else
+		            ggutils::die("unrecognised argument");
         }
     }
 
@@ -94,12 +101,21 @@ int main(int argc, char **argv)
         ggutils::die("-@ is not implemented");
     }
 
+    // register logger, name of outfile can be set by user on the cmd line
+    std::shared_ptr<spdlog::logger> lg = spdlog::basic_logger_mt("gg_logger", log_file);
+    // format: "*** [YYYY-MM-DD HH:MM:SS] [thread] [loglevel] message ***"
+    spdlog::set_pattern("*** [%c] [thread %t] [%l] %v ***");
+    lg->info("Starting gvcf merging");
+
     int buffer_size = 5000;
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
-    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file,ignore_non_matching_ref);
+    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref);
 
     g.write_vcf();
+
+    lg->info("Done");
+    spdlog::drop_all();
     return (0);
 }

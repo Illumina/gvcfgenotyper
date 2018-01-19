@@ -5,6 +5,9 @@
 #include <list>
 #include <stdexcept>
 
+#include "spdlog.h"
+
+
 extern "C" {
 #include <htslib/hts.h>
 #include <htslib/vcf.h>
@@ -20,13 +23,13 @@ class GVCFMerger
 {
 public:
     GVCFMerger(const vector<string> &input_files,
-	       const string &output_filename,
-	       const string &output_mode,
+	           const string &output_filename,
+	           const string &output_mode,
                const string &reference_genome,
-	       int buffer_size,
-	       const string &region = "",
-	       const int is_file = 0,
-	       bool ignore_non_matching_ref=false);
+	           int buffer_size,
+	           const string &region = "",
+               const int is_file = 0,
+               bool ignore_non_matching_ref=false);
     ~GVCFMerger();
     void write_vcf();
     bcf1_t *next();
@@ -54,6 +57,7 @@ private:
     size_t _num_ps_written;
     bool _has_strand_ad,_has_pl;
     Normaliser *_normaliser;
+    std::shared_ptr<spdlog::logger> _lg;
 };
 
 #endif

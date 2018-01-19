@@ -39,6 +39,8 @@
 
 #include "gtest/gtest.h"
 
+#include "spdlog.h"
+
 
 class GTestEnvironment : public testing::Environment
 {
@@ -50,6 +52,14 @@ public:
 
     virtual ~GTestEnvironment()
     {}
+
+    virtual void SetUp() {
+        // tests logging out goes to a separate log file
+        std::string log_file("gvcfgenotyper_tests.log");
+        std::shared_ptr<spdlog::logger> lg = spdlog::basic_logger_mt("gg_logger", log_file);
+        spdlog::set_pattern("*** [%H:%M:%S %z] %v ***");
+    }
+
 
     std::string getBasePath() const
     { return bpath; }

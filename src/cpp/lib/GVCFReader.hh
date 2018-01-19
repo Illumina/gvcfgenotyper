@@ -19,6 +19,8 @@ extern "C" {
 #include "VariantBuffer.hh"
 #include "DepthBuffer.hh"
 
+#include "spdlog.h"
+
 
 class GVCFReader
 {
@@ -58,6 +60,7 @@ private:
     VariantBuffer _variant_buffer;
     DepthBuffer _depth_buffer;
     Normaliser *_normaliser;
+    std::shared_ptr<spdlog::logger> _lg;
 };
 
 #endif

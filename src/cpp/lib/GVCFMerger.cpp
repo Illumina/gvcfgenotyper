@@ -36,10 +36,14 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _normaliser = new Normaliser(reference_genome,ignore_non_matching_ref);
     _num_gvcfs = input_files.size();
     _readers.reserve(_num_gvcfs);
-    std::cerr << "Input GVCFs:" << std::endl;
+
+    // retrieve logger from factory
+    _lg = spdlog::get("gg_logger");
+    assert(_lg!=nullptr);
+    _lg->info("Input GVCFs:");
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-      std::cerr << input_files[i] << " " << i+1<<"/"<<_num_gvcfs<<std::endl;
+        _lg->info("{} {}/{}",input_files[i],(i+1),_num_gvcfs);
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();
@@ -311,7 +315,7 @@ void GVCFMerger::write_vcf()
         num_written++;
     }
     assert(AreAllReadersEmpty());
-    std::cerr << "Wrote " << num_written << " variants" << std::endl;
+    _lg->info("Wrote {} variants",num_written);
 }
 
 void GVCFMerger::BuildHeader()
@@ -329,9 +333,11 @@ void GVCFMerger::BuildHeader()
             {
                 if (force_samples)
                 {
-                    cerr << "Warning duplicate sample found.\t" << sample_name;
-                    sample_name += ":R" + to_string(static_cast<long long>(repeat_count++));
-                    cerr << " -> " << sample_name << endl;
+                    _lg->warn("Warning duplicate sample found.\t {} {} -> {}",
+                              sample_name,
+                              (sample_name += ":R" + to_string(static_cast<long long>(repeat_count++))),
+                              sample_name
+                              ); 
                 } else
                 {
                     ggutils::die("duplicate sample names. use --force-samples if you want to merge anyway");
