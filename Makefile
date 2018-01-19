@@ -4,9 +4,7 @@ all: bin/gvcfgenotyper bin/test_gvcfgenotyper
 # hard-coded version
 VERSION_MAJOR=19-01-2018
 # if we are in a git repo and if git binary is available, add git hash + branch info
-ifneq "$(wildcard .git)" ""
 GIT_HASH = $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null)_$(shell git describe --always 2> /dev/null)
-endif
 ifneq "$(GIT_HASH)" "_"
 	VERSION= -DGG_VERSION=\"$(VERSION_MAJOR)_$(GIT_HASH)\"
 else
