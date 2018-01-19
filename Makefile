@@ -1,10 +1,17 @@
 .PHONY: all
 all: bin/gvcfgenotyper bin/test_gvcfgenotyper
 
+# hard-coded version
+VERSION_MAJOR=19-01-2018
+# if we are in a git repo and if git binary is available, add git hash + branch info
 ifneq "$(wildcard .git)" ""
-GIT_VERSION = $(shell git describe --always)
+GIT_HASH = $(shell git rev-parse --abbrev-ref HEAD)_$(shell git describe --always 2> /dev/null)
 endif
-VERSION= -DGG_VERSION=\"$(GIT_VERSION)\"
+ifneq "$(GIT_HASH)" ""
+	VERSION= -DGG_VERSION=\"$(VERSION_MAJOR)_$(GIT_HASH)\"
+else
+	VERSION= -DGG_VERSION=\"$(VERSION_MAJOR)\"
+endif
 
 CC=gcc
 CXX=g++
