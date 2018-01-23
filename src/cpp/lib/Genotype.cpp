@@ -94,25 +94,25 @@ void Genotype::CallGenotype()
 {
     if(_ploidy==1)
     {
-        auto it = std::max_element(_gl.begin(), _gl.end());
-        _gt[0] = bcf_gt_unphased(it - _gl.begin());
+        auto it = std::min_element(_pl.begin(), _pl.end());
+        _gt[0] = bcf_gt_unphased(it - _pl.begin());
     }
     else
     {
-        int maxi=0,maxj=0;
+        int maxi=0,minj=0;
         for(int i=0;i<_num_allele;i++)
         {
             for(int j=i;j<_num_allele;j++)
             {
-                if(_gl[ggutils::get_gl_index(i,j)]>_gl[ggutils::get_gl_index(maxi,maxj)])
+                if(_pl[ggutils::get_gl_index(i,j)]<_pl[ggutils::get_gl_index(mini,minj)])
                 {
-                    maxi=i;
-                    maxj=j;
+                    mini=i;
+                    minj=j;
                 }
             }
         }
-        _gt[0] = bcf_gt_unphased(maxi);
-        _gt[1] = bcf_gt_unphased(maxj);
+        _gt[0] = bcf_gt_unphased(mini);
+        _gt[1] = bcf_gt_unphased(minj);
     }
 }
 
@@ -147,6 +147,11 @@ void Genotype::allocate(int ploidy, int num_allele)
 }
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
+{
+    Init(header,record);
+}
+
+void Genotype::Init(bcf_hdr_t const *header, bcf1_t *record)
 {
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
@@ -450,6 +455,63 @@ void Genotype::MakeDiploid()
     _pl = _new_pl;
 }
 
+Genotype::Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
+{
+   bcf1_t *ret = bcf_dup(*sample_variants.first);
+   if (sample_variants.first == sample_variants.second)
+   {//nothing to do
+       Init(sample_header,ret);
+       return;
+   }
+
+   int num_new_alleles=0;
+   for (auto it = (sample_variants.first + 1); it != sample_variants.second; it++)
+       for (int i = 1; i < (*it)->n_allele; i++)
+           num_new_alleles+=ggutils::add_allele(ret, *it, i);
+
+   if(num_new_alleles==0)
+   {//nothing to do.
+       Init(sample_header,ret);
+       return;
+   }
+
+   //This is where things get messy. We have a collision between overlapping alleles that do not have respsective INFO/FORMAT for one another.
+   int ploidy=0;
+   size_t num_sample_variants = (sample_variants.second - sample_variants.first);
+   for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
+   assert(ploidy==1 || ploidy==2);
+   allocate(ploidy,num_sample_variants);
+   SetDepthToZero();
+   std::vector<bool> found_allele(sample_variants.second - sample_variants.first,false);
+   std::vector< std::vector<int> > pls;
+   for (auto it = sample_variants.first; it != sample_variants.second; it++)
+   {
+       int allele_index = ggutils::find_allele(ret,*it,1);
+       if(allele_index==-1 || !found_allele[allele_index])
+       {
+           Genotype g(sample_header,*it);
+           pls.emplace_back(_num_pl,-1);
+           for(int i=0;i<(*it)->n_allele;i++)
+           {
+               allele_index = i==0 ? 0 : ggutils::find_allele(ret,*it,i);
+               assert(allele_index>0);
+               found_allele[allele_index]=true;
+               _ad[allele_index] = g.ad(i);
+               _adf[allele_index] = g.adf(i);
+               _adr[allele_index] = g.adr(i);
+               for (int j = 0; j < (*it)->n_allele; j++)
+               {
+                   int allele_index2 = j==0 ? 0 : ggutils::find_allele(ret,*it,j);
+                   pls.back()[ggutils::get_gl_index(allele_index,allele_index2)] = g.gl(i,j);
+               }
+           }
+       }
+   }
+   ggutils::collapse_gls(pls,_gl);
+   SetDepthFromAd();
+   CallGenotype();
+}
+
 Genotype::Genotype(bcf_hdr_t *sample_header,
                    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
                    multiAllele & alleles_to_map)
@@ -474,10 +536,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         {
             std::cerr<<"WARNING: conflicting ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid);
             std::cerr<< ":" << (*it)->pos + 1 << std::endl;
-            if(g.ploidy()==1)
-                g.MakeDiploid();
-            else
-                ggutils::die("Unresolvable ploidy conflict.");
+            if(g.ploidy()==1) g.MakeDiploid();
+            else  ggutils::die("Unresolvable ploidy conflict.");
         }
 
         //FIXME: These values are overwriting on each iteration. Ideally they should be the same so it does not matter,
@@ -509,7 +569,6 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
             if (ploidy == 1)
             {
                 _gl[dst_allele_index] = g.gl(1);
-                _pl[dst_allele_index] = g.pl(1);
             }
             else
             {
@@ -517,16 +576,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
                 {
                     int dst_allele_index2 = alleles_to_map.Allele(*allele2);
                     int src_allele_index2 = ggutils::find_allele(*it,*allele2,1);
-                    if(src_allele_index2>=0)
-                    {
-                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
-                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.pl(src_allele_index2, 1);
-                    }
-                    else
-                    {
-                        _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = 0;
-                        _pl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = MAXPL;
-                    }
+                    if(src_allele_index2>=0) _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
+                    else _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = 0;
                 }
                 _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
                 _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.pl(0, 1);
@@ -535,13 +586,10 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
 
         for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
         {
-
             if (num_sample_variants == 1)//only one allele so this is a straightforward copy
             {
-                if (bcf_gt_allele(g.gt(genotype_index)) == 0)
-                    _gt[dst_genotype_count] = bcf_gt_unphased(0);
-                if (bcf_gt_allele(g.gt(genotype_index)) == 1)
-                    _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
+                if (bcf_gt_allele(g.gt(genotype_index)) == 0) _gt[dst_genotype_count] = bcf_gt_unphased(0);
+                if (bcf_gt_allele(g.gt(genotype_index)) == 1) _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
                 dst_genotype_count++;
             }
             else //there are multiple variants at this position. we need to do some careful genotype counting.
@@ -564,17 +612,13 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         }
     }
     SetDepthFromAd();
+
+    //this calls some heuristics to fix the case where we are collapsing confliciting alleles
+    //this is very rare and seems to be caused when force genotyping a bunch of overlapping variants.
     if(recall_genotypes_from_gl)
     {
         SetPlFromGl();
         CallGenotype();
-    }
-
-    //This is a sanity check which should possibly reside within unit testing.
-    if(_ploidy==2 && (_gt[0]==bcf_gt_missing) != (_gt[1]==bcf_gt_missing))
-    {
-        ggutils::print_variant(sample_header,*sample_variants.first);
-        ggutils::die("bad genotypes at sample "+(string)sample_header->samples[0]);
     }
 }
 

@@ -174,7 +174,7 @@ TEST(Genotype,SplitAndRebuild1)
         for(int j=i;j<3;j++)
             ASSERT_EQ(g1.pl(i,j),g2.pl(i,j));
 }
-
+\
 TEST(Genotype,SplitAndRebuild2)
 {
     auto hdr = get_header();

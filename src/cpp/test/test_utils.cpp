@@ -272,3 +272,56 @@ TEST(UtilTest,findAllele)
     ASSERT_EQ(ggutils::find_allele(target2,query2,2),1);
     ASSERT_EQ(ggutils::find_allele(target2,query2,3),2);
 }
+
+TEST(UtilTest,collapseLikelihoods1)
+{
+    int p[][3] = { {189,0,197},{0,108,561},{0,96,545} };
+    int num_allele = 4;
+    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    std::vector< std::vector<int> > gl;
+    for(int i=1;i<4;i++)
+    {
+        std::vector<int> tmp(num_gl,bcf_int32_missing);
+        tmp[ggutils::get_gl_index(0,0)] = p[i-1][0];
+        tmp[ggutils::get_gl_index(0,i)] = p[i-1][1];
+        tmp[ggutils::get_gl_index(i,i)] = p[i-1][2];
+        gl.push_back(tmp);
+    }
+    std::vector<int> new_gl;
+    ggutils::collapse_gls(2,num_allele,gl,new_gl);
+    ASSERT_EQ(new_gl[ 0 ], 189 );
+    ASSERT_EQ(new_gl[ 1 ], 0 );
+    ASSERT_EQ(new_gl[ 2 ], 197 );
+    ASSERT_EQ(new_gl[ 3 ], 297 );
+    ASSERT_EQ(new_gl[ 4 ], 108 );
+    ASSERT_EQ(new_gl[ 5 ], 750 );
+    ASSERT_EQ(new_gl[ 6 ], 285 );
+    ASSERT_EQ(new_gl[ 7 ], 96 );
+    ASSERT_EQ(new_gl[ 8 ], 393 );
+    ASSERT_EQ(new_gl[ 9 ], 734 );
+}
+
+TEST(UtilTest,collapseLikelihoods2)
+{
+    int p[][10] = { {189,0,197,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing},
+                   {0,bcf_int32_missing,bcf_int32_missing,108,bcf_int32_missing,561,96,bcf_int32_missing,bcf_int32_missing,545 } };
+
+    int num_allele = 4;
+    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    std::vector< std::vector<int> > gl;
+    gl.emplace_back(p[0],p[0]+num_gl);
+    gl.emplace_back(p[1],p[1]+num_gl);
+    std::vector<int> new_gl;
+    ggutils::collapse_gls(2,num_allele,gl,new_gl);
+//    for(auto it=new_gl.begin();it!=new_gl.end();it++) std::cerr << *it <<"\t";    std::cerr<<std::endl;
+    ASSERT_EQ(new_gl[ 0 ], 189 );
+    ASSERT_EQ(new_gl[ 1 ], 0 );
+    ASSERT_EQ(new_gl[ 2 ], 197 );
+    ASSERT_EQ(new_gl[ 3 ], 297 );
+    ASSERT_EQ(new_gl[ 4 ], 108 );
+    ASSERT_EQ(new_gl[ 5 ], 750 );
+    ASSERT_EQ(new_gl[ 6 ], 285 );
+    ASSERT_EQ(new_gl[ 7 ], 96 );
+    ASSERT_EQ(new_gl[ 8 ], 297 );
+    ASSERT_EQ(new_gl[ 9 ], 734 );
+}

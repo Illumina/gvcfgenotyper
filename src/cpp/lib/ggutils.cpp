@@ -646,4 +646,67 @@ namespace ggutils
         }
         return(-1);
     }
+
+    void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)
+    {
+        assert(ploidy==1 || ploidy==2);
+        int num_sets = pls.size();
+        assert(num_sets>0);
+        size_t num_gls = pls[0].size();
+        for(auto it=pls.begin();it!=pls.end();it++) assert(it->size()==num_gls);
+
+        int g00=0;
+        output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
+
+        for(auto it=pls.begin();it!=pls.end();it++)
+            g00 += (*it)[0];
+
+        for(auto it1=pls.begin();it1!=pls.end();it1++)
+        {
+            int gi0 = 0;
+            for(auto it2=pls.begin();it2!=pls.end();it2++)
+                if(it1!=it2)
+                    gi0 += (*it2)[0];
+            
+            for(int i=0;i<num_alleles;i++)
+            {
+                for(int j=i;j<num_alleles;j++)
+                {
+                    int index = ggutils::get_gl_index(i,j);
+                    if(i==0 && j==0)
+                    {
+                        output[0]=g00;  // collapse all the GT=0/0 GLs
+                    }
+                    else if(i==j || i==0)
+                    {
+                        int gl = (*it1)[index];
+                        if(gl != bcf_int32_missing)
+                            output[index] = gl + gi0; //GT=i/i or GT=0/i
+                    }
+                    else //GT=i/j where i!=j && i>0 && j>0
+                    {
+                        int gij = 0;
+                        for(auto it2=pls.begin();it2!=pls.end();it2++)
+                        {
+                            if((*it2)[index] == bcf_int32_missing)
+                            {                             
+                                int gi = (*it2)[ggutils::get_gl_index(0,i)];
+                                int gj = (*it2)[ggutils::get_gl_index(0,j)];
+                                if(gi != bcf_int32_missing) {gij += gi;}
+                                else if(gj != bcf_int32_missing) {gij += gj;}
+                                else {gij += (*it2)[0];}
+                            }
+                            else
+                            {
+                                gij += (*it2)[index];
+                            }
+                        }
+                        output[index] = gij;
+                    }
+                }
+            }
+        }
+         int min_pl = *std::min_element(output.begin(), output.end());
+         for(size_t i=0;i<output.size();i++) output[i] -= min_pl;
+    }
 }

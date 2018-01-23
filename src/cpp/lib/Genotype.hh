@@ -24,6 +24,7 @@ class Genotype
 public:
     //Constructs a Genotype with values taken from record.
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
+    void Init(bcf_hdr_t const *header, bcf1_t *record);
 
     //Constructs an empty Genotype with memory allocated according the ploidy/num_allele.
     Genotype(int ploidy, int num_allele);
@@ -33,6 +34,9 @@ public:
     Genotype(bcf_hdr_t *sample_header,
              pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
              multiAllele & alleles_to_map);
+
+    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
+
     ~Genotype();
 
     //Removes alleles in indices, adding their AD and PL values to the REF values.
