@@ -146,7 +146,7 @@ namespace ggutils
 
     //Adds the i'th allele from src to dst. FORMAT/INFO fields are unaffected.
     //Returns 0 if the allele was already present, 1 otherwise.
-    int add_allele(bcf1_t *dst,bcf1_t *src,int index);
+    int add_allele(bcf_hdr_t *hdr,bcf1_t *dst,bcf1_t *src,int index);
 
     //a heuristic for collapsing genotype likelihoods for variants that occur on two different rows but at the same position
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output);

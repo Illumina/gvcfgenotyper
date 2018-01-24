@@ -135,7 +135,7 @@ void multiAllele::Collapse(bcf1_t *output)
         {
             std::cerr << _pos+1 << " " <<  new_alleles[0] << "!=" <<(*rec)->d.allele[0] << std::endl;
             ggutils::print_variant(*rec);
-            throw std::runtime_error("inconsistent REF on first allele");
+            ggutils::die("inconsistent REF on first allele");
         }
         size_t old_ref_len = strlen((*rec)->d.allele[0]);
         size_t rightpad = max_ref_len - old_ref_len;
@@ -145,9 +145,6 @@ void multiAllele::Collapse(bcf1_t *output)
         memcpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad+1);
     }
     bcf_update_alleles(_hdr,output,(const char**)new_alleles,num_alleles);
-    for(size_t i=0;i<num_alleles;i++)
-    {
-        free(new_alleles[i]);
-    }
+    for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);
     free(new_alleles);
 }

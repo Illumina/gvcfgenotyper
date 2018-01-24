@@ -250,3 +250,59 @@ void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &at
         }
     }
 }
+
+bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
+                        pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants)
+{
+   bcf1_t *ret = bcf_dup(*sample_variants.first);
+   if (sample_variants.first == sample_variants.second)
+       return(ret);
+
+   int num_new_alleles=0;
+   for (auto it = (sample_variants.first + 1); it != sample_variants.second; it++)
+       for (int i = 1; i < (*it)->n_allele; i++)
+           num_new_alleles+=ggutils::add_allele(sample_header,ret, *it, i);
+
+   if(num_new_alleles==0)
+       return(ret);
+   
+   //This is where things get messy. We have a collision between overlapping alleles that do not have respsective 
+   //INFO/FORMAT for one another.
+   int ploidy=0;
+   size_t num_allele = (sample_variants.second - sample_variants.first)+1;
+   for (auto it = sample_variants.first; it != sample_variants.second; it++) 
+        ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
+   assert(ploidy==1 || ploidy==2);
+   Genotype output(ploidy,num_allele);
+   output.SetDepthToZero();
+   std::vector<bool> found_allele(sample_variants.second - sample_variants.first,false);
+   std::vector< std::vector<int> > pls;
+   for (auto it = sample_variants.first; it != sample_variants.second; it++)
+   {
+       int allele_index = ggutils::find_allele(ret,*it,1);
+       if(allele_index==-1 || !found_allele[allele_index])
+       {
+           Genotype g(sample_header,*it);
+           pls.emplace_back(output.num_pl(),bcf_int32_missing);
+           for(int i=0;i<(*it)->n_allele;i++)
+           {
+               allele_index = i==0 ? 0 : ggutils::find_allele(ret,*it,i);
+               assert(allele_index>0);
+               found_allele[allele_index]=true;
+               output.SetAd(g.ad(i),allele_index);
+               output.SetAdf(g.adf(i),allele_index);
+               output.SetAdr(g.adr(i),allele_index);
+               for (int j = 0; j < (*it)->n_allele; j++)
+               {
+                   int allele_index2 = j==0 ? 0 : ggutils::find_allele(ret,*it,j);
+                   pls.back()[ggutils::get_gl_index(allele_index,allele_index2)] = g.gl(i,j);
+               }
+           }
+       }
+   }
+   std::vector<int> pl;
+   ggutils::collapse_gls(ploidy,num_allele,pls,pl);
+   output.SetDepthFromAd();
+   output.CallGenotype();
+   return(ret);
+}

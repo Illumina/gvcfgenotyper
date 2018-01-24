@@ -325,3 +325,36 @@ TEST(UtilTest,collapseLikelihoods2)
     ASSERT_EQ(new_gl[ 8 ], 297 );
     ASSERT_EQ(new_gl[ 9 ], 734 );
 }
+
+TEST(UtilTest,addAllele1)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tC\tA\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tC\tT\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"C");
+    ASSERT_STREQ(v1->d.allele[1],"A");
+    ASSERT_STREQ(v1->d.allele[2],"T");
+}
+
+TEST(UtilTest,addAllele2)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tCA\tC\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tCAA\tC\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"CAA");
+    ASSERT_STREQ(v1->d.allele[1],"CA");
+    ASSERT_STREQ(v1->d.allele[2],"C");
+}
+
+TEST(UtilTest,addAllele3)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tCAA\tC\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tCA\tC\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"CAA");
+    ASSERT_STREQ(v1->d.allele[1],"C");
+    ASSERT_STREQ(v1->d.allele[2],"CA");
+}

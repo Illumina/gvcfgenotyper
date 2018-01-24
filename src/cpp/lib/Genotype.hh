@@ -77,6 +77,7 @@ public:
     int mq();
     int ploidy();
     int num_allele();
+    int num_pl() {return _num_pl;};
     int pl(int g0, int g1);
     int pl(int g0);
     float gl(int g0, int g1);
@@ -87,6 +88,9 @@ public:
     void SetDpf(int val);
     void SetGq(int val);
     void SetGqx(int val);
+    void SetAd(int val,int index);
+    void SetAdf(int val,int index);
+    void SetAdr(int val,int index);
 
     bool HasPl() {return _has_pl;};
     bool HasAdf() {return _adf_found;};
