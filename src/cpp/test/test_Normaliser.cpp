@@ -383,3 +383,59 @@ TEST(Normaliser, unarise10)
         ggutils::print_variant(hdr, *it);
     }
 }
+
+TEST(Normaliser, CollapseRecords1)
+{
+    auto hdr = get_header();
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name);
+    auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tT,G\t0\tLowGQX\tSNVHPOL=2;MQ=33\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/2:9:0:9:0:7,1,1:5,1,1:2,0,0:0:LowGQX:14,11,149,0,117,138");
+    multiAllele m;
+    m.Init(hdr);
+    m.SetPosition(record1->rid, record1->pos);
+
+    //std::cerr <<"Input:"<<std::endl;    ggutils::print_variant(hdr,record1);
+    std::vector<bcf1_t *> buffer;
+    norm.Unarise(record1, buffer,hdr);
+//    std::cerr <<"Output:"<<std::endl;
+    std::deque<bcf1_t *> q;
+    for (auto it = buffer.begin(); it != buffer.end(); it++)
+    {
+  //      ggutils::print_variant(hdr,*it);
+        m.Allele(*it);
+        q.push_back(*it);
+    }
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
+    auto collapsed_record = CollapseRecords(hdr,i);
+//    ggutils::print_variant(hdr,collapsed_record);
+    ASSERT_TRUE(ggutils::bcf1_all_equal(collapsed_record,record1));
+}
+
+TEST(Normaliser, CollapseRecords2)
+{
+    auto hdr = get_header();
+    auto rec1 = generate_record(hdr,"chr1\t6700131\t.\tC\tCA\t186\tPASS\tMQ=60\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/1:191:13:41:20,18:10,8:10,10:PASS:189,0,197");
+    auto rec2 = generate_record(hdr,"chr1\t6700131\t.\tC\tCAA\t0\tPASS\tMQ=60\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/0:105:105:41:37,0:18,0:19,0:PASS:0,108,561");
+    auto rec3 = generate_record(hdr,"chr1\t6700131\t.\tC\tCAAA\t0\tPASS\tMQ=60\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t0/0:93:93:41:37,1:18,0:19,1:PASS:0,96,545");
+    std::deque<bcf1_t *> q;
+    q.push_back(rec1);
+    q.push_back(rec2);
+    q.push_back(rec3);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
+    auto collapsed_record = CollapseRecords(hdr,i);
+ //   ggutils::print_variant(hdr,collapsed_record);   
+    int32_t *ptr=nullptr,num_values=0;
+    ASSERT_EQ(collapsed_record->n_allele,4);
+    ASSERT_EQ(bcf_get_format_int32(hdr,collapsed_record,"AD",&ptr,&num_values),4);
+    ASSERT_EQ(bcf_get_format_int32(hdr,collapsed_record,"PL",&ptr,&num_values),10);
+    ASSERT_EQ(ptr[ 0 ], 189 );
+    ASSERT_EQ(ptr[ 1 ], 0 );
+    ASSERT_EQ(ptr[ 2 ], 197 );
+    ASSERT_EQ(ptr[ 3 ], 297 );
+    ASSERT_EQ(ptr[ 4 ], 108 );
+    ASSERT_EQ(ptr[ 5 ], 750 );
+    ASSERT_EQ(ptr[ 6 ], 285 );
+    ASSERT_EQ(ptr[ 7 ], 96 );
+    ASSERT_EQ(ptr[ 8 ], 393 );
+    ASSERT_EQ(ptr[ 9 ], 734 );
+}

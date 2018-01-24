@@ -629,15 +629,16 @@ namespace ggutils
 
     int find_allele(bcf1_t *target,bcf1_t *query,int index)
     {
+        if(target==nullptr)return(-1);
         assert(index>0 && index<query->n_allele);
         size_t rlen,alen;
         char *q_ref=query->d.allele[0];
         char *q_alt=query->d.allele[index];
         ggutils::right_trim(q_ref,q_alt,rlen,alen);
+        char *t_ref=target->d.allele[0];
         for(int i=1;i<target->n_allele;i++)
         {
             size_t target_rlen,target_alen;
-            char *t_ref=target->d.allele[0];
             char *t_alt=target->d.allele[i];
             ggutils::right_trim(t_ref,t_alt,target_rlen,target_alen);
             if(rlen==target_rlen && alen==target_alen)
@@ -691,7 +692,6 @@ namespace ggutils
             new_alleles[num_alleles-1] = (char *)malloc(q_alen+1);
             memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
             new_alleles[num_alleles-1][q_alen]='\0';
-            //for(size_t i=0;i<num_alleles;i++)            std::cerr<<new_alleles[i]<<" "<<strlen(new_alleles[i])<<std::endl;//debug
         }
         bcf_update_alleles(hdr,dst,(const char**)new_alleles,num_alleles);
         for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);

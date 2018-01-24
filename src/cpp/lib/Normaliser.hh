@@ -48,5 +48,7 @@ private:
     bool _ignore_non_matching_ref;
 };
 
+bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
+                        pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
 
 #endif //GVCFGENOTYPER_NORMALISER_HH

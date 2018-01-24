@@ -91,7 +91,7 @@ public:
     void SetAd(int val,int index);
     void SetAdf(int val,int index);
     void SetAdr(int val,int index);
-
+    void SetPl(std::vector<int> & val);
     bool HasPl() {return _has_pl;};
     bool HasAdf() {return _adf_found;};
     bool HasAdr() {return _adr_found;};

@@ -5,6 +5,26 @@
 
 #define MAXPL 255
 
+void Genotype::SetAd(int val,int index)
+{
+    assert(index>=0 && index<_num_allele);
+    _ad[index] = val;
+}
+
+void Genotype::SetAdr(int val,int index)
+{
+    if(!_adr_found) return;
+    assert(index>=0 && index<_num_allele);
+    _adr[index] = val;
+}
+void Genotype::SetAdf(int val,int index)
+{
+    if(!_adf_found) return;
+    assert(index>=0 && index<_num_allele);
+    _adf[index] = val;
+}
+
+
 void Genotype::SetDp(int val)
 {
     _dp = (int32_t *)realloc(_dp,sizeof(int32_t));
@@ -618,3 +638,9 @@ float Genotype::gl(int g0)
     return(_gl[g0]);
 }
 
+void Genotype::SetPl(std::vector<int> & val)
+{
+    if(!_has_pl) return;
+    assert(val.size()==_num_pl);
+    std::copy(val.begin(),val.end(),_pl);
+}
