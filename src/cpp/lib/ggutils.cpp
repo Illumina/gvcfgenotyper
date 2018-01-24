@@ -651,7 +651,8 @@ namespace ggutils
     {
         assert(index>0 && index<src->n_allele);
         int dst_index = ggutils::find_allele(dst,src,index);
-        if(dst_index>0) return(index);
+        if(dst_index>0) 
+            return(dst_index);
         size_t num_alleles = dst->n_allele+1;
         char **new_alleles = (char **)malloc(sizeof(char*) * num_alleles);
         size_t old_ref_len = strlen(dst->d.allele[0]);            
@@ -669,13 +670,11 @@ namespace ggutils
 
             if(old_ref_len>q_rlen)
             {
-                            std::cerr<<"oh hai "<<old_ref_len<<" "<<q_rlen<<std::endl;//debug
                 size_t rightpad = old_ref_len - q_rlen;
                 new_alleles[num_alleles-1] = (char *)malloc(q_alen + rightpad + 1);
                 memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
                 memcpy(new_alleles[num_alleles-1]+q_alen,new_alleles[0]+old_ref_len-rightpad,rightpad);
-                new_alleles[num_alleles-1][q_alen+rightpad+1]='\0';
-                std::cerr<<new_alleles[num_alleles-1]<<std::endl;
+                new_alleles[num_alleles-1][q_alen+rightpad]='\0';
             }
         }
         else
@@ -684,17 +683,20 @@ namespace ggutils
             for(size_t i=0;i<num_alleles-1;i++)
             {
                 int alen=strlen(dst->d.allele[i]);
-                new_alleles[i]=(char *)malloc(alen+rightpad);
+                new_alleles[i]=(char *)malloc(alen+rightpad+1);
                 memcpy(new_alleles[i],dst->d.allele[i],alen);
                 memcpy(new_alleles[i]+alen,q_ref+old_ref_len,rightpad);
+                new_alleles[i][alen+rightpad]='\0';
             }
             new_alleles[num_alleles-1] = (char *)malloc(q_alen+1);
-            strncpy(new_alleles[num_alleles-1],q_alt,q_alen);
+            memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
+            new_alleles[num_alleles-1][q_alen]='\0';
+            //for(size_t i=0;i<num_alleles;i++)            std::cerr<<new_alleles[i]<<" "<<strlen(new_alleles[i])<<std::endl;//debug
         }
         bcf_update_alleles(hdr,dst,(const char**)new_alleles,num_alleles);
         for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);
         free(new_alleles);
-        return(0);
+        return(num_alleles-1);
     }
 
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)

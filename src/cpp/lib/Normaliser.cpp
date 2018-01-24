@@ -258,10 +258,11 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
    if (sample_variants.first == sample_variants.second)
        return(ret);
 
-   int num_new_alleles=0;
+    int num_old_alleles=ret->n_allele;
+    int num_new_alleles=0;
    for (auto it = (sample_variants.first + 1); it != sample_variants.second; it++)
        for (int i = 1; i < (*it)->n_allele; i++)
-           num_new_alleles+=ggutils::add_allele(sample_header,ret, *it, i);
+           num_new_alleles+=ggutils::add_allele(sample_header,ret, *it, i)>num_old_alleles;
 
    if(num_new_alleles==0)
        return(ret);
