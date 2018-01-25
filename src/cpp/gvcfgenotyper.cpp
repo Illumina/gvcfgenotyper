@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     string region = "";
     int n_threads = 0;
     string output_file = "";
-    string log_file = "gvcfgenotyper.log";
+    string log_file = "gvcfgenotyper."+ggutils::string_time()+".log";
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
