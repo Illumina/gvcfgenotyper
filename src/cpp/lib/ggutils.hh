@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "math.h"
 #include <stdlib.h>
+#include <ctime>
 
 #include <limits>
 #include <set>
@@ -150,4 +151,7 @@ namespace ggutils
 
     //a heuristic for collapsing genotype likelihoods for variants that occur on two different rows but at the same position
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output);
+
+    std::string string_time();
+
 }

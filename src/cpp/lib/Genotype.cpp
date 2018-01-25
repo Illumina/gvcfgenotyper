@@ -24,6 +24,12 @@ void Genotype::SetAdf(int val,int index)
     _adf[index] = val;
 }
 
+void Genotype::init_logger() 
+{
+    _lg = spdlog::get("gg_logger");
+    assert(_lg!=nullptr);
+}
+
 
 void Genotype::SetDp(int val)
 {
@@ -107,6 +113,7 @@ bool Genotype::IsDpMissing()
 
 Genotype::Genotype(int ploidy, int num_allele)
 {
+    init_logger();
     allocate(ploidy,num_allele);
 }
 
@@ -168,11 +175,15 @@ void Genotype::allocate(int ploidy, int num_allele)
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 {
+<<<<<<< HEAD
     Init(header,record);
 }
 
 void Genotype::Init(bcf_hdr_t const *header, bcf1_t *record)
 {
+=======
+    init_logger();
+>>>>>>> master
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
@@ -479,6 +490,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
                    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
                    multiAllele & alleles_to_map)
 {
+    init_logger();
     int ploidy=0;
     size_t num_sample_variants = (sample_variants.second - sample_variants.first);
     for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
@@ -497,10 +509,22 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
         Genotype g(sample_header, *it);
         if(g._ploidy!=ploidy)
         {
+<<<<<<< HEAD
             std::cerr<<"WARNING: conflicting ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid);
             std::cerr<< ":" << (*it)->pos + 1 << std::endl;
             if(g.ploidy()==1) g.MakeDiploid();
             else  ggutils::die("Unresolvable ploidy conflict.");
+=======
+            _lg->warn("conflicting ploidy for sample {} {}:{}",
+                      sample_header->samples[0],
+                      bcf_hdr_id2name(sample_header, (*it)->rid),
+                      ((*it)->pos + 1)
+                      );
+            if(g.ploidy()==1)
+                g.MakeDiploid();
+            else
+                ggutils::die("Unresolvable ploidy conflict. Check logfile");
+>>>>>>> master
         }
 
         //FIXME: These values are overwriting on each iteration. Ideally they should be the same so it does not matter,
@@ -561,8 +585,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,
                 {
                     if(dst_genotype_count>=_ploidy)
                     {
-                        std::cerr<<"WARNING: conflicting alleles/genotypes for sample "<<sample_header->samples[0]<<" ";
-                        std::cerr<< bcf_hdr_id2name(sample_header, (*it)->rid) << ":" << (*it)->pos + 1 << std::endl;
+                        _lg->warn("Conflicting alleles/genotypes for sample {} {} : {}",sample_header->samples[0],bcf_hdr_id2name(sample_header, (*it)->rid),((*it)->pos + 1));
                         recall_genotypes_from_gl=true;
                     }
                     else

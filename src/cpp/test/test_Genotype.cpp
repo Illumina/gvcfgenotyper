@@ -86,7 +86,7 @@ TEST(Genotype,format)
 
 TEST(Genotype,CallGenotypeDiploid)
 {
-auto hdr = get_header();
+    auto hdr = get_header();
     auto record1 = generate_record(hdr, "chr1\t10002558\t.\tG\tA\t499\tPASS\tMQ=60\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t0/0:102:30:35:0:0,35:0,15:0,20:-55.2:PASS:370,105,0");
     Genotype g1(hdr,record1);
     ASSERT_EQ(bcf_gt_allele(g1.gt(0)),0);

@@ -15,6 +15,7 @@ extern "C" {
 
 #include "multiAllele.hh"
 #include "ggutils.hh"
+#include "spdlog.h"
 
 //Genotype stores FORMAT/INFO fields from a VCF record for a single sample.
 //It contains a number of helper functions to manipulate these format/info
@@ -102,9 +103,11 @@ public:
 private:
     //Assigns memory according to ploidy/num_allele.
     void allocate(int ploidy, int num_allele);
+    void init_logger();
     float _qual;
     int32_t _mq;
     bool _has_pl, _adf_found, _adr_found;
+    std::shared_ptr<spdlog::logger> _lg;
 };
 
 #endif //GVCFGENOTYPER_GENOTYPE_HH

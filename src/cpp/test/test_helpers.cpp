@@ -56,3 +56,5 @@ void update_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles,bc
     bcf_unpack(record,BCF_UN_ALL);
     free(str.s);
 }
+
+

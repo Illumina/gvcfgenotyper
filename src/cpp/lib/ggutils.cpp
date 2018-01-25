@@ -761,4 +761,14 @@ namespace ggutils
          int min_pl = *std::min_element(output.begin(), output.end());
          for(size_t i=0;i<output.size();i++) output[i] -= min_pl;
     }
+
+    std::string string_time()
+    {
+        std::time_t result = std::time(nullptr);
+        char buffer[16];
+        std::strftime(buffer,120,"%Y%m%d_%H%M%S",std::localtime(&result));
+        return((std::string)buffer);
+    }
+
+
 }

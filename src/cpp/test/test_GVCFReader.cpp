@@ -108,6 +108,7 @@ TEST(GVCFReader, readMNP)
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/mnp.genome.vcf";
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/tiny.ref.fa";
     Normaliser normaliser(ref_file_name);
+
     GVCFReader reader(gvcf_file_name, &normaliser, 1000);
     const bcf_hdr_t *hdr = reader.GetHeader();
     bcf1_t *line = reader.Pop();
@@ -144,6 +145,7 @@ TEST(GVCFReader, readAGVCF)
     std::ofstream ofs(tn, std::ofstream::out);
     int buffer_size = 200;
     Normaliser normaliser(ref_file_name);
+
     GVCFReader reader(gvcf_file_name, &normaliser, buffer_size);
     const bcf_hdr_t *hdr = reader.GetHeader();
     bcf1_t *line = reader.Pop();

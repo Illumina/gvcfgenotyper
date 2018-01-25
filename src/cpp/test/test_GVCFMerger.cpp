@@ -3,6 +3,8 @@
 #include "GVCFMerger.hh"
 #include "StringUtil.hh"
 
+#include "spdlog.h"
+
 
 TEST(multiAllele,test1)
 {
@@ -71,6 +73,7 @@ TEST(GVCFMerger, platinumGenomeTinyTest)
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     std::string output_file_name = "test.out";//std::tmpnam(NULL);
     std::cerr << "Outputting to " << output_file_name << std::endl;
+    
     GVCFMerger g(files, output_file_name, "z", ref_file_name, buffer_size);
     g.write_vcf();
 }
