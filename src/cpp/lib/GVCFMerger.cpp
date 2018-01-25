@@ -166,8 +166,7 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_bloc
     pl_ptr[0] = 0;
 }
 
-void GVCFMerger::GenotypeAltVariant(int sample_index,
-                                    pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants)
+void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
 {
     int default_ploidy=2;
     Genotype g(_readers[sample_index].GetHeader(), sample_variants,_record_collapser);
@@ -183,10 +182,10 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,
 void GVCFMerger::GenotypeSample(int sample_index)
 {
     DepthBlock homref_block;//working structure to store homref info.
-    auto sample_variants = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
+    bcf1_t *sample_record = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
 
     //this sample has variants at this position, we need to populate its FORMAT field
-    if (sample_variants.first!=sample_variants.second)
+    if (sample_record!=nullptr)
     {
         GenotypeAltVariant(sample_index, sample_variants);
     }
