@@ -105,7 +105,7 @@ int GVCFMerger::get_next_variant()
             }
         }
     }
-
+    assert(_record_collapser.GetNumAlleles()>0);
     return(1);
 }
 
@@ -183,13 +183,14 @@ void GVCFMerger::GenotypeSample(int sample_index)
 {
     DepthBlock homref_block;//working structure to store homref info.
     auto hdr = _readers[sample_index].GetHeader();
-    auto records =     _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
-    bcf1_t *sample_record = CollapseRecords(hdr,records);
+    auto records = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
 
+    bcf1_t *sample_record = CollapseRecords(hdr,records);
     //this sample has variants at this position, we need to populate its FORMAT field
     if (sample_record!=nullptr)
     {
         GenotypeAltVariant(sample_index, sample_record);
+        bcf_destroy(sample_record);
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
     {
@@ -201,10 +202,7 @@ void GVCFMerger::GenotypeSample(int sample_index)
 
 bcf1_t *GVCFMerger::next()
 {
-    if (AreAllReadersEmpty())
-    {
-        return (nullptr);
-    }
+    if (AreAllReadersEmpty()) return (nullptr);
 
     bcf_clear(_output_record);
     get_next_variant(); //stores all the alleles at the next position.

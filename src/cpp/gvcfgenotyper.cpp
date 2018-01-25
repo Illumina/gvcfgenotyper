@@ -111,6 +111,7 @@ int main(int argc, char **argv)
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
+
     GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref);
 
     g.write_vcf();

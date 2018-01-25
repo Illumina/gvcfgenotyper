@@ -92,6 +92,33 @@ int multiAllele::Allele(bcf1_t *record,int index)
     }
 }
 
+int multiAllele::AlleleIndex(bcf1_t *record,int index)
+{
+    assert(_hdr!=nullptr);
+    assert(_rid>=0 && _pos>=0);
+    if(record->rid!=_rid || record->pos!=_pos)
+    {
+        return(0);
+    }
+
+    bcf1_t *tmp = copy_alleles(_hdr,record,index);
+    auto location = _records.begin();
+    while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp))
+    {
+        location++;
+    }
+    if(location==_records.end())
+    {
+        ggutils::die("multiAllele: variant not found");
+        return(-1);
+    }
+    else
+    {
+        bcf_destroy(tmp);
+        return((int) std::distance(_records.begin(),location)+1);
+    }
+}
+
 bcf1_t *multiAllele::GetMax()
 {
     bcf1_t *ret = nullptr;
@@ -147,4 +174,16 @@ void multiAllele::Collapse(bcf1_t *output)
     bcf_update_alleles(_hdr,output,(const char**)new_alleles,num_alleles);
     for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);
     free(new_alleles);
+}
+
+void multiAllele::print()
+{
+    std::cerr<<"multiAllele start"<<std::endl;
+    for(auto it=_records.begin();it!=_records.end();it++)
+    {
+        ggutils::print_variant(_hdr,*it);
+        std::cerr<<"rank="<<ggutils::get_variant_rank(*it)<<std::endl;
+    }
+
+    std::cerr<<"multiAllele end"<<std::endl;
 }

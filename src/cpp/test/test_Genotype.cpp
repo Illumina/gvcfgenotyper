@@ -2,6 +2,7 @@
 // Created by O'Connell, Jared on 12/21/17.
 //
 
+#include <htslib/vcf.h>
 #include "test_helpers.hh"
 
 extern "C"
@@ -30,12 +31,16 @@ TEST(Genotype,resolveAlleleConflict)
         m.Allele(*rec);
     auto sample_variants = reader.GetAllVariantsUpTo(m.GetMax());
     auto newrec =  CollapseRecords(hdr,sample_variants);
+    int32_t*ptr=nullptr,n=0;
+    ggutils::print_variant(hdr,newrec);
+    ASSERT_EQ(ggutils::get_number_of_likelihoods(2,newrec->n_allele),bcf_get_format_int32(hdr,newrec,"PL",&ptr,&n));
     Genotype g(hdr,newrec,m);
     for(int i=0;i< g.num_allele();i++)
     {
 //        std::cerr << g.get_ad(i) << " " << g.get_adf(i)<< "+"<<g.get_adr(i)<<"="<<g.get_adf(i)+g.get_adf(i)<<std::endl;
         ASSERT_EQ(g.ad(i), g.adf(i)+ g.adr(i));
     }
+    free(ptr);
 }
 
 //regression test checking that Genotype correctly propagates FORMAT fields

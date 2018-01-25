@@ -481,7 +481,7 @@ void Genotype::MakeDiploid()
 Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele & alleles_to_map)
 {
     Genotype src(sample_header,sample_variants);
-    allocate(src.ploidy(),src.num_allele());
+    allocate(src.ploidy(),alleles_to_map.GetNumAlleles()+1);
     SetDepthToZero();
     std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(_ploidy,_num_allele),MAXPL);
     _qual = src.qual();
@@ -492,9 +492,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     for(int src_index=0;src_index<sample_variants->n_allele;src_index++)
     {
         int dst_index = 0;
-        if(src_index>0) dst_index=alleles_to_map.Allele(sample_variants,src_index);
-
-        _ad[dst_index] = src.ad(src_index);
+        if(src_index>0) dst_index=alleles_to_map.AlleleIndex(sample_variants,src_index);
+        SetAd(src.ad(src_index),dst_index);
         if(src.HasAdf() && src.HasAdr())
         {
             _adf[dst_index] = src.adf(src_index);
@@ -510,7 +509,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
             {
                 for (int src_index2=src_index;src_index2<sample_variants->n_allele;src_index2++)
                 {
-                    int dst_index2 = alleles_to_map.Allele(sample_variants,src_index2);
+                    int dst_index2 = 0;
+                    if(src_index2>0) alleles_to_map.AlleleIndex(sample_variants,src_index2);
                     _pl[ggutils::get_gl_index(dst_index, dst_index2)] = src.pl(src_index,src_index2);
                 }
             }
