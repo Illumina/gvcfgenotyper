@@ -32,9 +32,7 @@ public:
 
     //Constructs a Genotype with alleles from alleles_to_map and format/info values taken from sample_variants (which contains subset of alleles_to_map).
     //Handle "conflicts" where allele and genotype combinations conflict with one another in a rudimentary but sane way.
-    Genotype(bcf_hdr_t *sample_header,
-             pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
-             multiAllele & alleles_to_map);
+    Genotype(bcf_hdr_t *sample_header,bcf1_t *sample_variants,multiAllele & alleles_to_map);
 
     Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
 

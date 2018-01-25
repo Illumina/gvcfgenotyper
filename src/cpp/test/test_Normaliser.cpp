@@ -362,7 +362,8 @@ TEST(Normaliser, unarise9)
     }
     std::cerr<<std::endl;
     pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
-    Genotype g(hdr,i,m);
+    auto newrec = CollapseRecords(hdr,i);
+    Genotype g(hdr,newrec,m);
 }
 
 TEST(Normaliser, unarise10)

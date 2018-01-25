@@ -259,15 +259,13 @@ size_t GVCFReader::GetNumDepthBlocks()
 }
 
 //gets all variants in interval start<=x<=stop
-bcf1_t *GVCFReader::GetAllVariantsInInterval(int chrom,int stop)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::GetAllVariantsInInterval(int chrom,int stop)
 {
-    auto variants = _variant_buffer.GetAllVariantsInInterval(chrom, stop);
-    return(CollapseRecords(_bcf_header,variants));
+    return(_variant_buffer.GetAllVariantsInInterval(chrom, stop));
 }
 
-bcf1_t *GVCFReader::GetAllVariantsUpTo(bcf1_t *record)
+pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GVCFReader::GetAllVariantsUpTo(bcf1_t *record)
 {
-    auto variants = _variant_buffer.GetAllVariantsUpTo(record);
-    return(CollapseRecords(_bcf_header,variants));
+    return(_variant_buffer.GetAllVariantsUpTo(record));
 }
 

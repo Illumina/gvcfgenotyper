@@ -182,12 +182,14 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
 void GVCFMerger::GenotypeSample(int sample_index)
 {
     DepthBlock homref_block;//working structure to store homref info.
-    bcf1_t *sample_record = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
+    auto hdr = _readers[sample_index].GetHeader();
+    auto records =     _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
+    bcf1_t *sample_record = CollapseRecords(hdr,records);
 
     //this sample has variants at this position, we need to populate its FORMAT field
     if (sample_record!=nullptr)
     {
-        GenotypeAltVariant(sample_index, sample_variants);
+        GenotypeAltVariant(sample_index, sample_record);
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
     {

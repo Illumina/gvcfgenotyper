@@ -175,15 +175,7 @@ void Genotype::allocate(int ploidy, int num_allele)
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 {
-<<<<<<< HEAD
-    Init(header,record);
-}
-
-void Genotype::Init(bcf_hdr_t const *header, bcf1_t *record)
-{
-=======
     init_logger();
->>>>>>> master
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
@@ -486,126 +478,45 @@ void Genotype::MakeDiploid()
     _pl = _new_pl;
 }
 
-Genotype::Genotype(bcf_hdr_t *sample_header,
-                   pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
-                   multiAllele & alleles_to_map)
+Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele & alleles_to_map)
 {
-    init_logger();
-    int ploidy=0;
-    size_t num_sample_variants = (sample_variants.second - sample_variants.first);
-    for (auto it = sample_variants.first; it != sample_variants.second; it++) ploidy = max(ggutils::get_ploidy(sample_header,*it),ploidy);
-    assert(ploidy==1 || ploidy==2);
-    allocate(ploidy, alleles_to_map.GetNumAlleles()+1);
+    Genotype src(sample_header,sample_variants);
+    allocate(src.ploidy(),src.num_allele());
     SetDepthToZero();
-    SetGtToHomRef();
-    assert(_num_allele>1);
-    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(ploidy,_num_allele),MAXPL);
-    int dst_genotype_count=0;
-    _qual = 0;
-    _mq = 0;
-    bool recall_genotypes_from_gl = false; //if this is triggered we well reset GT as argmax(GL). This is a hack to get around allele collisions (which are usually in flakey genomic regions anyway).
-    for (auto it = sample_variants.first; it != sample_variants.second; it++)
+    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(_ploidy,_num_allele),MAXPL);
+    _qual = src.qual();
+    _mq = src.mq();
+    *_gq = src.gq();
+    *_gqx = src.gqx();
+    *_dpf = src.dpf();
+    for(int src_index=0;src_index<sample_variants->n_allele;src_index++)
     {
-        Genotype g(sample_header, *it);
-        if(g._ploidy!=ploidy)
+        int dst_index = 0;
+        if(src_index>0) dst_index=alleles_to_map.Allele(sample_variants,src_index);
+
+        _ad[dst_index] = src.ad(src_index);
+        if(src.HasAdf() && src.HasAdr())
         {
-<<<<<<< HEAD
-            std::cerr<<"WARNING: conflicting ploidy for sample "<<sample_header->samples[0]<<" "<< bcf_hdr_id2name(sample_header, (*it)->rid);
-            std::cerr<< ":" << (*it)->pos + 1 << std::endl;
-            if(g.ploidy()==1) g.MakeDiploid();
-            else  ggutils::die("Unresolvable ploidy conflict.");
-=======
-            _lg->warn("conflicting ploidy for sample {} {}:{}",
-                      sample_header->samples[0],
-                      bcf_hdr_id2name(sample_header, (*it)->rid),
-                      ((*it)->pos + 1)
-                      );
-            if(g.ploidy()==1)
-                g.MakeDiploid();
-            else
-                ggutils::die("Unresolvable ploidy conflict. Check logfile");
->>>>>>> master
+            _adf[dst_index] = src.adf(src_index);
+            _adr[dst_index] = src.adr(src_index);
         }
-
-        //FIXME: These values are overwriting on each iteration. Ideally they should be the same so it does not matter,
-        // but there will be situations where this is not the case due variants shifting position. Hence with have to
-        // add some hacks to handle conflicting values.
-        _qual = max(_qual, g.qual()); //FIXME: QUAL should be estimated from PL
-        _mq = g.mq()==bcf_int32_missing ? bcf_int32_missing : max(mq(), g.mq());
-        *_gq = *_gq==bcf_int32_missing ? g.gq() : max(gq(), g.gq());
-        *_gqx = *_gqx==bcf_int32_missing ? g.gqx() : max(gqx(), g.gqx());
-        *_dpf = *_dpf==bcf_int32_missing ? g.dpf() : *_dpf;
-
-        _ad[0]  = max(ad(0), g.ad(0));
-        _adf[0] = max(adf(0), g.adf(0));
-        _adr[0] = max(adr(0), g.adr(0));
-        _gl[0] = g.ploidy()==1 ? g.gl(0) : g.gl(0,0);
-        _pl[0] = g.ploidy()==1 ? g.pl(0) : g.pl(0,0);
-
-        //these are values specific to the alt allele in question.
-        int dst_allele_index = alleles_to_map.Allele(*it);
-        assert(dst_allele_index < _num_allele && dst_allele_index > 0);
-        _ad[dst_allele_index] = g.ad(1);
-        if(g.HasAdf() && g.HasAdr())
+        if(src.HasPl())
         {
-            _adf[dst_allele_index] = g.adf(1);
-            _adr[dst_allele_index] = g.adr(1);
-        }
-        if(g.HasPl())
-        {
-            if (ploidy == 1)
+            if (_ploidy == 1)
             {
-                _gl[dst_allele_index] = g.gl(1);
+                _gl[dst_index] = src.gl(src_index);
             }
             else
             {
-                for (auto allele2 = sample_variants.first; allele2 != sample_variants.second; allele2++)
+                for (int src_index2=src_index;src_index2<sample_variants->n_allele;src_index2++)
                 {
-                    int dst_allele_index2 = alleles_to_map.Allele(*allele2);
-                    int src_allele_index2 = ggutils::find_allele(*it,*allele2,1);
-                    if(src_allele_index2>=0) _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = g.gl(src_allele_index2, 1);
-                    else _gl[ggutils::get_gl_index(dst_allele_index2, dst_allele_index)] = 0;
-                }
-                _gl[ggutils::get_gl_index(0, dst_allele_index)] = g.gl(0, 1);
-                _pl[ggutils::get_gl_index(0, dst_allele_index)] = g.pl(0, 1);
-            }
-        }
-
-        for (int genotype_index = 0; genotype_index < _ploidy; genotype_index++)
-        {
-            if (num_sample_variants == 1)//only one allele so this is a straightforward copy
-            {
-                if (bcf_gt_allele(g.gt(genotype_index)) == 0) _gt[dst_genotype_count] = bcf_gt_unphased(0);
-                if (bcf_gt_allele(g.gt(genotype_index)) == 1) _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
-                dst_genotype_count++;
-            }
-            else //there are multiple variants at this position. we need to do some careful genotype counting.
-            {
-                if (bcf_gt_allele(g.gt(genotype_index)) == 1)
-                {
-                    if(dst_genotype_count>=_ploidy)
-                    {
-                        _lg->warn("Conflicting alleles/genotypes for sample {} {} : {}",sample_header->samples[0],bcf_hdr_id2name(sample_header, (*it)->rid),((*it)->pos + 1));
-                        recall_genotypes_from_gl=true;
-                    }
-                    else
-                    {
-                        _gt[dst_genotype_count] = bcf_gt_unphased(dst_allele_index);
-                        dst_genotype_count++;
-                    }
+                    int dst_index2 = alleles_to_map.Allele(sample_variants,src_index2);
+                    _pl[ggutils::get_gl_index(dst_index, dst_index2)] = src.pl(src_index,src_index2);
                 }
             }
         }
     }
     SetDepthFromAd();
-
-    //this calls some heuristics to fix the case where we are collapsing confliciting alleles
-    //this is very rare and seems to be caused when force genotyping a bunch of overlapping variants.
-    if(recall_genotypes_from_gl)
-    {
-        SetPlFromGl();
-        CallGenotype();
-    }
 }
 
 float Genotype::qual()

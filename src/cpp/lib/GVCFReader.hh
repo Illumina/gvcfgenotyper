@@ -36,8 +36,8 @@ public:
     //empty buffer containing rows before and including record
     int FlushBuffer(bcf1_t *record);
 
-    bcf1_t * GetAllVariantsUpTo(bcf1_t *record);
-    bcf1_t *GetAllVariantsInInterval(int chrom, int stop);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GetAllVariantsUpTo(bcf1_t *record);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> GetAllVariantsInInterval(int chrom, int stop);
     bcf1_t *Front(); //return pointer to current vcf record
     bcf1_t *Pop(); //return pointer to current vcf record and remove it from buffer
     int ReadLines(const unsigned num_lines); //read at most num_lines
