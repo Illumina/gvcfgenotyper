@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "math.h"
 #include <stdlib.h>
+#include <ctime>
 
 #include <limits>
 #include <set>
@@ -143,4 +144,6 @@ namespace ggutils
 
     //Finds the index'th allele in from query in target. Retuns the allele index if found or -1 if missing.
     int find_allele(bcf1_t *target,bcf1_t *query,int index);
+
+    std::string string_time();
 }

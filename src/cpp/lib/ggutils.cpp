@@ -646,4 +646,13 @@ namespace ggutils
         }
         return(-1);
     }
+
+    std::string string_time()
+    {
+        std::time_t result = std::time(nullptr);
+        char buffer[16];
+        std::strftime(buffer,120,"%Y%m%d_%H%M%S",std::localtime(&result));
+        return((std::string)buffer);
+    }
+
 }

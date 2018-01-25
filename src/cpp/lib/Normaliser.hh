@@ -23,6 +23,8 @@ extern "C" {
 #define MROWS_MERGE  2
 //end vcf norm stuff
 
+#include "spdlog.h"
+
 int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &output);
 
 // This class is problematic, with several members that are pointers to other
@@ -32,7 +34,7 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
 class Normaliser
 {
 public:
-    Normaliser(const std::string &ref_fname,bool ignore_non_matching_ref=false);
+    Normaliser(const std::string &ref_fname, bool ignore_non_matching_ref=false);
     ~Normaliser();
     //breaks multi-allelics into pseudo-unary representation (primitive alleles and one-variant-per-row)
     void Unarise(bcf1_t *rec, std::vector<bcf1_t *> &atomised_variants, bcf_hdr_t *hdr);
@@ -46,6 +48,7 @@ private:
     char _symbolic_allele[2];
     args_t *_norm_args;
     bool _ignore_non_matching_ref;
+    std::shared_ptr<spdlog::logger> _lg;
 };
 
 

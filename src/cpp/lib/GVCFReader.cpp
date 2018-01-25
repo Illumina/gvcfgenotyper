@@ -29,6 +29,8 @@ int GVCFReader::FlushBuffer()
 GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, const int buffer_size,
                        const string &region /*=""*/, const int is_file /*=0*/)
 {
+    _lg = spdlog::get("gg_logger");
+    assert(_lg!=nullptr);
     _bcf_record = nullptr;
     _bcf_reader = bcf_sr_init();
     if (!region.empty())
@@ -71,13 +73,13 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, c
 
     //Checking and warning if a few tags are not present. This is how we support legacy GVCFs without crashing.
     if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADF")==-1)
-        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/ADF tag"<<std::endl;
+        _lg->warn("WARNING: {} has no FORMAT/ADF tag",input_gvcf);
     if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "ADR")==-1)
-        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/ADR tag"<<std::endl;
-    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "PL")==-1)
-        std::cerr << "WARNING: " << input_gvcf << " has no FORMAT/PL tag" <<std::endl;
+        _lg->warn("WARNING: {} has no FORMAT/ADR tag",input_gvcf);
+    if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "PL")==-1) 
+        _lg->warn("WARNING: {} has no FORMAT/PL tag",input_gvcf);
     if(bcf_hdr_id2int(_bcf_header, BCF_DT_ID, "MQ")==-1)
-        std::cerr << "WARNING: " << input_gvcf << " has no MQ tag" <<std::endl;
+        _lg->warn("WARNING: {} has no MQ tag",input_gvcf);
 }
 
 bool GVCFReader::HasPl()

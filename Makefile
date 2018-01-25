@@ -31,6 +31,10 @@ include $(HTSDIR)/htslib.mk
 HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
 
+# spdlog
+SPDLOGDIR=external/spdlog
+IFLAGS += -I$(SPDLOGDIR)
+
 #special builds for debugging and profiling
 debug: CXXFLAGS = -std=c++11 -g -O1 -Wall $(VERSION)
 debug: CFLAGS = -g -O1 $(VERSION)

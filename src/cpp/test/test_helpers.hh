@@ -15,6 +15,7 @@ extern "C" {
 #include "common.hh"
 #include <string>
 
+
 bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles, const std::string& gt);
 
 bcf1_t *generate_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles);

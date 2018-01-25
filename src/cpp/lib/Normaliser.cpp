@@ -3,8 +3,9 @@
 
 //#define DEBUG
 
-Normaliser::Normaliser(const string &ref_fname,bool ignore_non_matching_ref)
+Normaliser::Normaliser(const string &ref_fname, bool ignore_non_matching_ref)
 {
+    _lg = spdlog::get("gg_logger");
     _norm_args = init_vcfnorm(nullptr, (char *)ref_fname.c_str());
     _symbolic_allele[0]='X';
     _symbolic_allele[1]='\0';
@@ -144,7 +145,7 @@ bool Normaliser::Realign(bcf1_t *record, bcf_hdr_t *header)
     if (realign(_norm_args, record,header) != ERR_OK) {
         if(_ignore_non_matching_ref)
         {
-            std::cerr<<"WARNING: VCF record did not match the reference at sample "+(string)header->samples[0]<<std::endl;
+            _lg->warn("WARNING: VCF record did not match the reference at sample {}",header->samples[0]);
             return(false);
         }
         else
