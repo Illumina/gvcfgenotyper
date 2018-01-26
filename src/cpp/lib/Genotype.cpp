@@ -13,13 +13,13 @@ void Genotype::SetAd(int val,int index)
 
 void Genotype::SetAdr(int val,int index)
 {
-    if(!_adr_found) return;
+    _adr_found=true;
     assert(index>=0 && index<_num_allele);
     _adr[index] = val;
 }
 void Genotype::SetAdf(int val,int index)
 {
-    if(!_adf_found) return;
+    _adf_found=true;
     assert(index>=0 && index<_num_allele);
     _adf[index] = val;
 }
@@ -306,11 +306,6 @@ Genotype::~Genotype()
 
 int Genotype::UpdateBcfRecord(bcf_hdr_t *header, bcf1_t *record)
 {
-//    float max_gl = *std::max_element(_gl.begin(), _gl.end());
-//    for (int i = 0; i < _num_pl; i++)
-//    {
-//        _pl[i] = _gl[i] > 0 ? ggutils::phred(_gl[i] / max_gl) : MAXPL;
-//    }
 
     assert(bcf_update_genotypes(header, record, _gt, _num_gt)==0);
 
@@ -489,10 +484,16 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     *_gq = src.gq();
     *_gqx = src.gqx();
     *_dpf = src.dpf();
+
+    if(!src.IsGtMissing())
+    {
+        _gt[0] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(0))));
+        if(src.ploidy()==2) _gt[1] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(1))));
+    }
+
     for(int src_index=0;src_index<sample_variants->n_allele;src_index++)
     {
-        int dst_index = 0;
-        if(src_index>0) dst_index=alleles_to_map.AlleleIndex(sample_variants,src_index);
+        int dst_index=alleles_to_map.AlleleIndex(sample_variants,src_index);
         SetAd(src.ad(src_index),dst_index);
         if(src.HasAdf() && src.HasAdr())
         {
@@ -503,14 +504,13 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
         {
             if (_ploidy == 1)
             {
-                _gl[dst_index] = src.gl(src_index);
+                _pl[dst_index] = src.pl(src_index);
             }
             else
             {
                 for (int src_index2=src_index;src_index2<sample_variants->n_allele;src_index2++)
                 {
-                    int dst_index2 = 0;
-                    if(src_index2>0) alleles_to_map.AlleleIndex(sample_variants,src_index2);
+                    int dst_index2 = alleles_to_map.AlleleIndex(sample_variants,src_index2);
                     _pl[ggutils::get_gl_index(dst_index, dst_index2)] = src.pl(src_index,src_index2);
                 }
             }
@@ -575,6 +575,6 @@ float Genotype::gl(int g0)
 void Genotype::SetPl(std::vector<int> & val)
 {
     if(!_has_pl) return;
-    assert(val.size()==_num_pl);
+    assert(val.size()==(size_t)_num_pl);
     std::copy(val.begin(),val.end(),_pl);
 }

@@ -63,6 +63,7 @@ public:
     //sets FORMAT/GT to argmax(GL)
     void CallGenotype();
     bool IsDpMissing();
+    bool IsGtMissing() {return bcf_gt_is_missing(_gt[0]);}
 
     //accessors/mutators
     int gq();

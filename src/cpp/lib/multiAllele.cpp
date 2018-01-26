@@ -7,7 +7,8 @@
 inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src,int index)
 {
     assert(src->n_allele>1);
-    assert(index>0 && index<src->n_allele);
+    if(!(index>0 && index<src->n_allele)) ggutils::die("bad index = "+std::to_string(index));
+
     bcf_unpack(src,BCF_UN_ALL);
     size_t rlen,alen;
     ggutils::right_trim(src->d.allele[0],src->d.allele[index], rlen,alen);
@@ -94,6 +95,7 @@ int multiAllele::Allele(bcf1_t *record,int index)
 
 int multiAllele::AlleleIndex(bcf1_t *record,int index)
 {
+    if(index==0) return 0;
     assert(_hdr!=nullptr);
     assert(_rid>=0 && _pos>=0);
     if(record->rid!=_rid || record->pos!=_pos)

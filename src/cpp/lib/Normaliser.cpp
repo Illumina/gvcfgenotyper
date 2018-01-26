@@ -220,12 +220,11 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
         return (ret);
 
     int num_old_alleles = ret->n_allele;
-    int num_new_alleles = 0;
     for (auto it = (sample_variants.first + 1); it != sample_variants.second; it++)
         for (int i = 1; i < (*it)->n_allele; i++)
-            num_new_alleles += ggutils::add_allele(sample_header, ret, *it, i) > num_old_alleles;
+            ggutils::add_allele(sample_header, ret, *it, i);
 
-    if (num_new_alleles == 0)
+    if (num_old_alleles == ret->n_allele)
         return (ret);
 
     //This is where things get messy. We have a collision between overlapping alleles that
@@ -236,25 +235,36 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
         ploidy = max(ggutils::get_ploidy(sample_header, *it), ploidy);
     assert(ploidy == 1 || ploidy == 2);
     Genotype output(ploidy, num_allele);
-    std::cerr << "num_pl"<<output.num_pl() << std::endl;//debug
     std::vector<bool> found_allele(sample_variants.second - sample_variants.first + 1, false);
     std::vector<std::vector<int> > pls;
-    for (auto it = sample_variants.first; it != sample_variants.second; it++) {
+    for (auto it = sample_variants.first; it != sample_variants.second; it++)
+    {
         int allele_index = ggutils::find_allele(ret, *it, 1);
-        if (allele_index == -1 || !found_allele[allele_index]) {
-            Genotype g(sample_header, *it);
+        if (allele_index == -1 || !found_allele[allele_index])
+        {
+            Genotype src(sample_header, *it);
+            if(output.gqx()==bcf_int32_missing && src.gqx()!=bcf_int32_missing && output.gqx()<src.gqx())
+                output.SetGqx(src.gqx());
+            if(output.gq()==bcf_int32_missing && src.gq()!=bcf_int32_missing && output.gq()<src.gq())
+                output.SetGq(src.gq());
+
             pls.emplace_back(output.num_pl(), bcf_int32_missing);
-            for (int i = 0; i < (*it)->n_allele; i++) {
+            for (int i = 0; i < (*it)->n_allele; i++)
+            {
                 allele_index = i == 0 ? 0 : ggutils::find_allele(ret, *it, i);
                 found_allele[allele_index] = true;
-                if (output.ad(allele_index) == bcf_int32_missing) {
-                    output.SetAd(g.ad(i), allele_index);
-                    output.SetAdf(g.adf(i), allele_index);
-                    output.SetAdr(g.adr(i), allele_index);
-                }
+                if (output.ad(allele_index) == bcf_int32_missing || output.ad(allele_index)>src.ad(i))
+                    output.SetAd(src.ad(i), allele_index);
+                if(src.HasAdr())
+                    if (output.adr(allele_index) == bcf_int32_missing || output.adf(allele_index)>src.adr(i))
+                        output.SetAdr(src.adr(i), allele_index);
+                if(src.HasAdf())
+                    if (output.adf(allele_index) == bcf_int32_missing || output.adf(allele_index)>src.adf(i))
+                        output.SetAdf(src.adf(i), allele_index);
+
                 for (int j = 0; j < (*it)->n_allele; j++) {
                     int allele_index2 = j == 0 ? 0 : ggutils::find_allele(ret, *it, j);
-                    pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = g.pl(i, j);
+                    pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = src.pl(i, j);
                 }
             }
         }
