@@ -440,3 +440,20 @@ TEST(Normaliser, CollapseRecords2)
     ASSERT_EQ(ptr[ 8 ], 393 );
     ASSERT_EQ(ptr[ 9 ], 734 );
 }
+
+TEST(Normaliser, CollapseRecords3)
+{
+    auto hdr = get_header();
+    auto rec1 = generate_record(hdr, "chr20\t945476\t.\tTATAT\tCACACACACAC\t617\t.\tMQ=56\tGT:GQ:GQX:DPI:AD:ADF:ADR:FT:PL\t1/1:77:60:28:0,29:0,13:0,16:PASS:660,80,0");
+    auto rec2 = generate_record(hdr, "chr20\t945476\t.\tT\tC\t.\t.\tMQ=43\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t.:.:.:1:1:0,1:0,1:0,0:0:LowGQX;HighDPFRatio:.");
+    std::deque<bcf1_t *> q;
+    q.push_back(rec1);
+    q.push_back(rec2);
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> i(q.begin(),q.end());
+    auto collapsed_record = CollapseRecords(hdr,i);
+    ggutils::print_variant(hdr,collapsed_record);
+    Genotype g(hdr,collapsed_record);
+    for(int i=0;i<g.num_allele();i++)
+        for(int j=0;j<g.num_allele();j++)
+            ASSERT_GE(g.pl(i,j),0);
+}

@@ -199,7 +199,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     status = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
     if (status == 1 || status == -3 || status == -1)
     {
-        std::fill(_pl, _pl + _num_pl, bcf_int32_missing);
+        std::fill(_pl, _pl + _num_pl, MAXPL);
         status = _num_pl;
         _has_pl = false;
     }
