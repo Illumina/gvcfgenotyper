@@ -262,9 +262,17 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
                     if (output.adf(allele_index) == bcf_int32_missing || output.adf(allele_index)>src.adf(i))
                         output.SetAdf(src.adf(i), allele_index);
 
-                for (int j = 0; j < (*it)->n_allele; j++) {
-                    int allele_index2 = j == 0 ? 0 : ggutils::find_allele(ret, *it, j);
-                    pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = src.pl(i, j);
+                if(ploidy==1)
+                {
+                    pls.back()[allele_index] = src.pl(i);
+                }
+                else
+                {
+                    for (int j = 0; j < (*it)->n_allele; j++)
+                    {
+                        int allele_index2 = j == 0 ? 0 : ggutils::find_allele(ret, *it, j);
+                        pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = src.pl(i, j);
+                    }
                 }
             }
         }

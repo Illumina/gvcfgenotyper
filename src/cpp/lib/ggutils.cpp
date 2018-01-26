@@ -699,6 +699,22 @@ namespace ggutils
         return(num_alleles-1);
     }
 
+    void collapse_haploid_gls(int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)
+    {
+        output[0]=0;
+        for(auto it=pls.begin();it!=pls.end();it++) output[0] += (*it)[0];
+        for(auto it=pls.begin();it!=pls.end();it++)
+        {
+            for(size_t i=1;i<it->size();i++)
+            {
+                if((*it)[i]!=bcf_int32_missing)
+                    output[i]=(*it)[i];
+                else
+                    output[i]+=(*it)[0];
+            }
+        }
+    }
+
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)
     {
         assert(ploidy==1 || ploidy==2);
@@ -706,10 +722,14 @@ namespace ggutils
         assert(num_sets>0);
         size_t num_gls = pls[0].size();
         for(auto it=pls.begin();it!=pls.end();it++) assert(it->size()==num_gls);
+        output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
+        if(ploidy==1)
+        {
+            collapse_haploid_gls(num_alleles,pls,output);
+            return;
+        }
 
         int g00=0;
-        output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
-
         for(auto it=pls.begin();it!=pls.end();it++)
             g00 += (*it)[0];
 
