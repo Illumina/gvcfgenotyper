@@ -1,3 +1,4 @@
+
 #include <htslib/vcf.h>
 #include "ggutils.hh"
 
@@ -699,7 +700,7 @@ namespace ggutils
         return(num_alleles-1);
     }
 
-    void collapse_haploid_gls(int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)
+    void collapse_haploid_gls(std::vector< std::vector<int> > & pls,std::vector<int> & output)
     {
         output[0]=0;
         for(auto it=pls.begin();it!=pls.end();it++) output[0] += (*it)[0];
@@ -725,7 +726,7 @@ namespace ggutils
         output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
         if(ploidy==1)
         {
-            collapse_haploid_gls(num_alleles,pls,output);
+            collapse_haploid_gls(pls,output);
             return;
         }
 
