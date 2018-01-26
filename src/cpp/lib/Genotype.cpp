@@ -171,6 +171,7 @@ void Genotype::allocate(int ploidy, int num_allele)
     _gl.assign(_num_pl, 0.);
     _adf_found=false;
     _adr_found=false;
+    _qual = bcf_float_missing;
 }
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)

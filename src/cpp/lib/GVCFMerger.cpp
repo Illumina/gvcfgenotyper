@@ -176,7 +176,8 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
         _mean_mq += g.mq();
         _num_mq++;
     }
-    _output_record->qual += g.qual();
+    if(!bcf_float_is_missing(g.qual()))
+        _output_record->qual += g.qual();
 }
 
 void GVCFMerger::GenotypeSample(int sample_index)
