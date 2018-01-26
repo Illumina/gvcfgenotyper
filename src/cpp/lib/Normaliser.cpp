@@ -243,6 +243,20 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
         if (allele_index == -1 || !found_allele[allele_index])
         {
             Genotype src(sample_header, *it);
+            if(src.ploidy()!=ploidy)
+            {
+                auto logger = spdlog::get("gg_logger");
+                logger->warn("conflicting ploidy for sample {} {}:{}",
+                          sample_header->samples[0],
+                          bcf_hdr_id2name(sample_header, (*it)->rid),
+                          ((*it)->pos + 1)
+                );
+                if(src.ploidy()==1)
+                    src.MakeDiploid();
+                else
+                    ggutils::die("Unresolvable ploidy conflict. Check logfile");
+            }
+
             if(output.gqx()==bcf_int32_missing && src.gqx()!=bcf_int32_missing && output.gqx()<src.gqx())
                 output.SetGqx(src.gqx());
             if(output.gq()==bcf_int32_missing && src.gq()!=bcf_int32_missing && output.gq()<src.gq())
