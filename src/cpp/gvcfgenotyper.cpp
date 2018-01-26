@@ -106,7 +106,10 @@ int main(int argc, char **argv)
     std::shared_ptr<spdlog::logger> lg = spdlog::basic_logger_mt("gg_logger", log_file);
     // format: "*** [YYYY-MM-DD HH:MM:SS] [thread] [loglevel] message ***"
     spdlog::set_pattern(" [%c] [%l] %v");
-    lg->info("Starting gvcf merging");
+    std::string commandline = argv[0];
+    for(int i=1;i<argc;i++) commandline += (" " + (string)argv[i]);
+    lg->info("Command line: "+commandline);
+    lg->info("Starting GVCF merging");
 
     int buffer_size = 5000;
     std::vector<std::string> input_files;
