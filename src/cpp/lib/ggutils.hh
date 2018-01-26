@@ -154,4 +154,5 @@ namespace ggutils
 
     std::string string_time();
 
+    std::string generateUUID();
 }

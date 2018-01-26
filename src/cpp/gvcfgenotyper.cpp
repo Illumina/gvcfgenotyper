@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     string region = "";
     int n_threads = 0;
     string output_file = "";
-    string log_file = "gvcfgenotyper."+ggutils::string_time()+".log";
+    string log_file = "gvcfgenotyper."+ggutils::string_time()+"."+to_string(getpid())+".log";
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
@@ -100,11 +100,12 @@ int main(int argc, char **argv)
     {
         ggutils::die("-@ is not implemented");
     }
+    std::cerr << "Logging output to " <<log_file<<std::endl;
 
     // register logger, name of outfile can be set by user on the cmd line
     std::shared_ptr<spdlog::logger> lg = spdlog::basic_logger_mt("gg_logger", log_file);
     // format: "*** [YYYY-MM-DD HH:MM:SS] [thread] [loglevel] message ***"
-    spdlog::set_pattern("*** [%c] [thread %t] [%l] %v ***");
+    spdlog::set_pattern(" [%c] [%l] %v");
     lg->info("Starting gvcf merging");
 
     int buffer_size = 5000;

@@ -43,7 +43,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _lg->info("Input GVCFs:");
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        _lg->info("{} {}/{}",input_files[i],(i+1),_num_gvcfs);
+        _lg->info("Opened {} {}/{}",input_files[i],(i+1),_num_gvcfs);
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();
