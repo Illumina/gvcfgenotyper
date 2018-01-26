@@ -29,7 +29,8 @@ public:
 	           int buffer_size,
 	           const string &region = "",
                const int is_file = 0,
-               bool ignore_non_matching_ref=false);
+               bool ignore_non_matching_ref=false,
+               bool force_samples=false);
     ~GVCFMerger();
     void write_vcf();
     bcf1_t *next();
@@ -58,6 +59,7 @@ private:
     bool _has_strand_ad,_has_pl;
     Normaliser *_normaliser;
     std::shared_ptr<spdlog::logger> _lg;
+    bool _force_samples;
 };
 
 #endif
