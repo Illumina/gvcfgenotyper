@@ -2,6 +2,7 @@
 // Created by O'Connell, Jared on 10/16/17.
 //
 
+#include <htslib/vcf.h>
 #include "test_helpers.hh"
 #include "GVCFReader.hh"
 
@@ -456,4 +457,28 @@ TEST(Normaliser, CollapseRecords3)
     for(int i=0;i<g.num_allele();i++)
         for(int j=0;j<g.num_allele();j++)
             ASSERT_GE(g.pl(i,j),0);
+}
+
+TEST(Normaliser, CollapseRecords4)
+{
+    auto hdr = get_header();
+    auto rec2 = generate_record(hdr,"chr1\t535\t.\tGACC\tGCTCCCCGCCGCCGTGGCTTTTTGACA,GCTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGTCC\t42\t.\t.\tGT:GQ:GQX:DPI:AD\t1/2:93:53:21:12,3,3");
+    auto rec1 = generate_record(hdr,"chr1\t536\t.\tA\tC\t0\t.\t.\tGT:GQX:DP:DPF:AD\t0/1:25:4:8:3,1");
+    std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
+    Normaliser norm(ref_file_name);
+    std::vector<bcf1_t *> buffer;
+    norm.Unarise(rec1, buffer,hdr);
+    norm.Unarise(rec2, buffer,hdr);
+    std::deque<bcf1_t *> q;
+    for(auto it=buffer.begin();it!=buffer.end();it++)
+    {
+//        ggutils::print_variant(hdr,*it);
+//        std::cerr<<"rank="<<ggutils::get_variant_rank(*it)<<std::endl;
+        q.push_back(*it);
+    }
+
+    pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> variant_queue(q.begin(),q.end());
+    auto collapsed_record = CollapseRecords(hdr,variant_queue);
+    ggutils::print_variant(hdr,collapsed_record);
+    ASSERT_EQ(collapsed_record->n_allele,4);
 }

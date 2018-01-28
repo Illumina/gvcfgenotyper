@@ -70,10 +70,7 @@ int multiAllele::Allele(bcf1_t *record,int index)
 {
     assert(_hdr!=nullptr);
     assert(_rid>=0 && _pos>=0);
-    if(record->rid!=_rid || record->pos!=_pos)
-    {
-        return(0);
-    }
+    if(record->rid!=_rid || record->pos!=_pos) return(0);
 
     bcf1_t *tmp = copy_alleles(_hdr,record,index);
     auto location = _records.begin();
@@ -105,13 +102,14 @@ int multiAllele::AlleleIndex(bcf1_t *record,int index)
 
     bcf1_t *tmp = copy_alleles(_hdr,record,index);
     auto location = _records.begin();
-    while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp))
-    {
-        location++;
-    }
+    //while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp)) location++;
+    while(location!=_records.end() && ggutils::find_allele(*location,record,index)!=1) location++;
+
     if(location==_records.end())
     {
-        ggutils::die("multiAllele: variant not found");
+        print();
+        ggutils::print_variant(record);
+        ggutils::die("multiAllele: variant "+std::to_string(index)+" not found");
         return(-1);
     }
     else

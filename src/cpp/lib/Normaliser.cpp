@@ -211,6 +211,7 @@ void Normaliser::Unarise(bcf1_t *bcf_record_to_marginalise, vector<bcf1_t *> &at
 
 bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
                         pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants) {
+
     if ((sample_variants.second - sample_variants.first) == 0)
         return nullptr;
 
@@ -220,17 +221,22 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
         return (ret);
 
     int num_old_alleles = ret->n_allele;
-    for (auto it = (sample_variants.first + 1); it != sample_variants.second; it++)
+    for (auto it = sample_variants.first; it != sample_variants.second; it++)
+    {
         for (int i = 1; i < (*it)->n_allele; i++)
+        {
             ggutils::add_allele(sample_header, ret, *it, i);
+        }
+    }
 
     if (num_old_alleles == ret->n_allele)
         return (ret);
-
+    assert(ret->n_allele == (sample_variants.second-sample_variants.first+1));
     //This is where things get messy. We have a collision between overlapping alleles that
     //do not have respsective INFO/FORMAT for one another.
+    bool has_pl = bcf_hdr_id2int(sample_header, BCF_DT_ID, "PL")!=-1;
     int ploidy = 0;
-    size_t num_allele = (sample_variants.second - sample_variants.first) + 1;
+    size_t num_allele = ret->n_allele;
     for (auto it = sample_variants.first; it != sample_variants.second; it++)
         ploidy = max(ggutils::get_ploidy(sample_header, *it), ploidy);
     assert(ploidy == 1 || ploidy == 2);
@@ -276,24 +282,31 @@ bcf1_t *CollapseRecords(bcf_hdr_t *sample_header,
                     if (output.adf(allele_index) == bcf_int32_missing || output.adf(allele_index)>src.adf(i))
                         output.SetAdf(src.adf(i), allele_index);
 
-                if(ploidy==1)
+                if(has_pl)
                 {
-                    pls.back()[allele_index] = src.pl(i);
-                }
-                else
-                {
-                    for (int j = 0; j < (*it)->n_allele; j++)
+                    if(ploidy==1)
                     {
-                        int allele_index2 = j == 0 ? 0 : ggutils::find_allele(ret, *it, j);
-                        pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = src.pl(i, j);
+                        pls.back()[allele_index] = src.pl(i);
+                    }
+                    else
+                    {
+                        for (int j = 0; j < (*it)->n_allele; j++)
+                        {
+                            int allele_index2 = j == 0 ? 0 : ggutils::find_allele(ret, *it, j);
+                            pls.back()[ggutils::get_gl_index(allele_index, allele_index2)] = src.pl(i, j);
+                        }
                     }
                 }
             }
         }
     }
+
     std::vector<int> pl;
-    ggutils::collapse_gls(ploidy, num_allele, pls, pl);
-    output.SetPl(pl);
+    if(has_pl)
+    {
+        ggutils::collapse_gls(ploidy, num_allele, pls, pl);
+        output.SetPl(pl);
+    }
     output.SetDepthFromAd();
     output.CallGenotype();
     output.UpdateBcfRecord(sample_header, ret);

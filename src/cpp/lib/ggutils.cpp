@@ -1,4 +1,3 @@
-
 #include <htslib/vcf.h>
 #include "ggutils.hh"
 
@@ -630,7 +629,10 @@ namespace ggutils
 
     int find_allele(bcf1_t *target,bcf1_t *query,int index)
     {
-        if(target==nullptr)return(-1);
+        bcf_unpack(query,BCF_UN_ALL);
+        bcf_unpack(target,BCF_UN_ALL);
+        assert(target!=nullptr);
+        assert(query!=nullptr);
         assert(index>0 && index<query->n_allele);
         size_t rlen,alen;
         char *q_ref=query->d.allele[0];
@@ -651,33 +653,36 @@ namespace ggutils
 
     int add_allele(bcf_hdr_t *hdr,bcf1_t *dst,bcf1_t *src,int index)
     {
+        bcf_unpack(dst,BCF_UN_ALL);
+        bcf_unpack(src,BCF_UN_ALL);
         assert(index>0 && index<src->n_allele);
         int dst_index = ggutils::find_allele(dst,src,index);
         if(dst_index>0) 
             return(dst_index);
         size_t num_alleles = dst->n_allele+1;
         char **new_alleles = (char **)malloc(sizeof(char*) * num_alleles);
-        size_t old_ref_len = strlen(dst->d.allele[0]);            
+        size_t old_ref_len = strlen(dst->d.allele[0]);
         size_t q_rlen,q_alen;
         char *q_ref=src->d.allele[0];
         char *q_alt=src->d.allele[index];
         ggutils::right_trim(q_ref,q_alt,q_rlen,q_alen);
-        if(old_ref_len>=q_rlen)
+        if(old_ref_len==q_rlen)
         {
             for(size_t i=0;i<num_alleles-1;i++)
                 new_alleles[i]=strdup(dst->d.allele[i]);
-
-            if(old_ref_len==q_rlen)
-                new_alleles[num_alleles-1]=strdup(src->d.allele[index]);            
-
-            if(old_ref_len>q_rlen)
-            {
-                size_t rightpad = old_ref_len - q_rlen;
-                new_alleles[num_alleles-1] = (char *)malloc(q_alen + rightpad + 1);
-                memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
-                memcpy(new_alleles[num_alleles-1]+q_alen,new_alleles[0]+old_ref_len-rightpad,rightpad);
-                new_alleles[num_alleles-1][q_alen+rightpad]='\0';
-            }
+            new_alleles[num_alleles-1]=(char *)malloc(q_alen+1);
+            strncpy(new_alleles[num_alleles-1],src->d.allele[index],q_alen);
+            new_alleles[num_alleles-1][q_alen]='\0';
+        }
+        else if(old_ref_len>q_rlen)
+        {
+            for(size_t i=0;i<num_alleles-1;i++)
+                new_alleles[i]=strdup(dst->d.allele[i]);
+            size_t rightpad = old_ref_len - q_rlen;
+            new_alleles[num_alleles-1] = (char *)malloc(q_alen + rightpad + 1);
+            memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
+            memcpy(new_alleles[num_alleles-1]+q_alen,new_alleles[0]+old_ref_len-rightpad,rightpad);
+            new_alleles[num_alleles-1][q_alen+rightpad]='\0';
         }
         else
         {

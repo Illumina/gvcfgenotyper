@@ -80,7 +80,9 @@ int Genotype::dp()
 
 int Genotype::ad(int index)
 {
-    assert(index<_num_ad && index>=0);
+    if(!(index<_num_ad && index>=0))
+        ggutils::die("bad allele index="+std::to_string(index)+" num_allele="+std::to_string(_num_ad));
+
     return(_ad[index]);
 }
 
@@ -491,7 +493,6 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
         _gt[0] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(0))));
         if(src.ploidy()==2) _gt[1] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(1))));
     }
-
     for(int src_index=0;src_index<sample_variants->n_allele;src_index++)
     {
         int dst_index=alleles_to_map.AlleleIndex(sample_variants,src_index);
