@@ -629,15 +629,19 @@ namespace ggutils
 
     int find_allele(bcf1_t *target,bcf1_t *query,int index)
     {
+        bcf_unpack(query,BCF_UN_ALL);
+        bcf_unpack(target,BCF_UN_ALL);
+        assert(target!=nullptr);
+        assert(query!=nullptr);
         assert(index>0 && index<query->n_allele);
         size_t rlen,alen;
         char *q_ref=query->d.allele[0];
         char *q_alt=query->d.allele[index];
         ggutils::right_trim(q_ref,q_alt,rlen,alen);
+        char *t_ref=target->d.allele[0];
         for(int i=1;i<target->n_allele;i++)
         {
             size_t target_rlen,target_alen;
-            char *t_ref=target->d.allele[0];
             char *t_alt=target->d.allele[i];
             ggutils::right_trim(t_ref,t_alt,target_rlen,target_alen);
             if(rlen==target_rlen && alen==target_alen)
@@ -645,6 +649,143 @@ namespace ggutils
                     return(i);
         }
         return(-1);
+    }
+
+    int add_allele(bcf_hdr_t *hdr,bcf1_t *dst,bcf1_t *src,int index)
+    {
+        bcf_unpack(dst,BCF_UN_ALL);
+        bcf_unpack(src,BCF_UN_ALL);
+        assert(index>0 && index<src->n_allele);
+        int dst_index = ggutils::find_allele(dst,src,index);
+        if(dst_index>0) 
+            return(dst_index);
+        size_t num_alleles = dst->n_allele+1;
+        char **new_alleles = (char **)malloc(sizeof(char*) * num_alleles);
+        size_t old_ref_len = strlen(dst->d.allele[0]);
+        size_t q_rlen,q_alen;
+        char *q_ref=src->d.allele[0];
+        char *q_alt=src->d.allele[index];
+        ggutils::right_trim(q_ref,q_alt,q_rlen,q_alen);
+        if(old_ref_len==q_rlen)
+        {
+            for(size_t i=0;i<num_alleles-1;i++)
+                new_alleles[i]=strdup(dst->d.allele[i]);
+            new_alleles[num_alleles-1]=(char *)malloc(q_alen+1);
+            strncpy(new_alleles[num_alleles-1],src->d.allele[index],q_alen);
+            new_alleles[num_alleles-1][q_alen]='\0';
+        }
+        else if(old_ref_len>q_rlen)
+        {
+            for(size_t i=0;i<num_alleles-1;i++)
+                new_alleles[i]=strdup(dst->d.allele[i]);
+            size_t rightpad = old_ref_len - q_rlen;
+            new_alleles[num_alleles-1] = (char *)malloc(q_alen + rightpad + 1);
+            memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
+            memcpy(new_alleles[num_alleles-1]+q_alen,new_alleles[0]+old_ref_len-rightpad,rightpad);
+            new_alleles[num_alleles-1][q_alen+rightpad]='\0';
+        }
+        else
+        {
+            size_t rightpad = q_rlen - old_ref_len;
+            for(size_t i=0;i<num_alleles-1;i++)
+            {
+                int alen=strlen(dst->d.allele[i]);
+                new_alleles[i]=(char *)malloc(alen+rightpad+1);
+                memcpy(new_alleles[i],dst->d.allele[i],alen);
+                memcpy(new_alleles[i]+alen,q_ref+old_ref_len,rightpad);
+                new_alleles[i][alen+rightpad]='\0';
+            }
+            new_alleles[num_alleles-1] = (char *)malloc(q_alen+1);
+            memcpy(new_alleles[num_alleles-1],q_alt,q_alen);
+            new_alleles[num_alleles-1][q_alen]='\0';
+        }
+        bcf_update_alleles(hdr,dst,(const char**)new_alleles,num_alleles);
+        for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);
+        free(new_alleles);
+        return(num_alleles-1);
+    }
+
+    void collapse_haploid_gls(std::vector< std::vector<int> > & pls,std::vector<int> & output)
+    {
+        output[0]=0;
+        for(auto it=pls.begin();it!=pls.end();it++) output[0] += (*it)[0];
+        for(auto it=pls.begin();it!=pls.end();it++)
+        {
+            for(size_t i=1;i<it->size();i++)
+            {
+                if((*it)[i]!=bcf_int32_missing)
+                    output[i]=(*it)[i];
+                else
+                    output[i]+=(*it)[0];
+            }
+        }
+    }
+
+    void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output)
+    {
+        assert(ploidy==1 || ploidy==2);
+        int num_sets = pls.size();
+        assert(num_sets>0);
+        size_t num_gls = pls[0].size();
+        for(auto it=pls.begin();it!=pls.end();it++) assert(it->size()==num_gls);
+        output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
+        if(ploidy==1)
+        {
+            collapse_haploid_gls(pls,output);
+            return;
+        }
+
+        int g00=0;
+        for(auto it=pls.begin();it!=pls.end();it++)
+            g00 += (*it)[0];
+
+        for(auto it1=pls.begin();it1!=pls.end();it1++)
+        {
+            int gi0 = 0;
+            for(auto it2=pls.begin();it2!=pls.end();it2++)
+                if(it1!=it2)
+                    gi0 += (*it2)[0];
+            
+            for(int i=0;i<num_alleles;i++)
+            {
+                for(int j=i;j<num_alleles;j++)
+                {
+                    int index = ggutils::get_gl_index(i,j);
+                    if(i==0 && j==0)
+                    {
+                        output[0]=g00;  // collapse all the GT=0/0 GLs
+                    }
+                    else if(i==j || i==0)
+                    {
+                        int gl = (*it1)[index];
+                        if(gl != bcf_int32_missing)
+                            output[index] = gl + gi0; //GT=i/i or GT=0/i
+                    }
+                    else //GT=i/j where i!=j && i>0 && j>0
+                    {
+                        int gij = 0;
+                        for(auto it2=pls.begin();it2!=pls.end();it2++)
+                        {
+                            if((*it2)[index] == bcf_int32_missing)
+                            {                             
+                                int gi = (*it2)[ggutils::get_gl_index(0,i)];
+                                int gj = (*it2)[ggutils::get_gl_index(0,j)];
+                                if(gi != bcf_int32_missing) {gij += gi;}
+                                else if(gj != bcf_int32_missing) {gij += gj;}
+                                else {gij += (*it2)[0];}
+                            }
+                            else
+                            {
+                                gij += (*it2)[index];
+                            }
+                        }
+                        output[index] = gij;
+                    }
+                }
+            }
+        }
+         int min_pl = *std::min_element(output.begin(), output.end());
+         for(size_t i=0;i<output.size();i++) output[i] -= min_pl;
     }
 
     std::string string_time()
@@ -655,4 +796,5 @@ namespace ggutils
         return((std::string)buffer);
     }
 
+   
 }

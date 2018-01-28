@@ -7,7 +7,8 @@
 inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src,int index)
 {
     assert(src->n_allele>1);
-    assert(index>0 && index<src->n_allele);
+    if(!(index>0 && index<src->n_allele)) ggutils::die("bad index = "+std::to_string(index));
+
     bcf_unpack(src,BCF_UN_ALL);
     size_t rlen,alen;
     ggutils::right_trim(src->d.allele[0],src->d.allele[index], rlen,alen);
@@ -69,10 +70,7 @@ int multiAllele::Allele(bcf1_t *record,int index)
 {
     assert(_hdr!=nullptr);
     assert(_rid>=0 && _pos>=0);
-    if(record->rid!=_rid || record->pos!=_pos)
-    {
-        return(0);
-    }
+    if(record->rid!=_rid || record->pos!=_pos) return(0);
 
     bcf1_t *tmp = copy_alleles(_hdr,record,index);
     auto location = _records.begin();
@@ -84,6 +82,35 @@ int multiAllele::Allele(bcf1_t *record,int index)
     {
         _records.push_back(tmp);
         return((int)_records.size());
+    }
+    else
+    {
+        bcf_destroy(tmp);
+        return((int) std::distance(_records.begin(),location)+1);
+    }
+}
+
+int multiAllele::AlleleIndex(bcf1_t *record,int index)
+{
+    if(index==0) return 0;
+    assert(_hdr!=nullptr);
+    assert(_rid>=0 && _pos>=0);
+    if(record->rid!=_rid || record->pos!=_pos)
+    {
+        return(0);
+    }
+
+    bcf1_t *tmp = copy_alleles(_hdr,record,index);
+    auto location = _records.begin();
+    //while(location!=_records.end() && ggutils::bcf1_not_equal(*location,tmp)) location++;
+    while(location!=_records.end() && ggutils::find_allele(*location,record,index)!=1) location++;
+
+    if(location==_records.end())
+    {
+        print();
+        ggutils::print_variant(record);
+        ggutils::die("multiAllele: variant "+std::to_string(index)+" not found");
+        return(-1);
     }
     else
     {
@@ -135,7 +162,7 @@ void multiAllele::Collapse(bcf1_t *output)
         {
             std::cerr << _pos+1 << " " <<  new_alleles[0] << "!=" <<(*rec)->d.allele[0] << std::endl;
             ggutils::print_variant(*rec);
-            throw std::runtime_error("inconsistent REF on first allele");
+            ggutils::die("inconsistent REF on first allele");
         }
         size_t old_ref_len = strlen((*rec)->d.allele[0]);
         size_t rightpad = max_ref_len - old_ref_len;
@@ -145,9 +172,18 @@ void multiAllele::Collapse(bcf1_t *output)
         memcpy(new_alleles[index++]+strlen(new_alt),new_alleles[0]+old_ref_len,rightpad+1);
     }
     bcf_update_alleles(_hdr,output,(const char**)new_alleles,num_alleles);
-    for(size_t i=0;i<num_alleles;i++)
-    {
-        free(new_alleles[i]);
-    }
+    for(size_t i=0;i<num_alleles;i++) free(new_alleles[i]);
     free(new_alleles);
+}
+
+void multiAllele::print()
+{
+    std::cerr<<"multiAllele start"<<std::endl;
+    for(auto it=_records.begin();it!=_records.end();it++)
+    {
+        ggutils::print_variant(_hdr,*it);
+        std::cerr<<"rank="<<ggutils::get_variant_rank(*it)<<std::endl;
+    }
+
+    std::cerr<<"multiAllele end"<<std::endl;
 }

@@ -183,9 +183,9 @@ TEST(UtilTest,bcf1AlleleSwapDiploid)
         ASSERT_EQ(pl[ggutils::get_gl_index(i,1)],pl_new[ggutils::get_gl_index(1,i)]);
         ASSERT_EQ(pl[ggutils::get_gl_index(i,i)],pl_new[ggutils::get_gl_index(1,1)]);
         for(int j=2;j<record1->n_allele;j++)
-            if(i!=j)
-                ASSERT_EQ(pl[ggutils::get_gl_index(i,j)],pl_new[ggutils::get_gl_index(1,j)]);
-
+        {
+            if(i!=j) {ASSERT_EQ(pl[ggutils::get_gl_index(i,j)],pl_new[ggutils::get_gl_index(1,j)]);}
+        }
         bcf_destroy1(record2);
     }
     free(pl);
@@ -272,3 +272,110 @@ TEST(UtilTest,findAllele)
     ASSERT_EQ(ggutils::find_allele(target2,query2,2),1);
     ASSERT_EQ(ggutils::find_allele(target2,query2,3),2);
 }
+
+TEST(UtilTest,collapseLikelihoods1)
+{
+    int p[][3] = { {189,0,197},{0,108,561},{0,96,545} };
+    int num_allele = 4;
+    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    std::vector< std::vector<int> > gl;
+    for(int i=1;i<4;i++)
+    {
+        std::vector<int> tmp(num_gl,bcf_int32_missing);
+        tmp[ggutils::get_gl_index(0,0)] = p[i-1][0];
+        tmp[ggutils::get_gl_index(0,i)] = p[i-1][1];
+        tmp[ggutils::get_gl_index(i,i)] = p[i-1][2];
+        gl.push_back(tmp);
+    }
+    std::vector<int> new_gl;
+    ggutils::collapse_gls(2,num_allele,gl,new_gl);
+    ASSERT_EQ(new_gl[ 0 ], 189 );
+    ASSERT_EQ(new_gl[ 1 ], 0 );
+    ASSERT_EQ(new_gl[ 2 ], 197 );
+    ASSERT_EQ(new_gl[ 3 ], 297 );
+    ASSERT_EQ(new_gl[ 4 ], 108 );
+    ASSERT_EQ(new_gl[ 5 ], 750 );
+    ASSERT_EQ(new_gl[ 6 ], 285 );
+    ASSERT_EQ(new_gl[ 7 ], 96 );
+    ASSERT_EQ(new_gl[ 8 ], 393 );
+    ASSERT_EQ(new_gl[ 9 ], 734 );
+}
+
+TEST(UtilTest,collapseLikelihoods2)
+{
+    int p[][10] = { {189,0,197,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing,bcf_int32_missing},
+                   {0,bcf_int32_missing,bcf_int32_missing,108,bcf_int32_missing,561,96,bcf_int32_missing,bcf_int32_missing,545 } };
+
+    int num_allele = 4;
+    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    std::vector< std::vector<int> > gl;
+    gl.emplace_back(p[0],p[0]+num_gl);
+    gl.emplace_back(p[1],p[1]+num_gl);
+    std::vector<int> new_gl;
+    ggutils::collapse_gls(2,num_allele,gl,new_gl);
+//    for(auto it=new_gl.begin();it!=new_gl.end();it++) std::cerr << *it <<"\t";    std::cerr<<std::endl;
+    ASSERT_EQ(new_gl[ 0 ], 189 );
+    ASSERT_EQ(new_gl[ 1 ], 0 );
+    ASSERT_EQ(new_gl[ 2 ], 197 );
+    ASSERT_EQ(new_gl[ 3 ], 297 );
+    ASSERT_EQ(new_gl[ 4 ], 108 );
+    ASSERT_EQ(new_gl[ 5 ], 750 );
+    ASSERT_EQ(new_gl[ 6 ], 285 );
+    ASSERT_EQ(new_gl[ 7 ], 96 );
+    ASSERT_EQ(new_gl[ 8 ], 297 );
+    ASSERT_EQ(new_gl[ 9 ], 734 );
+}
+
+TEST(UtilTest,addAllele1)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tC\tA\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tC\tT\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"C");
+    ASSERT_STREQ(v1->d.allele[1],"A");
+    ASSERT_STREQ(v1->d.allele[2],"T");
+}
+
+TEST(UtilTest,addAllele2)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tCA\tC\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tCAA\tC\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"CAA");
+    ASSERT_STREQ(v1->d.allele[1],"CA");
+    ASSERT_STREQ(v1->d.allele[2],"C");
+}
+
+TEST(UtilTest,addAllele3)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr, "chr1\t1\t.\tCAA\tC\t0\t.\t.\tGT\t0/1");
+    auto v2 = generate_record(hdr, "chr1\t1\t.\tCA\tC\t0\t.\t.\tGT\t0/1");
+    ggutils::add_allele(hdr,v1,v2,1);
+    ASSERT_STREQ(v1->d.allele[0],"CAA");
+    ASSERT_STREQ(v1->d.allele[1],"C");
+    ASSERT_STREQ(v1->d.allele[2],"CA");
+}
+
+TEST(UtilTest,addAllele4)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr,"chr21\t9437597\t.\tACC\tCTCCCCGCCGCCGTGGCTTTTTGACA,CTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGTCC\t42\tPASS\tCIGAR=1M3D26I,1M1D46I2M;RU=.,.;REFREP=.,.;IDREP=.,.\tGT:GQ:GQX:DPI:AD\t1/2:93:53:21:12,3,3");
+    auto v2 = generate_record(hdr,"chr21\t9437597\t.\tA\tC\t0\tSiteConflict;LowGQX;HighDPFRatio\t.\tGT:GQX:DP:DPF:AD\t0/1:25:4:8:3,1");
+    ggutils::add_allele(hdr,v2,v1,2);
+    ASSERT_STREQ(v2->d.allele[2],"CTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGT");
+    ggutils::add_allele(hdr,v2,v1,1);
+    ggutils::add_allele(hdr,v2,v2,1);
+    ggutils::add_allele(hdr,v2,v1,1);
+    ggutils::add_allele(hdr,v2,v1,2);
+
+///    ggutils::print_variant(hdr,v2);
+    ASSERT_STREQ(v2->d.allele[0],"ACC");
+    ASSERT_STREQ(v2->d.allele[1],"CCC");
+    ASSERT_STREQ(v2->d.allele[2],"CTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGTCC");
+    ASSERT_STREQ(v2->d.allele[3],"CTCCCCGCCGCCGTGGCTTTTTGACA");
+
+}
+

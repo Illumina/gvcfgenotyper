@@ -25,6 +25,7 @@ public:
     void Init(bcf_hdr_t *hdr);
     void SetPosition(int rid, int pos);
     int Allele(bcf1_t *record,int index=1);
+    int AlleleIndex(bcf1_t *record,int index);
     void Collapse(bcf1_t *output);
     int GetNumAlleles() {return _records.size();};
     bcf1_t *GetMax();//returns the maximum allele (as defined by bcf1_t_less_than)
@@ -33,6 +34,7 @@ public:
     //accessors/mutators
     int pos() {return _pos;};
     int rid() {return _rid;};
+    void print();
 
 private:
     int _rid,_pos;

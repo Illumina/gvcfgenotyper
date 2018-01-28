@@ -25,15 +25,17 @@ class Genotype
 public:
     //Constructs a Genotype with values taken from record.
     Genotype(bcf_hdr_t const *header, bcf1_t *record);
+    void Init(bcf_hdr_t const *header, bcf1_t *record);
 
     //Constructs an empty Genotype with memory allocated according the ploidy/num_allele.
     Genotype(int ploidy, int num_allele);
 
     //Constructs a Genotype with alleles from alleles_to_map and format/info values taken from sample_variants (which contains subset of alleles_to_map).
     //Handle "conflicts" where allele and genotype combinations conflict with one another in a rudimentary but sane way.
-    Genotype(bcf_hdr_t *sample_header,
-             pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants,
-             multiAllele & alleles_to_map);
+    Genotype(bcf_hdr_t *sample_header,bcf1_t *sample_variants,multiAllele & alleles_to_map);
+
+    Genotype(bcf_hdr_t *sample_header,pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> & sample_variants);
+
     ~Genotype();
 
     //Removes alleles in indices, adding their AD and PL values to the REF values.
@@ -61,6 +63,7 @@ public:
     //sets FORMAT/GT to argmax(GL)
     void CallGenotype();
     bool IsDpMissing();
+    bool IsGtMissing() {return bcf_gt_is_missing(_gt[0]);}
 
     //accessors/mutators
     int gq();
@@ -74,6 +77,7 @@ public:
     int mq();
     int ploidy();
     int num_allele();
+    int num_pl() {return _num_pl;};
     int pl(int g0, int g1);
     int pl(int g0);
     float gl(int g0, int g1);
@@ -84,7 +88,10 @@ public:
     void SetDpf(int val);
     void SetGq(int val);
     void SetGqx(int val);
-
+    void SetAd(int val,int index);
+    void SetAdf(int val,int index);
+    void SetAdr(int val,int index);
+    void SetPl(std::vector<int> & val);
     bool HasPl() {return _has_pl;};
     bool HasAdf() {return _adf_found;};
     bool HasAdr() {return _adr_found;};
