@@ -96,6 +96,7 @@ DepthBlock DepthBlock::Intersect(int rid, int start, int end)
     {
         std::cerr << "DepthBlock " << _rid << ":" << _start + 1 << "-" << _end + 1 << " does not contain region: "
                   << rid << ":" << start + 1 << "-" << end + 1 << std::endl;
+        std::cerr << "One possible cause are mismatching genome references" << std::endl;
         ggutils::die("DepthBlock: bad coordinates.");
     }
 

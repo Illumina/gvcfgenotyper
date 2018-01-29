@@ -160,6 +160,10 @@ int GVCFReader::ReadLines(const unsigned num_lines)
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
         _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
+#ifdef DEBUG
+        ggutils::print_variant(_bcf_header,_bcf_record);
+#endif
+
         if(_bcf_record->n_allele>1)
         {
             int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
