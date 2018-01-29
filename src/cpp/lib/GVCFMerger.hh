@@ -38,8 +38,7 @@ public:
 
 private:
     void GenotypeHomrefVariant(int sample_index, DepthBlock &depth);
-    void GenotypeAltVariant(int sample_index,
-                            pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants);
+    void GenotypeAltVariant(int sample_index,bcf1_t *sample_variants);
     void GenotypeSample(int sample_index);
     void UpdateFormatAndInfo();
     void BuildHeader();

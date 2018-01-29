@@ -47,7 +47,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _lg->info("Input GVCFs:");
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
-        _lg->info("{} {}/{}",input_files[i],(i+1),_num_gvcfs);
+        _lg->info("Opened {} {}/{}",input_files[i],(i+1),_num_gvcfs);
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
         _has_pl &= _readers.back().HasPl();
         _has_strand_ad &= _readers.back().HasStrandAd();
@@ -110,7 +110,7 @@ int GVCFMerger::get_next_variant()
             }
         }
     }
-
+    assert(_record_collapser.GetNumAlleles()>0);
     return(1);
 }
 
@@ -171,8 +171,7 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_bloc
     pl_ptr[0] = 0;
 }
 
-void GVCFMerger::GenotypeAltVariant(int sample_index,
-                                    pair<std::deque<bcf1_t *>::iterator, std::deque<bcf1_t *>::iterator> &sample_variants)
+void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
 {
     int default_ploidy=2;
     Genotype g(_readers[sample_index].GetHeader(), sample_variants,_record_collapser);
@@ -182,18 +181,22 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,
         _mean_mq += g.mq();
         _num_mq++;
     }
-    _output_record->qual += g.qual();
+    if(!bcf_float_is_missing(g.qual()))
+        _output_record->qual += g.qual();
 }
 
 void GVCFMerger::GenotypeSample(int sample_index)
 {
     DepthBlock homref_block;//working structure to store homref info.
-    auto sample_variants = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
+    auto hdr = _readers[sample_index].GetHeader();
+    auto records = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
 
+    bcf1_t *sample_record = CollapseRecords(hdr,records);
     //this sample has variants at this position, we need to populate its FORMAT field
-    if (sample_variants.first!=sample_variants.second)
+    if (sample_record!=nullptr)
     {
-        GenotypeAltVariant(sample_index, sample_variants);
+        GenotypeAltVariant(sample_index, sample_record);
+        bcf_destroy(sample_record);
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
     {
@@ -205,10 +208,7 @@ void GVCFMerger::GenotypeSample(int sample_index)
 
 bcf1_t *GVCFMerger::next()
 {
-    if (AreAllReadersEmpty())
-    {
-        return (nullptr);
-    }
+    if (AreAllReadersEmpty()) return (nullptr);
 
     bcf_clear(_output_record);
     get_next_variant(); //stores all the alleles at the next position.

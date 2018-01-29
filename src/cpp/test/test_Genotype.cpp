@@ -2,6 +2,7 @@
 // Created by O'Connell, Jared on 12/21/17.
 //
 
+#include <htslib/vcf.h>
 #include "test_helpers.hh"
 
 extern "C"
@@ -29,12 +30,17 @@ TEST(Genotype,resolveAlleleConflict)
     for (auto rec = variants.first; rec != variants.second; rec++)
         m.Allele(*rec);
     auto sample_variants = reader.GetAllVariantsUpTo(m.GetMax());
-    Genotype g(hdr,sample_variants,m);
+    auto newrec =  CollapseRecords(hdr,sample_variants);
+    int32_t*ptr=nullptr,n=0;
+    ggutils::print_variant(hdr,newrec);
+    ASSERT_EQ(ggutils::get_number_of_likelihoods(2,newrec->n_allele),bcf_get_format_int32(hdr,newrec,"PL",&ptr,&n));
+    Genotype g(hdr,newrec,m);
     for(int i=0;i< g.num_allele();i++)
     {
-//        std::cerr << g.get_ad(i) << " " << g.get_adf(i)<< "+"<<g.get_adr(i)<<"="<<g.get_adf(i)+g.get_adf(i)<<std::endl;
+        //std::cerr << g.ad(i) << " " << g.adf(i)<< "+"<<g.adr(i)<<"="<<g.adf(i)+g.adf(i)<<std::endl;
         ASSERT_EQ(g.ad(i), g.adf(i)+ g.adr(i));
     }
+    free(ptr);
 }
 
 //regression test checking that Genotype correctly propagates FORMAT fields
@@ -165,7 +171,8 @@ TEST(Genotype,SplitAndRebuild1)
     std::cerr<<std::endl;
 
     std::pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> variants(q.begin(),q.end());
-    Genotype g2(hdr,variants,m);
+    auto newrec = CollapseRecords(hdr,variants);
+    Genotype g2(hdr,newrec,m);
     g2.UpdateBcfRecord(hdr,record2);
     ggutils::print_variant(hdr,record2);
 
@@ -173,6 +180,9 @@ TEST(Genotype,SplitAndRebuild1)
     for(int i=0;i<3;i++)
         for(int j=i;j<3;j++)
             ASSERT_EQ(g1.pl(i,j),g2.pl(i,j));
+
+    ASSERT_EQ(65,g2.gq());
+    ASSERT_EQ(25,g2.gqx());
 }
 
 TEST(Genotype,SplitAndRebuild2)
@@ -204,13 +214,15 @@ TEST(Genotype,SplitAndRebuild2)
     std::cerr<<std::endl;
 
     std::pair<std::deque<bcf1_t *>::iterator,std::deque<bcf1_t *>::iterator> variants(q.begin(),q.end());
-    Genotype g2(hdr,variants,m);
+    auto newrec = CollapseRecords(hdr,variants);
+    Genotype g2(hdr,newrec,m);
     ASSERT_EQ(g2.ploidy(),1);
     ASSERT_EQ(g2.ploidy(),original_g.ploidy());
+
     g2.UpdateBcfRecord(hdr,record2);
     ggutils::print_variant(hdr,record2);
-
     Genotype g1(hdr,record1);
-    for(int i=0;i<g2.num_allele();i++)
-	ASSERT_EQ(g1.pl(i),g2.pl(i));
+    ASSERT_EQ(17,g2.gq());
+    ASSERT_EQ(8,g2.gqx());
+    for(int i=0;i<g2.num_allele();i++) ASSERT_EQ(g1.pl(i),g2.pl(i));
 }

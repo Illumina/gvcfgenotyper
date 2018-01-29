@@ -15,7 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
-#include <exception>
+#include <deque>
 
 
 using namespace std;
@@ -145,5 +145,14 @@ namespace ggutils
     //Finds the index'th allele in from query in target. Retuns the allele index if found or -1 if missing.
     int find_allele(bcf1_t *target,bcf1_t *query,int index);
 
+    //Adds the i'th allele from src to dst. FORMAT/INFO fields are unaffected.
+    //Returns 0 if the allele was already present, 1 otherwise.
+    int add_allele(bcf_hdr_t *hdr,bcf1_t *dst,bcf1_t *src,int index);
+
+    //a heuristic for collapsing genotype likelihoods for variants that occur on two different rows but at the same position
+    void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output);
+
     std::string string_time();
+
+    std::string generateUUID();
 }

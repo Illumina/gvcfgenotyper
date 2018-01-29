@@ -10,8 +10,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_C_FLAGS_RELEASE "-O2")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra -Werror")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall")
 set(CMAKE_C_FLAGS_DEBUG "-O0 -g -Wall")
+
+add_definitions(-DGG_VERSION="\\"foo\\"")
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.7)
@@ -37,6 +39,8 @@ add_custom_target(
 
 include_directories("${PROJECT_SOURCE_DIR}/src/cpp/lib/" "${PROJECT_SOURCE_DIR}/src/c/" "${PROJECT_SOURCE_DIR}/src/cpp/test/")
 include_directories("${PROJECT_SOURCE_DIR}/external/htslib-1.6/")
+include_directories("${PROJECT_SOURCE_DIR}/external/spdlog/")
+
 
 file(GLOB SRC "${PROJECT_SOURCE_DIR}/src/cpp/lib/*.cpp" "${PROJECT_SOURCE_DIR}/src/c/*.c")
 add_executable(gvcfgenotyper src/cpp/gvcfgenotyper.cpp ${SRC} )
