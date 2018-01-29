@@ -3,6 +3,8 @@
 #include <htslib/hts.h>
 #include <htslib/vcf.h>
 
+#include <unordered_map>
+
 extern "C" {
       size_t hts_realloc_or_die(unsigned long, unsigned long, unsigned long, unsigned long, int, void**, char const*);
 }
@@ -28,8 +30,10 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
                        int buffer_size,
                        const string &region /*= ""*/,
                        const int is_file /*= 0*/,
-		       bool ignore_non_matching_ref)
+                       bool ignore_non_matching_ref,
+                       bool force_samples)
 {
+    _force_samples = force_samples;
     _has_pl = true;
     _has_strand_ad=true;
     _num_variants=0;
@@ -71,6 +75,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _num_ps_written = 0;
     _mean_mq = 0;
     _num_mq = 0;
+
 }
 
 int GVCFMerger::get_next_variant()
@@ -321,8 +326,7 @@ void GVCFMerger::write_vcf()
 void GVCFMerger::BuildHeader()
 {
     _output_header = bcf_hdr_init("w");
-    bool force_samples = false;
-    int repeat_count = 0;
+    std::unordered_map<std::string,long long> repeat_count;
     for (size_t i = 0; i < _num_gvcfs; i++)
     {
         const bcf_hdr_t *hr = _readers[i].GetHeader();
@@ -331,13 +335,14 @@ void GVCFMerger::BuildHeader()
             string sample_name = hr->samples[j];
             if (bcf_hdr_id2int(_output_header, BCF_DT_SAMPLE, sample_name.c_str()) != -1)
             {
-                if (force_samples)
+                if (_force_samples)
                 {
-                    _lg->warn("Warning duplicate sample found.\t {} {} -> {}",
+                    _lg->warn("Warning duplicate sample found.\t {} -> {}",
                               sample_name,
-                              (sample_name += ":R" + to_string(static_cast<long long>(repeat_count++))),
-                              sample_name
+                              (sample_name + ":R" + to_string(repeat_count[sample_name]))
                               ); 
+                    // Need to modify sample name here and not inside the log message
+                    sample_name += ":R" + to_string(repeat_count[sample_name]++);
                 } else
                 {
                     ggutils::die("duplicate sample names. use --force-samples if you want to merge anyway");
