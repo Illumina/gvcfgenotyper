@@ -36,6 +36,8 @@ int main(int argc, char **argv)
     string reference_genome = "";
     //This is a hidden flag that when true will drop variants with reference mismatches rather than exit with error (this is ill advised).
     bool ignore_non_matching_ref=false;
+    // Another hidden flag to force processing of gvcf files with duplicate sample names
+    bool force_samples=false;
     static struct option loptions[] = {
             {"list",        1, 0, 'l'},
             {"fasta-ref",   1, 0, 'f'},
@@ -45,6 +47,7 @@ int main(int argc, char **argv)
             {"region",      1, 0, 'r'},
             {"thread",      1, 0, '@'},
 	        {"ignore-non-matching-ref",0,0,1},
+	        {"force-samples",0,0,'s'},
             {0,             0, 0, 0}
     };
 
@@ -75,6 +78,9 @@ int main(int argc, char **argv)
                 break;
             case 1:
 	            ignore_non_matching_ref=true;break;
+            case 's':
+	            force_samples=true;
+                break;
 	        default:
 	            if (optarg != NULL)
 		            ggutils::die("Unknown argument:" + (string) optarg + "\n");
@@ -115,9 +121,7 @@ int main(int argc, char **argv)
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
-
-    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref);
-
+    GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref, force_samples);
     g.write_vcf();
 
     lg->info("Done");
