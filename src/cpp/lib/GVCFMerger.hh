@@ -34,7 +34,8 @@ public:
     ~GVCFMerger();
     void write_vcf();
     bcf1_t *next();
-    int get_next_variant();
+    int GetNextVariant();
+    void SetMaxAlleles(size_t max_alleles) {_max_alleles=max_alleles;};
 
 private:
     void GenotypeHomrefVariant(int sample_index, DepthBlock &depth);
@@ -44,6 +45,7 @@ private:
     void BuildHeader();
     void SetOutputBuffersToMissing(int num_alleles);
     bool AreAllReadersEmpty();
+
 
     multiAllele _record_collapser;
     vector<GVCFReader> _readers;
@@ -59,6 +61,7 @@ private:
     Normaliser *_normaliser;
     std::shared_ptr<spdlog::logger> _lg;
     bool _force_samples;
+	size_t _max_alleles;
 };
 
 #endif

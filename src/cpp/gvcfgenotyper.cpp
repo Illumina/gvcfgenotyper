@@ -10,14 +10,15 @@ static void usage()
     std::cerr << "Usage:   gvcfmerge -f ref.fa -l gvcf_list.txt" << std::endl;
     std::cerr << "" << std::endl;
     std::cerr << "Options:" << std::endl;
-    std::cerr << "    -l, --list        <file>          plain text list of gvcfs to merge" << std::endl;
-    std::cerr << "    -f, --fasta-ref   <file>          reference sequence" << std::endl;
-    std::cerr << "    -o, --output-file <file>          output file name [stdout]" << std::endl;
+    std::cerr << "    -l, --list          <file>          plain text list of gvcfs to merge" << std::endl;
+    std::cerr << "    -f, --fasta-ref     <file>          reference sequence" << std::endl;
+    std::cerr << "    -o, --output-file   <file>          output file name [stdout]" << std::endl;
     std::cerr
-            << "    -O, --output-type <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
+            << "    -O, --output-type     <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
             << std::endl;
-    std::cerr << "    -r, --region      <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
+    std::cerr << "    -r, --region        <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
               << std::endl;
+    std::cerr << "    -M, --max-alleles   <file>          maximum number of alleles [20]" << std::endl;
 //    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
     std::cerr << std::endl;
 }
@@ -34,10 +35,13 @@ int main(int argc, char **argv)
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
+    size_t max_alleles = 20;
+
     //This is a hidden flag that when true will drop variants with reference mismatches rather than exit with error (this is ill advised).
     bool ignore_non_matching_ref=false;
     // Another hidden flag to force processing of gvcf files with duplicate sample names
     bool force_samples=false;
+
     static struct option loptions[] = {
             {"list",        1, 0, 'l'},
             {"fasta-ref",   1, 0, 'f'},
@@ -46,6 +50,7 @@ int main(int argc, char **argv)
             {"log-file",    1, 0, 'g'},
             {"region",      1, 0, 'r'},
             {"thread",      1, 0, '@'},
+            {"max-alleles", 1, 0, 'M'},
 	        {"ignore-non-matching-ref",0,0,1},
 	        {"force-samples",0,0,'s'},
             {0,             0, 0, 0}
@@ -65,6 +70,9 @@ int main(int argc, char **argv)
                 output_file = optarg;
                 break;
             case 'O':
+                output_type = optarg;
+                break;
+            case 'M':
                 output_type = optarg;
                 break;
             case 'g':
@@ -122,6 +130,7 @@ int main(int argc, char **argv)
     ggutils::read_text_file(gvcf_list, input_files);
     int is_file = 0;
     GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref, force_samples);
+    g.SetMaxAlleles(max_alleles);
     g.write_vcf();
 
     lg->info("Done");

@@ -75,10 +75,10 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _num_ps_written = 0;
     _mean_mq = 0;
     _num_mq = 0;
-
+    _max_alleles = INT32_MAX;
 }
 
-int GVCFMerger::get_next_variant()
+int GVCFMerger::GetNextVariant()
 {
     assert(_readers.size() == _num_gvcfs);
     assert(!AreAllReadersEmpty());
@@ -211,29 +211,41 @@ bcf1_t *GVCFMerger::next()
     if (AreAllReadersEmpty()) return (nullptr);
 
     bcf_clear(_output_record);
-    get_next_variant(); //stores all the alleles at the next position.
+    GetNextVariant(); //stores all the alleles at the next position.
     bcf_update_id(_output_header, _output_record, ".");
     _record_collapser.Collapse(_output_record);
     _output_record->qual = 0;
 #ifdef DEBUG
     ggutils::print_variant(_output_header,_output_record);
 #endif
-    //fill in the format information for every sample.
-    SetOutputBuffersToMissing(_output_record->n_allele);
 
-    // count the number of written PS tags
-    _num_ps_written = 0;
-    _mean_mq = 0;
-    _num_mq = 0;
-
-    for (size_t i = 0; i < _num_gvcfs; i++)
+    if(_output_record->n_allele <= _max_alleles)
     {
-        GenotypeSample(i);
-        _readers[i].FlushBuffer(_record_collapser.GetMax());
+        //fill in the format information for every sample.
+        SetOutputBuffersToMissing(_output_record->n_allele);
+
+        // count the number of written PS tags
+        _num_ps_written = 0;
+        _mean_mq = 0;
+        _num_mq = 0;
+
+        for (size_t i = 0; i < _num_gvcfs; i++)
+        {
+            GenotypeSample(i);
+            _readers[i].FlushBuffer(_record_collapser.GetMax());
+        }
+        _num_variants++;
+        UpdateFormatAndInfo();
+        return(_output_record);
     }
-    _num_variants++;
-    UpdateFormatAndInfo();
-    return(_output_record);
+    else
+    {
+        _lg->warn("Too many alleles at {}:{} dropping this position.",
+                  bcf_hdr_id2name(_output_header,_output_record->rid),_output_record->pos+1);
+        for (size_t i = 0; i < _num_gvcfs; i++)
+            _readers[i].FlushBuffer(_record_collapser.GetMax());
+        return(next());
+    }
 }
 
 void GVCFMerger::UpdateFormatAndInfo()
