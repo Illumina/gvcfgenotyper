@@ -118,10 +118,10 @@ int mnp_decompose(bcf1_t *record_to_split, bcf_hdr_t *header, vector<bcf1_t *> &
 bool Normaliser::Realign(bcf1_t *record, bcf_hdr_t *header) {
     if (realign(_norm_args, record, header) != ERR_OK) {
         if (_ignore_non_matching_ref) {
-            _lg->warn("WARNING: VCF record did not match the reference at sample {}", header->samples[0]);
+            _lg->warn("WARNING: VCF record did not match the reference at sample {} {}:{}", header->samples[0], bcf_hdr_int2id(header, BCF_DT_CTG, record->rid),record->pos+1);
             return (false);
         } else {
-            ggutils::die("VCF record did not match the reference at sample " + (string) header->samples[0]);
+            ggutils::die("VCF record did not match the reference at sample " + (string) header->samples[0] + " "+ (string)bcf_hdr_int2id(header, BCF_DT_CTG, record->rid)+":"+std::to_string(record->pos+1));
         }
     }
     return (true);
