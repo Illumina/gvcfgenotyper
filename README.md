@@ -8,7 +8,7 @@ This tool provides basic genome VCF (GVCF) merging and genotyping functionality 
 
 #### Caution:
 
-This software is in very early development, it is largely functional but may contain bugs.
+This software is in early development, it is largely functional but may contain bugs.
 
 There are various flavours of GVCF in the wild, this tool only works with the format [produced by Illumina pipelines](https://sites.google.com/site/gvcftools/home/about-gvcf).
 
