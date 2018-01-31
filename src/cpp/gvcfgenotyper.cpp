@@ -14,12 +14,12 @@ static void usage()
     std::cerr << "    -f, --fasta-ref     <file>          reference sequence" << std::endl;
     std::cerr << "    -o, --output-file   <file>          output file name [stdout]" << std::endl;
     std::cerr
-            << "    -O, --output-type     <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
+              << "    -O, --output-type   <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
             << std::endl;
     std::cerr << "    -r, --region        <region>        region to genotype eg. chr1 or chr20:5000000-6000000"
               << std::endl;
-    std::cerr << "    -M, --max-alleles   <file>          maximum number of alleles [20]" << std::endl;
-//    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl;
+    std::cerr << "    -M, --max-alleles   INT             maximum number of alleles [50]" << std::endl;
+//    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl; //TODO: implement multi-threading!
     std::cerr << std::endl;
 }
 
