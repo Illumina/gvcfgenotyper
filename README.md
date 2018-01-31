@@ -42,11 +42,11 @@ done | xargs -l -P 23 ./gvcfgenotyper
 
 ### Known issues
 
-We are working on multi-threading to improve performance.
-
-Homozygous reference confidence (`GQ` and `DP`) works well for SNPs but is less reliable for indels. Our homozygous reference likelihoods are currently just dummy values eg. `PL=0,255,255` and should not be used for any sophisticated modelling.
+Homozygous reference confidence (`GQ` and `DP`) works well for SNPs but is less reliable for indels. Our homozygous reference likelihoods are currently just dummy values eg. `PL=0,255,255` and should not be used for any sophisticated analysis such as denovo mutation calling (Strelka has good joint-calling-from BAM functionality for small pedigrees).
 
 Complex variants can occasionally contain primitive alleles called in other samples. We are investigating decomposition approaches for this problem.
+
+We are working on multi-threading to improve performance.
 
 ### Acknowledgements
 
