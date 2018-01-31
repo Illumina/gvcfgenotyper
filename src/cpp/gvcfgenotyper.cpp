@@ -13,6 +13,7 @@ static void usage()
     std::cerr << "    -l, --list          <file>          plain text list of gvcfs to merge" << std::endl;
     std::cerr << "    -f, --fasta-ref     <file>          reference sequence" << std::endl;
     std::cerr << "    -o, --output-file   <file>          output file name [stdout]" << std::endl;
+    std::cerr << "    -L, --log-file      <file>          logging information" << std::endl;
     std::cerr
               << "    -O, --output-type   <b|u|z|v>       b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v: uncompressed VCF [v]"
             << std::endl;
@@ -47,7 +48,7 @@ int main(int argc, char **argv)
             {"fasta-ref",   1, 0, 'f'},
             {"output-file", 1, 0, 'o'},
             {"output-type", 1, 0, 'O'},
-            {"log-file",    1, 0, 'g'},
+            {"log-file",    1, 0, 'L'},
             {"region",      1, 0, 'r'},
             {"thread",      1, 0, '@'},
             {"max-alleles", 1, 0, 'M'},
@@ -56,7 +57,7 @@ int main(int argc, char **argv)
             {0,             0, 0, 0}
     };
 
-    while ((c = getopt_long(argc, argv, "l:f:o:O:r:@:", loptions, NULL)) >= 0)
+    while ((c = getopt_long(argc, argv, "L:l:f:o:O:r:@:", loptions, NULL)) >= 0)
     {
         switch (c)
         {
@@ -73,16 +74,16 @@ int main(int argc, char **argv)
                 output_type = optarg;
                 break;
             case 'M':
-                output_type = optarg;
+                max_alleles = stoi(optarg);
                 break;
-            case 'g':
+            case 'L':
                 log_file = optarg;
                 break;
             case 'r':
                 region = optarg;
                 break;
             case '@':
-                n_threads = atoi(optarg);
+                n_threads = stoi(optarg);
                 break;
             case 1:
 	            ignore_non_matching_ref=true;break;
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
 
     // register logger, name of outfile can be set by user on the cmd line
     std::shared_ptr<spdlog::logger> lg = spdlog::basic_logger_mt("gg_logger", log_file);
-    // format: "*** [YYYY-MM-DD HH:MM:SS] [thread] [loglevel] message ***"
+    // format: "*** [YYYY-MM-DD HH:MM:SS]  [loglevel] message ***"
     spdlog::set_pattern(" [%c] [%l] %v");
     std::string commandline = argv[0];
     for(int i=1;i<argc;i++) commandline += (" " + (string)argv[i]);
