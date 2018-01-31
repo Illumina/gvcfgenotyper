@@ -35,7 +35,7 @@ int main(int argc, char **argv)
     string output_type = "v";
     string gvcf_list = "";
     string reference_genome = "";
-    size_t max_alleles = 20;
+    size_t max_alleles = 50;
 
     //This is a hidden flag that when true will drop variants with reference mismatches rather than exit with error (this is ill advised).
     bool ignore_non_matching_ref=false;
