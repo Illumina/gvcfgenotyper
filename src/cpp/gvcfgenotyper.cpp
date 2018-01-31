@@ -7,7 +7,7 @@ static void usage()
 {
     std::cerr << "\nAbout:   GVCF merging and genotyping for Illumina GVCFs" << std::endl;
     std::cerr << "Version: " << GG_VERSION << std::endl;
-    std::cerr << "Usage:   gvcfmerge -f ref.fa -l gvcf_list.txt" << std::endl;
+    std::cerr << "Usage:   gvcfgenotyper -f ref.fa -l gvcf_list.txt" << std::endl;
     std::cerr << "" << std::endl;
     std::cerr << "Options:" << std::endl;
     std::cerr << "    -l, --list          <file>          plain text list of gvcfs to merge" << std::endl;
