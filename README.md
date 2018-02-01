@@ -50,4 +50,4 @@ We are working on multi-threading to improve performance.
 
 ### Acknowledgements
 
-This tool depends on [htslib](www.htslib.org) and [googletest](https://github.com/google/googletest). We also borrowed some variant normalisation code from [BCFtools](https://samtools.github.io/bcftools/bcftools.html).
+This tool depends on [htslib](www.htslib.org), [googletest](https://github.com/google/googletest) and [spdlog](https://github.com/gabime/spdlog). We also borrowed some variant normalisation code from [BCFtools](https://samtools.github.io/bcftools/bcftools.html).
