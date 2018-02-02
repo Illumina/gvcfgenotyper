@@ -37,7 +37,7 @@ void DepthBuffer::push_back(const DepthBlock& db)
             std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << "   ->   " << _buffer.back().rid()
                       << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << std::endl;
         }
-        ggutils::die("DepthBuffer: bad homref block");
+        ggutils::die("DepthBuffer: bad homref block. Check input files, consecutive depth info is needed (gvcf format).");
     }
 
     if (_buffer.empty() || db.rid() > _buffer.back().rid() || db.start() > _buffer.back().end())
