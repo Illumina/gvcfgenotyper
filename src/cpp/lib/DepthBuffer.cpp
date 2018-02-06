@@ -34,10 +34,11 @@ void DepthBuffer::push_back(const DepthBlock& db)
     {
         if (!_buffer.empty())
         {
-            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << "   ->   " << _buffer.back().rid()
-                      << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << std::endl;
+            std::cerr << _buffer.back().rid() << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << "   ->   ";
+            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << std::endl;
+            
         }
-        ggutils::die("DepthBuffer: bad homref block");
+        ggutils::die("non-contiguous homozygous reference blocks. Is this an Illumina GVCF?");
     }
 
     if (_buffer.empty() || db.rid() > _buffer.back().rid() || db.start() > _buffer.back().end())
