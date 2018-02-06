@@ -34,8 +34,9 @@ void DepthBuffer::push_back(const DepthBlock& db)
     {
         if (!_buffer.empty())
         {
-            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << "   ->   " << _buffer.back().rid()
-                      << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << std::endl;
+            std::cerr << _buffer.back().rid() << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << "   ->   ";
+            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << << std::endl;
+            
         }
         ggutils::die("non-contiguous homozygous reference blocks. Is this an Illumina GVCF?");
     }
