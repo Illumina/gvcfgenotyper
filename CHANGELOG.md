@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-02-07
+- first public release
+
 ## [Unreleased] - 2017-12-20
 - replaced CMake with good old Make
 
