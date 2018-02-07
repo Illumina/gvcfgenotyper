@@ -18,7 +18,7 @@ There are various flavours of GVCF in the wild, this tool only works with the fo
 The only requirement is a C++11 compatible compiler.
 
 ```
-git clone git@git.illumina.com:Bioinformatics/gvcfgenotyper.git
+git clone https://github.com/Illumina/gvcfgenotyper.git
 cd gvcfgenotyper/
 make
 bin/gvcfgenotyper
