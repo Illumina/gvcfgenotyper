@@ -379,3 +379,10 @@ TEST(UtilTest,addAllele4)
 
 }
 
+TEST(UtilTest,median)
+{
+    int x[5] = {10,5,3,2,289};
+    ASSERT_FLOAT_EQ(5.,ggutils::median(x,5));
+    int y[6] = {10,5,3,2,289,1000000};
+    ASSERT_FLOAT_EQ(7.5,ggutils::median(y,6));
+}

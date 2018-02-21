@@ -152,6 +152,8 @@ namespace ggutils
     //a heuristic for collapsing genotype likelihoods for variants that occur on two different rows but at the same position
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output);
 
+    float inplace_median(std::vector<int> & work); //this modifies the input vector. probably can be replaced with some code from the web.
+    float median(int *x, int n);
     std::string string_time();
 
     std::string generateUUID();
