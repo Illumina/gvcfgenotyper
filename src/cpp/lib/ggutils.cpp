@@ -796,5 +796,31 @@ namespace ggutils
         return((std::string)buffer);
     }
 
-   
+
+    float median(int *x, int n)
+    {
+        assert(n>0);
+        std::vector<int> work(x,x+n);
+        return(inplace_median(work));
+    }
+    
+    //TODO: I think a better way to do this is the quickselect algorithm: https://en.wikipedia.org/wiki/Quickselect
+    float inplace_median(std::vector<int> & work)
+    {
+        size_t n = work.size();
+        assert(n>0);
+        if(n%2==1)
+        {
+            std::nth_element(work.begin(),work.begin()+n/2,work.end());
+            return work[n/2];
+        }
+        else
+        {
+            std::nth_element(work.begin(),work.begin()+n/2,work.end());
+            float a=work[n/2];
+            std::nth_element(work.begin(),work.begin()+n/2-1,work.end());
+            a+=work[n/2-1];
+            return a/2.;
+        }        
+    }   
 }

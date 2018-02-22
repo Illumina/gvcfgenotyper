@@ -248,18 +248,48 @@ bcf1_t *GVCFMerger::next()
     }
 }
 
+void GVCFMerger::setMedianInfoValues()
+{
+    std::vector<float> median_gq(_output_record->n_allele);
+    std::vector<float> median_gqx(_output_record->n_allele);
+    for(int allele=0;allele<_output_record->n_allele;allele++)
+    {
+        std::vector<int> index_of_alt_genotypes;
+        for(size_t i=0;i<_num_gvcfs;i++)
+        {
+            bool is_alt;
+            if(format->ploidy==1)
+                is_alt = !bcf_gt_is_missing(format->gt[i]) && bcf_gt_allele(format->gt[i])==allele;
+            else
+                is_alt = !bcf_gt_is_missing(format->gt[2*i+1]) && !bcf_gt_is_missing(format->gt[2*i]) && (bcf_gt_allele(format->gt[2*i])==allele||bcf_gt_allele(format->gt[2*i+1])==allele);
+            if(is_alt)
+                index_of_alt_genotypes.push_back(i);
+        }
+        std::vector<int> values_at_alt_genotypes;
+        for(auto it=index_of_alt_genotypes.begin();it!=index_of_alt_genotypes.end();it++) 
+            if(format->gq[*it]!=bcf_int32_missing)
+                values_at_alt_genotypes.push_back(format->gq[*it]);
+        bcf_float_set_missing(median_gq[allele]);
+        if(!values_at_alt_genotypes.empty())
+            median_gq[allele] =  ggutils::inplace_median(values_at_alt_genotypes);
+        values_at_alt_genotypes.clear();
+        for(auto it=index_of_alt_genotypes.begin();it!=index_of_alt_genotypes.end();it++) 
+            if(format->gqx[*it]!=bcf_int32_missing)
+                values_at_alt_genotypes.push_back(format->gqx[*it]);
+
+        bcf_float_set_missing(median_gqx[allele]);
+        if(!values_at_alt_genotypes.empty())
+            median_gqx[allele] =  ggutils::inplace_median(values_at_alt_genotypes);
+    }
+    assert(bcf_update_info_float(_output_header,_output_record,"GQX_MEDIAN",median_gqx.data()+1,_output_record->n_allele-1)==0);
+    assert(bcf_update_info_float(_output_header,_output_record,"GQ_MEDIAN",median_gq.data()+1,_output_record->n_allele-1)==0);
+}
+
 void GVCFMerger::UpdateFormatAndInfo()
 {
     assert(bcf_update_genotypes(_output_header, _output_record,format->gt, _num_gvcfs * 2)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQ",format->gq, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQX",format->gqx, _num_gvcfs)==0);
-
-
-    if (_num_ps_written > 0)
-    {
-//        bcf_update_format_int32(_output_header, _output_record, "PS",format->ps, _num_gvcfs);
-    }
-
     assert(bcf_update_format_int32(_output_header, _output_record, "DP",format->dp, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "DPF",format->dpf, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "AD",format->ad, _num_gvcfs * _output_record->n_allele)==0);
@@ -308,6 +338,7 @@ void GVCFMerger::UpdateFormatAndInfo()
         bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
         bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
     }
+    setMedianInfoValues();
 }
 
 void GVCFMerger::write_vcf()
@@ -379,6 +410,11 @@ void GVCFMerger::BuildHeader()
     bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AN,Number=1,Type=Integer,Description=\"Total number of alleles in called genotypes\">");
+    bcf_hdr_append(_output_header,
+                   "##INFO=<ID=GQX_MEDIAN,Number=A,Type=Float,Description=\"The median GQX value for samples carrying this alternate allele\">");
+    bcf_hdr_append(_output_header,
+                   "##INFO=<ID=GQ_MEDIAN,Number=A,Type=Float,Description=\"The median GQ value for samples carrying this alternate allele\">");
+                   
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
     bcf_hdr_append(_output_header,
                    "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Filtered basecall depth used for site genotyping\">");

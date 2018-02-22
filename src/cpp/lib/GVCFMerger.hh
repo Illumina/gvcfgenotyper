@@ -45,7 +45,7 @@ private:
     void BuildHeader();
     void SetOutputBuffersToMissing(int num_alleles);
     bool AreAllReadersEmpty();
-
+    void setMedianInfoValues();
 
     multiAllele _record_collapser;
     vector<GVCFReader> _readers;
