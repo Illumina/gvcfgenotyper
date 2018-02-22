@@ -823,4 +823,16 @@ namespace ggutils
             return a/2.;
         }        
     }   
+    
+    void fisher_sb_test(int *adf,int *adr,int num_allele,std::vector<float> & output)
+    {
+        assert(num_allele>1);
+        output.resize(num_allele-1);
+        double left,right,two_sided;
+        for(int i=1;i<num_allele;i++)
+        {
+            kt_fisher_exact(adf[0],adf[i],adr[0],adf[i],&left,&right,&two_sided);
+            output[i-1] = -log10(two_sided);
+        }
+    }
 }

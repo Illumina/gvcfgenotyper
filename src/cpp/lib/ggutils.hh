@@ -26,6 +26,7 @@ extern "C" {
 #include <htslib/vcf.h>
 #include <htslib/vcfutils.h>
 #include <htslib/synced_bcf_reader.h>
+#include "htslib/kfunc.h"
 }
 
 
@@ -152,9 +153,17 @@ namespace ggutils
     //a heuristic for collapsing genotype likelihoods for variants that occur on two different rows but at the same position
     void collapse_gls(int ploidy,int num_alleles,std::vector< std::vector<int> > & pls,std::vector<int> & output);
 
-    float inplace_median(std::vector<int> & work); //this modifies the input vector. probably can be replaced with some code from the web.
-    float median(int *x, int n);
-    std::string string_time();
+    //this modifies the input vector, probably not the most efficient implementation of a median function
+    float inplace_median(std::vector<int> & work); 
 
+    //wrapper function for inplace_median. does not modify input
+    float median(int *x, int n);
+
+    //Fisher's exact test for per allele strand bias
+    void fisher_sb_test(int *adf,int *adr,int num_allele,std::vector<float> & output);
+
+    std::string string_time();
     std::string generateUUID();
+
+
 }
