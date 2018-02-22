@@ -831,7 +831,7 @@ namespace ggutils
         double left,right,two_sided;
         for(int i=1;i<num_allele;i++)
         {
-            kt_fisher_exact(adf[0],adf[i],adr[0],adf[i],&left,&right,&two_sided);
+            kt_fisher_exact(adr[0],adr[i],adf[0],adf[i],&left,&right,&two_sided);
             output[i-1] = -log10(two_sided);
         }
     }
