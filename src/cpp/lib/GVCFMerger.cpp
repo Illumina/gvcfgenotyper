@@ -290,8 +290,6 @@ void GVCFMerger::UpdateFormatAndInfo()
     assert(bcf_update_genotypes(_output_header, _output_record,format->gt, _num_gvcfs * 2)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQ",format->gq, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "GQX",format->gqx, _num_gvcfs)==0);
-    setMedianInfoValues();
-  
     assert(bcf_update_format_int32(_output_header, _output_record, "DP",format->dp, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "DPF",format->dpf, _num_gvcfs)==0);
     assert(bcf_update_format_int32(_output_header, _output_record, "AD",format->ad, _num_gvcfs * _output_record->n_allele)==0);
@@ -340,6 +338,7 @@ void GVCFMerger::UpdateFormatAndInfo()
         bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
         bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
     }
+    setMedianInfoValues();
 }
 
 void GVCFMerger::write_vcf()
