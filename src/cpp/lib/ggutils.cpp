@@ -833,6 +833,7 @@ namespace ggutils
         {
             kt_fisher_exact(adr[0],adr[i],adf[0],adf[i],&left,&right,&two_sided);
             output[i-1] = -log10(two_sided);
+	    if(output[i-1]== -0.0) output[i-1]=0.;//gets rid of silly -0.0
         }
     }
 }
