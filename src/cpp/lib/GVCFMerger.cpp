@@ -32,7 +32,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
                        const int is_file /*= 0*/,
                        bool ignore_non_matching_ref,
                        bool force_samples)
-{
+{    
     _force_samples = force_samples;
     _has_pl = true;
     _has_strand_ad=true;
@@ -337,6 +337,8 @@ void GVCFMerger::UpdateFormatAndInfo()
         }
         bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
         bcf_update_info_int32(_output_header,_output_record,"ADR",_info_adr,_output_record->n_allele);
+        ggutils::fisher_sb_test(_info_adr,_info_adf,_output_record->n_allele,_sb_pvalue);
+        bcf_update_info_float(_output_header,_output_record,"FS",_sb_pvalue.data(),_output_record->n_allele-1);
     }
     setMedianInfoValues();
 }
@@ -395,6 +397,7 @@ void GVCFMerger::BuildHeader()
         }
     }
     
+    bcf_hdr_append(_output_header, "##INFO=<ID=FS,Number=A,Type=Float,Description=\"Fisher exact test for per allele strand bias.\">");
     bcf_hdr_append(_output_header, "##INFO=<ID=GN,Number=G,Type=Integer,Description=\"count of each genotype.\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AD,Number=R,Type=Integer,Description=\"sum of allele depths for ALL individuals\">");

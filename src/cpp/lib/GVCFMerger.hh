@@ -62,7 +62,7 @@ private:
     std::shared_ptr<spdlog::logger> _lg;
     bool _force_samples;
 	size_t _max_alleles;
+    std::vector<float> _sb_pvalue;
 };
 
 #endif
-

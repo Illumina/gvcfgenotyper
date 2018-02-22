@@ -386,3 +386,26 @@ TEST(UtilTest,median)
     int y[6] = {10,5,3,2,289,1000000};
     ASSERT_FLOAT_EQ(7.5,ggutils::median(y,6));
 }
+
+TEST(UtilTest,fisherSB1)
+{
+    std::vector<float> p;
+    int adf[3] = {10,25,1};
+    int adr[3] = {13,26,40};
+    ggutils::fisher_sb_test(adf,adr,3,p);
+    ASSERT_FLOAT_EQ(p[1],4.187761);
+    ASSERT_FLOAT_EQ(p[0],0.09571717);
+}
+
+TEST(UtilTest,fisherSB2)
+{
+    std::vector<float> p;
+    int adf[2] = {2528,5981};
+    int adr[2] = {2111,5051};
+    ggutils::fisher_sb_test(adf,adr,2,p);
+    ASSERT_FLOAT_EQ(p[0],0.1238319);
+    adf[0] = 54;adf[1]=45;
+    adr[0] = 4;adr[1]=2;
+    ggutils::fisher_sb_test(adf,adr,2,p);
+    ASSERT_FLOAT_EQ(p[0], 0.1617119);    
+}
