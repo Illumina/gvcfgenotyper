@@ -43,10 +43,10 @@ RANLIB = ranlib
 CPPFLAGS = 
 CFLAGS   =  -Wall -g -O2
 LDFLAGS  = 
-LIBS     = -lz 
+LIBS     = -lz -lm 
 
-PLATFORM   = Darwin
-PLUGIN_EXT = .bundle
+PLATFORM   = default
+PLUGIN_EXT = .so
 
 # Lowercase here indicates these are "local" to config.mk
 plugin_OBJS =
@@ -72,7 +72,7 @@ ifeq "gcs-enabled" "gcs-enabled"
 plugin_OBJS += hfile_gcs.o
 endif
 
-ifeq "s3-enabled" "s3-enabled"
+ifeq "s3-disabled" "s3-enabled"
 plugin_OBJS += hfile_s3.o
 
 CRYPTO_LIBS = 
