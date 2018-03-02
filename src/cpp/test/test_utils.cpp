@@ -409,3 +409,13 @@ TEST(UtilTest,fisherSB2)
     ggutils::fisher_sb_test(adf,adr,2,p);
     ASSERT_FLOAT_EQ(p[0], 0.1617119);    
 }
+
+TEST(UtilTest,fisherSB3)
+{
+    std::vector<float> p;    
+    int adf[2] = {10903,1225};
+    int adr[2] = {13919,13415};
+    ggutils::fisher_sb_test(adf,adr,2,p);
+    ASSERT_FLOAT_EQ(p[0],1000.);
+}
+

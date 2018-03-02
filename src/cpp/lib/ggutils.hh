@@ -160,7 +160,7 @@ namespace ggutils
     float median(int *x, int n);
 
     //Fisher's exact test for per allele strand bias
-    void fisher_sb_test(int *adf,int *adr,int num_allele,std::vector<float> & output);
+    void fisher_sb_test(int *adf,int *adr,int num_allele,std::vector<float> & output,float maxret=1000.);
 
     std::string string_time();
     std::string generateUUID();
