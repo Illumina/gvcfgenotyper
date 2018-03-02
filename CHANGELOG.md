@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-03-02
+- added Fisher's exact test for strand bias (INFO/FS)
+- added INFO/GQ_MEDIAN and INFO/GQX_MEDIAN to output
+- updated to htslib-1.7
+- improved some error messages when non-GVCFs are provided as input
+
 # 2018-02-07
 - first public release
 
