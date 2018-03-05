@@ -2,7 +2,7 @@
 all: bin/gvcfgenotyper bin/test_gvcfgenotyper
 
 # hard-coded version
-VERSION_MAJOR=2018.02.07
+VERSION_MAJOR=2018.03.02
 # if we are in a git repo and if git binary is available, add git hash + branch info
 GIT_HASH = $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null)_$(shell git describe --always 2> /dev/null)
 ifneq "$(GIT_HASH)" "_"
@@ -19,14 +19,14 @@ CFLAGS = -O2 $(VERSION)
 
 
 IFLAGS = -Isrc/cpp/lib/ -Isrc/c/
-LFLAGS = -lz -lm -lpthread
+LFLAGS = -lz -lm -lpthread -lcurl
 
 #testing stuff
 TESTFLAGS = -I./external/googletest-release-1.8.0//googletest/include/
 include external/googletest-release-1.8.0//googletest/make/Makefile
 
 #htslib stuff
-HTSDIR=external/htslib-1.6
+HTSDIR=external/htslib-1.7
 include $(HTSDIR)/htslib.mk
 HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
