@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - 2018-03-13
 - removed deprecated `CMakeLists.txt`
+- removed curl dependency
 
 # 2018-03-02
 - added Fisher's exact test for strand bias (INFO/FS)
