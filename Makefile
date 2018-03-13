@@ -69,7 +69,7 @@ bin/test_gvcfgenotyper:  $(OBJS) $(TESTOBJS) $(HTSLIB) build/gtest.a build/gtest
 .PHONY: test
 test: bin/test_gvcfgenotyper bin/gvcfgenotyper
 	bin/test_gvcfgenotyper
-	bash -e src/bash/run_smoke_tests.sh
+	bash -e src/bash/run_regression_tests.sh
 .PHONY: clean
 clean:
 	rm -rf build/* bin/*
