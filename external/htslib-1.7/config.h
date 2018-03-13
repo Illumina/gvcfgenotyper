@@ -12,7 +12,7 @@
    accurate PACKAGE_VERSION as computed by the Makefile.  */
 
 /* Define if HTSlib should enable GCS support. */
-#define ENABLE_GCS 1
+/* #undef ENABLE_GCS */
 
 /* Define if HTSlib should enable plugins. */
 /* #undef ENABLE_PLUGINS */
@@ -51,7 +51,7 @@
 /* #undef HAVE_LIBBZ2 */
 
 /* Define if libcurl file access is enabled. */
-#define HAVE_LIBCURL 1
+/* #undef HAVE_LIBCURL */
 
 /* Define to 1 if you have the `lzma' library (-llzma). */
 /* #undef HAVE_LIBLZMA */

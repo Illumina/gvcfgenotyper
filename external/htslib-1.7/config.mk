@@ -56,7 +56,7 @@ noplugin_LIBS =
 # ifeq/.../endif, +=, and target-specific variables are GNU Make-specific.
 # If you don't have GNU Make, comment out this conditional and note that
 # to enable libcurl you will need to implement the following elsewhere.
-ifeq "libcurl-enabled" "libcurl-enabled"
+ifeq "libcurl-disabled" "libcurl-enabled"
 
 LIBCURL_LIBS = -lcurl
 
@@ -68,7 +68,7 @@ noplugin_LIBS += $(LIBCURL_LIBS)
 
 endif
 
-ifeq "gcs-enabled" "gcs-enabled"
+ifeq "gcs-disabled" "gcs-enabled"
 plugin_OBJS += hfile_gcs.o
 endif
 
