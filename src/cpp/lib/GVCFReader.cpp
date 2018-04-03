@@ -169,8 +169,8 @@ int GVCFReader::ReadLines(const unsigned num_lines)
         {
 	    if(ggutils::is_valid_strelka_record(_bcf_header,_bcf_record))
 	    {
-		int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
 		//TODO: we need to decide whether to propagate FILTER to FORMAT/FT
+//		int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
 		// bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
 		// bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
 		// bcf_update_id(_bcf_header, _bcf_record, nullptr);	    
