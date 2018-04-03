@@ -365,53 +365,59 @@ namespace ggutils
         return (choose(a, 1) + choose(b + 1, 2));
     }
 
-
     void print_variant(bcf_hdr_t const *header, bcf1_t *record)
     {
+	std::cerr<<record2string(header,record) <<std::endl;
+    }
+	
+    string record2string(bcf_hdr_t const *header, bcf1_t *record)
+    {
         bcf_unpack(record, BCF_UN_ALL);
-        std::cerr << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
+	std::stringstream ss;
+        ss << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
         for (int i = 1; i < record->n_allele; i++)
         {
-            std::cerr << ":" << record->d.allele[i];
+            ss << ":" << record->d.allele[i];
         }
-        int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
-        int num_gt=0,num_ad=0,num_pl=0;
-        int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
-        if(ret>0)
-        {
-            std::cerr << "\tGT=";
-            for (int i = 0; i < ret; i++)
-            {
-                if (i > 0) std::cerr << "/";
-                std::cerr << bcf_gt_allele(gt[i]);
-            }
-        }
+	return ss.str();
+        // int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
+        // int num_gt=0,num_ad=0,num_pl=0;
+        // int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
+        // if(ret>0)
+        // {
+        //     ss << "\tGT=";
+        //     for (int i = 0; i < ret; i++)
+        //     {
+        //         if (i > 0) ss << "/";
+        //         ss << bcf_gt_allele(gt[i]);
+        //     }
+        // }
 
-        ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
-        if(ret>0)
-        {
-            std::cerr << "\tAD=";
-            for (int i = 0; i < ret; i++)
-            {
-                if (i > 0) std::cerr << ",";
-                std::cerr << ad[i];
-            }
-        }
+        // ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
+        // if(ret>0)
+        // {
+        //     ss << "\tAD=";
+        //     for (int i = 0; i < ret; i++)
+        //     {
+        //         if (i > 0) ss << ",";
+        //         ss << ad[i];
+        //     }
+        // }
 
-        ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
-        if(ret>0)
-        {
-            std::cerr << "\tPL=";
-            for (int i = 0; i < ret; i++)
-            {
-                if (i > 0) std::cerr << ",";
-                std::cerr << pl[i];
-            }
-        }
-        free(gt);
-        free(pl);
-        free(ad);
-        std::cerr << std::endl;
+        // ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
+        // if(ret>0)
+        // {
+        //     ss << "\tPL=";
+        //     for (int i = 0; i < ret; i++)
+        //     {
+        //         if (i > 0) ss << ",";
+        //         ss << pl[i];
+        //     }
+        // }
+        // free(gt);
+        // free(pl);
+        // free(ad);
+        // ss << std::endl;
     }
 
     void print_variant(bcf1_t *record)

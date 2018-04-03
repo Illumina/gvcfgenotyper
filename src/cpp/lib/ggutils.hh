@@ -48,6 +48,7 @@ namespace ggutils
 
     int read_text_file(const string &fname, vector<string> &output);
 
+    string record2string(bcf_hdr_t const *header, bcf1_t *record);
     void print_variant(bcf_hdr_t const *header, bcf1_t *record);
 
     void print_variant(bcf1_t *record);
