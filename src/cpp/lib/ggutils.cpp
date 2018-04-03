@@ -843,4 +843,13 @@ namespace ggutils
             if(output[i-1]>maxret) output[i-1]=maxret;
         }
     }
+    
+    bool is_valid_strelka_record(bcf_hdr_t const *header, bcf1_t *record)
+    {
+	int32_t *int_ptr=nullptr;
+	int num_int=0;
+	int status = bcf_get_format_int32(header, record, "AD", &int_ptr, &num_int);
+	if(status>0) free(int_ptr);
+	return(status == record->n_allele);
+    }
 }
