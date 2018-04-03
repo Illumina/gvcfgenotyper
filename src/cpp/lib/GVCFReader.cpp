@@ -29,6 +29,7 @@ int GVCFReader::FlushBuffer()
 GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, const int buffer_size,
                        const string &region /*=""*/, const int is_file /*=0*/)
 {
+    _input_gvcf=input_gvcf;
     _lg = spdlog::get("gg_logger");
     assert(_lg!=nullptr);
     _bcf_record = nullptr;
@@ -166,17 +167,25 @@ int GVCFReader::ReadLines(const unsigned num_lines)
 
         if(_bcf_record->n_allele>1)
         {
-            int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
-            bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
-            bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
-            bcf_update_id(_bcf_header, _bcf_record, nullptr);
-            vector<bcf1_t *> atomised_variants;
-            _normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
-            for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
-            {
-                _variant_buffer.PushBack(_bcf_header, *v);
-            }
-            num_read++;
+	    if(ggutils::is_valid_strelka_record(_bcf_header,_bcf_record))
+	    {
+		int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
+		//TODO: we need to decide whether to propagate FILTER to FORMAT/FT
+		// bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
+		// bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
+		// bcf_update_id(_bcf_header, _bcf_record, nullptr);	    
+		vector<bcf1_t *> atomised_variants;
+		_normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
+		for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
+		{
+		    _variant_buffer.PushBack(_bcf_header, *v);
+		}
+		num_read++;
+	    }
+	    else
+	    {
+		_lg->warn("WARNING: {} from {} is not a valid GVCFGenotyper variant, this record will be ignored.",ggutils::record2string(_bcf_header,_bcf_record),_input_gvcf);
+	    }
         }
         int32_t dp;
         //buffer a depth block. FIXME: this should really all be in the DepthBlock constructor.

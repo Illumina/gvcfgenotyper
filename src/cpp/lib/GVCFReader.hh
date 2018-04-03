@@ -61,6 +61,7 @@ private:
     DepthBuffer _depth_buffer;
     Normaliser *_normaliser;
     std::shared_ptr<spdlog::logger> _lg;
+    std::string _input_gvcf;
 };
 
 #endif

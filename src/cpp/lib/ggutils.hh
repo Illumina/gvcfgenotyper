@@ -47,7 +47,8 @@ namespace ggutils
     void destroy_vcf_data(vcf_data_t & record);
 
     int read_text_file(const string &fname, vector<string> &output);
-
+    bool is_valid_strelka_record(bcf_hdr_t const *header, bcf1_t *record);
+    string record2string(bcf_hdr_t const *header, bcf1_t *record);
     void print_variant(bcf_hdr_t const *header, bcf1_t *record);
 
     void print_variant(bcf1_t *record);

@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-04-03
+- updated to htslib-1.7
+- more rigorous error checking of input GVCFs
+
 ## [Unreleased] - 2018-03-13
 - removed deprecated `CMakeLists.txt`
 - removed curl dependency

@@ -216,7 +216,10 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         std::cerr << "Got " << status << " values instead of " << _num_pl << " ploidy=" << _ploidy << " num_allele=" << _num_allele << std::endl;
         ggutils::die("incorrect number of values in  FORMAT/PL");
     }
-    assert(bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad) == _num_allele);
+    status = bcf_get_format_int32(header, record, "AD", &_ad, &_num_ad);
+    if(status!=_num_allele)    
+	ggutils::die("incorrect number of FORMAT/AD values at "+ggutils::record2string(header,record));
+    
     if (bcf_get_format_int32(header, record, "ADF", &_adf, &_num_adf) == _num_allele)
     {
         _adf_found = true;
@@ -257,8 +260,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         float *tmp_gq = nullptr;
         if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
-            //FIXME: we should be logging this in a separate file
-            //std::cerr<<"WARNING: missing GQ value at pos "<<record->pos+1<<std::endl;
+	    _lg->warn("WARNING: missing FORMAT/GQ at {}:{}",bcf_hdr_int2id(header,BCF_DT_CTG,record->rid),record->pos+1);
         }
         else
         {
