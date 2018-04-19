@@ -1,7 +1,11 @@
-#include <htslib/vcf.h>
-#include "test_helpers.hh"
+extern "C" {
+#include "htslib/vcf.h"
+#include "htslib/kstring.h"
+}
 
+#include "test_helpers.hh"
 #include "ggutils.hh"
+
 
 TEST(UtilTest, comparators)
 {
@@ -419,3 +423,17 @@ TEST(UtilTest,fisherSB3)
     ASSERT_FLOAT_EQ(p[0],1000.);
 }
 
+
+TEST(UtilTest,filter2string)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr,"chr21\t9437597\t.\tACC\tCTCCCCGCCGCCGTGGCTTTTTGACA,CTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGTCC\t42\tPASS\tCIGAR=1M3D26I,1M1D46I2M;RU=.,.;REFREP=.,.;IDREP=.,.\tGT:GQ:GQX:DPI:AD\t1/2:93:53:21:12,3,3");
+    auto v2 = generate_record(hdr,"chr21\t9437597\t.\tA\tC\t0\tSiteConflict;LowGQX;HighDPFRatio\t.\tGT:GQX:DP:DPF:AD\t0/1:25:4:8:3,1");
+    kstring_t ft = { 0, 0, NULL };
+    ggutils::filter2string(hdr, v1,ft);
+    ASSERT_STREQ(ft.s,".");
+    kstring_t ft2 = { 0, 0, NULL };    
+    ggutils::filter2string(hdr, v2,ft2);
+    ASSERT_STREQ(ft2.s,"SiteConflict;LowGQX;HighDPFRatio");
+    free(ft.s);
+}

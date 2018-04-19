@@ -27,6 +27,7 @@ extern "C" {
 #include <htslib/vcfutils.h>
 #include <htslib/synced_bcf_reader.h>
 #include "htslib/kfunc.h"
+#include "htslib/kstring.h"
 }
 
 
@@ -35,6 +36,7 @@ namespace ggutils
     //Simple struct to hold our default FORMAT fields.
     struct vcf_data_t
     {
+	char **ft;
         int32_t *pl,*ad,*adf,*adr,*gt,*gq,*gqx,*dp,*dpf,*ps;
         size_t ploidy,num_allele,num_sample,num_ad,num_pl;
         vcf_data_t(size_t ploidy,size_t num_allele,size_t num_sample);
@@ -50,7 +52,8 @@ namespace ggutils
     bool is_valid_strelka_record(bcf_hdr_t const *header, bcf1_t *record);
     string record2string(bcf_hdr_t const *header, bcf1_t *record);
     void print_variant(bcf_hdr_t const *header, bcf1_t *record);
-
+    void filter2string(bcf_hdr_t const *header, bcf1_t *record,kstring_t & str);
+   
     void print_variant(bcf1_t *record);
 
     int32_t *zeros(int n);
@@ -165,6 +168,5 @@ namespace ggutils
 
     std::string string_time();
     std::string generateUUID();
-
 
 }

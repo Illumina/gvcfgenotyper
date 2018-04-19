@@ -100,6 +100,11 @@ int Genotype::adr(int index)
     return(_adr[index]);
 }
 
+const char *Genotype::filter()
+{
+    return _filter;
+}
+
 int Genotype::dpf()
 {
     if(_num_dpf>0)
@@ -147,6 +152,9 @@ void Genotype::CallGenotype()
 
 void Genotype::allocate(int ploidy, int num_allele)
 {
+    if(_filter)    _filter = (char *)realloc(_filter,2);
+    else _filter = (char *)malloc(2);
+    strcpy(_filter,".");
     _has_pl=true;
     _ploidy = ploidy;
     _num_allele = num_allele;
@@ -178,10 +186,16 @@ void Genotype::allocate(int ploidy, int num_allele)
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 {
+
+    int status;//keeps track of return values from htslib
     init_logger();
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
+
+    //this moves the FILTER values to FORMAT/FT
+    status = bcf_get_format_char(header, record, "FT", &_filter, &_num_filter);
+//    if(status<=0) ggutils::die("bad return value ("+std::to_string(status)+") on bcf_get_format_char(header, record, \"FT\", &_filter, &_num_filter):");
 
     //this chunk of codes reads our canonical FORMAT fields (PL,GQ,DP,DPF,AD)
     _gt = (int *) malloc(2 * sizeof(int));//force gt to be of length 2.
@@ -197,7 +211,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 
     _qual = record->qual;
     _pl = (int32_t *) malloc(sizeof(int32_t) * _num_pl);
-    int status;
     status = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
     if (status == 1 || status == -3 || status == -1)
     {
@@ -298,6 +311,7 @@ void Genotype::SetDepthFromAd()
 
 Genotype::~Genotype()
 {
+    if(_filter)    free(_filter);
     free(_gt);
     free(_ad);
     free(_adf);
@@ -425,6 +439,13 @@ void Genotype::SetPlFromGl()
 int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils::vcf_data_t *format)
 {
     assert(sample_index<format->num_sample);
+    
+    //move the sample's FILTER to FORMAT/FT
+    if(_filter) {
+	format->ft[sample_index]=(char *)realloc(format->ft[sample_index],strlen(_filter)+1);
+	strcpy(format->ft[sample_index],_filter);
+    }
+    
     //update scalars
     format->gq[sample_index] = gq();
     format->gqx[sample_index] = gqx();
@@ -490,6 +511,10 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     *_gqx = src.gqx();
     *_dpf = src.dpf();
 
+    kstring_t str = { 0, 0, NULL };
+    kputs(src.filter(),&str);
+    _filter=str.s;
+    
     if(!src.IsGtMissing())
     {
         _gt[0] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(0))));

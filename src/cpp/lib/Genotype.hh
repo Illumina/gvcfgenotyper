@@ -74,6 +74,8 @@ public:
     int adr(int index);
     int adf(int index);
     int gt(int index);
+    const char *filter();
+    
     int mq();
     int ploidy();
     int num_allele();
@@ -97,8 +99,10 @@ public:
     bool HasAdr() {return _adr_found;};
 
     int32_t *_gt=nullptr, *_ad=nullptr, *_gq=nullptr, *_dp=nullptr, *_dpf=nullptr, *_pl=nullptr, *_adf=nullptr, *_adr=nullptr, *_gqx=nullptr;
-    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0;
+    int _num_allele, _ploidy, _num_pl=0, _num_gt=0, _num_ad=0, _num_adf=0, _num_adr=0,  _num_gq=0, _num_gqx=0, _num_dp=0, _num_dpf=0,_num_filter=0;
     std::vector<float> _gl;
+    char *_filter=nullptr;//stores the FILTER column as a string.
+    
 private:
     //Assigns memory according to ploidy/num_allele.
     void allocate(int ploidy, int num_allele);

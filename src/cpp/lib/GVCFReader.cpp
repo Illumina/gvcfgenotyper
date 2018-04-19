@@ -53,8 +53,9 @@ GVCFReader::GVCFReader(const std::string &input_gvcf, Normaliser * normaliser, c
     _bcf_record = nullptr;
 
     //header setup
-    _bcf_header = _bcf_reader->readers[0].header;
-
+    _bcf_header = bcf_hdr_dup(_bcf_reader->readers[0].header);
+    bcf_hdr_append(_bcf_header, "##FORMAT=<ID=FT,Number=1,Type=String,Description=\"Sample filter, 'PASS' indicates that all single sample filters passed for this sample\">");
+    bcf_hdr_sync(_bcf_header);
     _normaliser = normaliser;
     FillBuffer();
 
@@ -100,6 +101,7 @@ GVCFReader::~GVCFReader()
         error("Error: %s\n", bcf_sr_strerror(_bcf_reader->errnum));
     }
     bcf_sr_destroy(_bcf_reader);
+    bcf_hdr_destroy(_bcf_header);
 }
 
 size_t GVCFReader::FillBuffer()
@@ -169,11 +171,19 @@ int GVCFReader::ReadLines(const unsigned num_lines)
         {
 	    if(ggutils::is_valid_strelka_record(_bcf_header,_bcf_record))
 	    {
-		//TODO: we need to decide whether to propagate FILTER to FORMAT/FT
-//		int32_t pass = bcf_has_filter(_bcf_header, _bcf_record, (char *) ".");
-		// bcf_update_format_int32(_bcf_header, _bcf_record, "FT", &pass, 1);
-		// bcf_update_filter(_bcf_header, _bcf_record, nullptr, 0);
-		// bcf_update_id(_bcf_header, _bcf_record, nullptr);	    
+		kstring_t filter = { 0, 0, NULL };
+		if(bcf_has_filter(_bcf_header, _bcf_record, (char *) "."))
+		{
+		    kputc('.',&filter);
+		    assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
+		}
+		else
+		{
+		    ggutils::filter2string(_bcf_header,_bcf_record,filter);
+		    assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
+		}
+		free(filter.s);
+		
 		vector<bcf1_t *> atomised_variants;
 		_normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
 		for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
