@@ -438,6 +438,27 @@ namespace ggutils
         return (ploidy);
     }
 
+    int bcf1_get_one_format_string(const bcf_hdr_t *header, bcf1_t *record, const char *tag,std::string & output)
+    {
+	if(bcf_hdr_nsamples(header)!=1)
+	    die("bcf1_get_one_format_string: number samples != 1");
+        bcf_unpack(record,BCF_UN_FMT);
+	char **strings = nullptr;
+	int num_string=0;
+	int status = bcf_get_format_string(header, record, tag, &strings, &num_string);
+	if(status<0)
+	{
+	    output=".";
+	}
+	else
+	{
+	    output=strings[0];
+	    free(strings[0]);
+	    free(strings);
+	}
+	return(status);
+    }
+    
     int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);
@@ -575,6 +596,8 @@ namespace ggutils
         this->num_allele=num_allele;
         this->num_sample=num_sample;
 
+	ft=(char **)malloc(num_sample*sizeof(char *));
+        std::fill(ft,ft+num_sample,nullptr);
         gq=(int32_t*)malloc(num_sample*sizeof(int32_t));
         gqx=(int32_t*)malloc(num_sample*sizeof(int32_t));
         dp=(int32_t*)malloc(num_sample*sizeof(int32_t));
@@ -631,6 +654,8 @@ namespace ggutils
         free(dp);
         free(dpf);
         free(ps);
+	for(size_t i=0;i<num_sample;i++) free(ft[i]);
+	free(ft);
     }
 
     int find_allele(bcf1_t *target,bcf1_t *query,int index)
@@ -852,4 +877,22 @@ namespace ggutils
 	if(status>0) free(int_ptr);
 	return(status == record->n_allele);
     }
+    
+    void filter2string(bcf_hdr_t const *header, bcf1_t *record,kstring_t & str)
+    {
+	if(bcf_has_filter(header, record, (char *)"."))
+	{
+	    kputc('.',&str);
+	}
+	else
+	{
+	    for(int i=0;i<record->d.n_flt;i++)
+	    {
+		if(i>0)  kputc(';',&str);
+		const char *tmp=bcf_hdr_int2id(header,BCF_DT_ID, record->d.flt[i]);
+		kputs(tmp,&str);
+	    }
+	}
+    }
+   
 }

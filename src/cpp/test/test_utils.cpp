@@ -1,7 +1,11 @@
-#include <htslib/vcf.h>
-#include "test_helpers.hh"
+extern "C" {
+#include "htslib/vcf.h"
+#include "htslib/kstring.h"
+}
 
+#include "test_helpers.hh"
 #include "ggutils.hh"
+
 
 TEST(UtilTest, comparators)
 {
@@ -150,7 +154,7 @@ TEST(UtilTest,getploidy)
 TEST(UtilTest,getters)
 {
     auto hdr = get_header();
-    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01");
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB:FT\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01:LowGQX");
     int32_t mq,dp;
     ggutils::bcf1_get_one_info_int(hdr,record1,"MQ",mq);
     ggutils::bcf1_get_one_format_int(hdr,record1,"DP",dp);
@@ -163,6 +167,10 @@ TEST(UtilTest,getters)
     float sb;
     ggutils::bcf1_get_one_format_float(hdr,record1,"SB",sb);
     ASSERT_FLOAT_EQ(sb,1.01);
+
+    std::string ft;
+    ggutils::bcf1_get_one_format_string(hdr,record1,"FT",ft);
+    ASSERT_EQ(ft,"LowGQX");    
 }
 
 TEST(UtilTest,bcf1AlleleSwapDiploid)
@@ -419,3 +427,17 @@ TEST(UtilTest,fisherSB3)
     ASSERT_FLOAT_EQ(p[0],1000.);
 }
 
+
+TEST(UtilTest,filter2string)
+{
+    auto hdr = get_header();
+    auto v1 = generate_record(hdr,"chr21\t9437597\t.\tACC\tCTCCCCGCCGCCGTGGCTTTTTGACA,CTCCCCGCCGCCGTGGCTTTTTGACACCGCCGCCGCGGCTTTTGGTCC\t42\tPASS\tCIGAR=1M3D26I,1M1D46I2M;RU=.,.;REFREP=.,.;IDREP=.,.\tGT:GQ:GQX:DPI:AD\t1/2:93:53:21:12,3,3");
+    auto v2 = generate_record(hdr,"chr21\t9437597\t.\tA\tC\t0\tSiteConflict;LowGQX;HighDPFRatio\t.\tGT:GQX:DP:DPF:AD\t0/1:25:4:8:3,1");
+    kstring_t ft = { 0, 0, NULL };
+    ggutils::filter2string(hdr, v1,ft);
+    ASSERT_STREQ(ft.s,".");
+    kstring_t ft2 = { 0, 0, NULL };    
+    ggutils::filter2string(hdr, v2,ft2);
+    ASSERT_STREQ(ft2.s,"SiteConflict;LowGQX;HighDPFRatio");
+    free(ft.s);
+}

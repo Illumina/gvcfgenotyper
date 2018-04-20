@@ -100,6 +100,11 @@ int Genotype::adr(int index)
     return(_adr[index]);
 }
 
+std::string Genotype::filter()
+{
+    return _filter;
+}
+
 int Genotype::dpf()
 {
     if(_num_dpf>0)
@@ -147,6 +152,7 @@ void Genotype::CallGenotype()
 
 void Genotype::allocate(int ploidy, int num_allele)
 {
+    _filter=".";
     _has_pl=true;
     _ploidy = ploidy;
     _num_allele = num_allele;
@@ -178,10 +184,15 @@ void Genotype::allocate(int ploidy, int num_allele)
 
 Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 {
+
+    int status;//keeps track of return values from htslib
     init_logger();
     _num_allele = record->n_allele;
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
+
+    status = ggutils::bcf1_get_one_format_string(header,record,"FT",_filter);
+//    if(status<=0) ggutils::die("bad return value ("+std::to_string(status)+") on bcf_get_format_char(header, record, \"FT\", &_filter, &_num_filter):");
 
     //this chunk of codes reads our canonical FORMAT fields (PL,GQ,DP,DPF,AD)
     _gt = (int *) malloc(2 * sizeof(int));//force gt to be of length 2.
@@ -197,7 +208,6 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
 
     _qual = record->qual;
     _pl = (int32_t *) malloc(sizeof(int32_t) * _num_pl);
-    int status;
     status = bcf_get_format_int32(header, record, "PL", &_pl, &_num_pl);
     if (status == 1 || status == -3 || status == -1)
     {
@@ -425,6 +435,11 @@ void Genotype::SetPlFromGl()
 int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils::vcf_data_t *format)
 {
     assert(sample_index<format->num_sample);
+    
+    //move the sample's FILTER to FORMAT/FT
+    format->ft[sample_index]=(char *)realloc(format->ft[sample_index],_filter.size()+1);
+    strcpy(format->ft[sample_index],_filter.c_str());
+    
     //update scalars
     format->gq[sample_index] = gq();
     format->gqx[sample_index] = gqx();
@@ -489,7 +504,8 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     *_gq = src.gq();
     *_gqx = src.gqx();
     *_dpf = src.dpf();
-
+    _filter=src.filter();
+    
     if(!src.IsGtMissing())
     {
         _gt[0] = bcf_gt_unphased(alleles_to_map.AlleleIndex(sample_variants,bcf_gt_allele(src.gt(0))));

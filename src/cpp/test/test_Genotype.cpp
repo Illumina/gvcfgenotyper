@@ -191,6 +191,8 @@ TEST(Genotype,SplitAndRebuild2)
     auto record1 = generate_record(hdr,"chr1\t1\t.\tA\tC,G\t60\tSiteConflict\tMQ=51\tGT:GQ:GQX:DP:DPF:AD:ADF:ADR:SB:FT:PL\t2:17:8:6:10:0,3,3:0,0,2:0,3,1:-7.3:SiteConflict:95,17,0");
     auto record2 = bcf_dup(record1);
     Genotype original_g(hdr,record1);
+
+    ASSERT_EQ("SiteConflict",original_g.filter());
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name);
     multiAllele m;
