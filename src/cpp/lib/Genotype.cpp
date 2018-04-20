@@ -100,7 +100,7 @@ int Genotype::adr(int index)
     return(_adr[index]);
 }
 
-const char *Genotype::filter()
+std::string Genotype::filter()
 {
     return _filter;
 }
@@ -152,9 +152,7 @@ void Genotype::CallGenotype()
 
 void Genotype::allocate(int ploidy, int num_allele)
 {
-    if(_filter)    _filter = (char *)realloc(_filter,2);
-    else _filter = (char *)malloc(2);
-    strcpy(_filter,".");
+    _filter=".";
     _has_pl=true;
     _ploidy = ploidy;
     _num_allele = num_allele;
@@ -193,8 +191,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
     bcf_unpack(record, BCF_UN_ALL);
     assert(_num_allele > 1);
 
-    //this moves the FILTER values to FORMAT/FT
-    status = bcf_get_format_char(header, record, "FT", &_filter, &_num_filter);
+    status = ggutils::bcf1_get_one_format_string(header,record,"FT",_filter);
 //    if(status<=0) ggutils::die("bad return value ("+std::to_string(status)+") on bcf_get_format_char(header, record, \"FT\", &_filter, &_num_filter):");
 
     //this chunk of codes reads our canonical FORMAT fields (PL,GQ,DP,DPF,AD)
@@ -311,7 +308,6 @@ void Genotype::SetDepthFromAd()
 
 Genotype::~Genotype()
 {
-    if(_filter)    free(_filter);
     free(_gt);
     free(_ad);
     free(_adf);
@@ -441,10 +437,8 @@ int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils:
     assert(sample_index<format->num_sample);
     
     //move the sample's FILTER to FORMAT/FT
-    if(_filter) {
-	format->ft[sample_index]=(char *)realloc(format->ft[sample_index],strlen(_filter)+1);
-	strcpy(format->ft[sample_index],_filter);
-    }
+    format->ft[sample_index]=(char *)realloc(format->ft[sample_index],_filter.size()+1);
+    strcpy(format->ft[sample_index],_filter.c_str());
     
     //update scalars
     format->gq[sample_index] = gq();
@@ -510,10 +504,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     *_gq = src.gq();
     *_gqx = src.gqx();
     *_dpf = src.dpf();
-
-    kstring_t str = { 0, 0, NULL };
-    kputs(src.filter(),&str);
-    _filter=str.s;
+    _filter=src.filter();
     
     if(!src.IsGtMissing())
     {

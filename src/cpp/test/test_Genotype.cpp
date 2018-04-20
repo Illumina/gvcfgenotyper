@@ -192,7 +192,7 @@ TEST(Genotype,SplitAndRebuild2)
     auto record2 = bcf_dup(record1);
     Genotype original_g(hdr,record1);
 
-    ASSERT_STREQ("SiteConflict",original_g.filter());
+    ASSERT_EQ("SiteConflict",original_g.filter());
     std::string ref_file_name = g_testenv->getBasePath() + "/../test/test2/test2.ref.fa";
     Normaliser norm(ref_file_name);
     multiAllele m;

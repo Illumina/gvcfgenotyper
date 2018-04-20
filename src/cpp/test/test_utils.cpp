@@ -154,7 +154,7 @@ TEST(UtilTest,getploidy)
 TEST(UtilTest,getters)
 {
     auto hdr = get_header();
-    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01");
+    auto record1 = generate_record(hdr, "chr1\t5420\t.\tC\tA,T,G\t100\tPASS\tMQ=50;AF1000G=.13\tGT:GQ:DP:DPF:AD:PL:SB:FT\t1/3:30:16:0:0,12,0,4:396,92,63,368,92,396,276,0,276,285:1.01:LowGQX");
     int32_t mq,dp;
     ggutils::bcf1_get_one_info_int(hdr,record1,"MQ",mq);
     ggutils::bcf1_get_one_format_int(hdr,record1,"DP",dp);
@@ -167,6 +167,10 @@ TEST(UtilTest,getters)
     float sb;
     ggutils::bcf1_get_one_format_float(hdr,record1,"SB",sb);
     ASSERT_FLOAT_EQ(sb,1.01);
+
+    std::string ft;
+    ggutils::bcf1_get_one_format_string(hdr,record1,"FT",ft);
+    ASSERT_EQ(ft,"LowGQX");    
 }
 
 TEST(UtilTest,bcf1AlleleSwapDiploid)

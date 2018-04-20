@@ -40,7 +40,10 @@ bcf_hdr_t *get_header()
 {
     //FIXME: we should store the header as a big string within the source code
     std::string gvcf_file_name = g_testenv->getBasePath() + "/../test/test2/NA12887_S1.vcf.gz";
-    return(bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r")));
+    auto bcf_header=bcf_hdr_read(hts_open(gvcf_file_name.c_str(), "r"));
+    bcf_hdr_append(bcf_header, "##FORMAT=<ID=FT,Number=1,Type=String,Description=\"Sample filter, 'PASS' indicates that all single sample filters passed for this sample\">");
+    bcf_hdr_sync(bcf_header);
+    return(bcf_header);
 }
 
 void update_record(bcf_hdr_t *hdr,int rid,int pos,const std::string & alleles,bcf1_t *record)

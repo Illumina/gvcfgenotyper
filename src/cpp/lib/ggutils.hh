@@ -168,5 +168,5 @@ namespace ggutils
 
     std::string string_time();
     std::string generateUUID();
-
+    int bcf1_get_one_format_string(const bcf_hdr_t *header, bcf1_t *record, const char *tag,std::string & output);
 }

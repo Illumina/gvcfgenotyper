@@ -438,6 +438,20 @@ namespace ggutils
         return (ploidy);
     }
 
+    int bcf1_get_one_format_string(const bcf_hdr_t *header, bcf1_t *record, const char *tag,std::string & output)
+    {
+        bcf_unpack(record,BCF_UN_INFO);
+	char **strings = (char **)malloc(sizeof(char *));
+	strings[0]=nullptr;
+	int num_string=1;
+	int status = bcf_get_format_string(header, record, tag, &strings, &num_string);
+	if(status<0) output=".";
+	else output=strings[0];
+	free(strings[0]);
+	free(strings);
+	return(status);
+    }
+    
     int bcf1_get_one_info_float(const bcf_hdr_t *header, bcf1_t *record, const char *tag,float & output)
     {
         bcf_unpack(record,BCF_UN_INFO);

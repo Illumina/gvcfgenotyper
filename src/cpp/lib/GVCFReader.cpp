@@ -174,7 +174,7 @@ int GVCFReader::ReadLines(const unsigned num_lines)
 		kstring_t filter = { 0, 0, NULL };
 		if(bcf_has_filter(_bcf_header, _bcf_record, (char *) "."))
 		{
-		    kputc('.',&filter);
+		    kputs("PASS",&filter);
 		    assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
 		}
 		else
