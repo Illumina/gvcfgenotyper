@@ -151,6 +151,11 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_bloc
     _format->dpf[sample_index] = homref_block.dpf();
     _format->gq[sample_index] = homref_block.gq();
     _format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
+    if(_format->ft[sample_index]) _format->ft[sample_index]=(char *)realloc(_format->ft[sample_index],2);
+    else _format->ft[sample_index]=(char *)malloc(2);
+    _format->ft[sample_index][0] = '.';
+    _format->ft[sample_index][1] = '\0';
+    
     for(int i=1;i<_output_record->n_allele;i++)
         _format->ad[sample_index * _output_record->n_allele+i] = 0;
     if (homref_block.dp() > 0)
