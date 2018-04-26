@@ -73,8 +73,8 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _output_record = bcf_init1();
 
     _num_ps_written = 0;
-    _mean_mq = 0;
-    _num_mq = 0;
+    _mean_weighted_mq = 0;
+    _sum_mq_weights = 0;
     _max_alleles = INT32_MAX;
 }
 
@@ -183,8 +183,8 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
     g.PropagateFormatFields(sample_index, default_ploidy, _format);
     if(g.mq() != bcf_int32_missing)
     {
-        _mean_mq += g.mq();
-        _num_mq++;
+        _mean_weighted_mq += (g.dp() * g.mq());
+        _sum_mq_weights += g.dp();
     }
     if(!bcf_float_is_missing(g.qual()))
         _output_record->qual += g.qual();
@@ -231,8 +231,8 @@ bcf1_t *GVCFMerger::next()
 
         // count the number of written PS tags
         _num_ps_written = 0;
-        _mean_mq = 0;
-        _num_mq = 0;
+        _mean_weighted_mq = 0;
+        _sum_mq_weights = 0;
 
         for (size_t i = 0; i < _num_gvcfs; i++)
         {
@@ -307,10 +307,10 @@ void GVCFMerger::UpdateFormatAndInfo()
     if(_has_pl) assert(bcf_update_format_int32(_output_header, _output_record, "PL",_format->pl, _format->num_pl)==0);
 
     // Write INFO/MQ
-    if (_num_mq>0)
+    if (_sum_mq_weights>0)
     {
-        _mean_mq /= _num_mq;
-        assert(bcf_update_info_int32(_output_header,_output_record,"MQ",&_mean_mq,1)==0);
+        _mean_weighted_mq /= _sum_mq_weights;
+        assert(bcf_update_info_int32(_output_header,_output_record,"MQ",&_mean_weighted_mq,1)==0);
     }
 
     // Calculate AC/AN using htslib standard functions

@@ -55,7 +55,7 @@ private:
     bcf_hdr_t *_output_header;
     ggutils::vcf_data_t *_format;//stores all our format fields.
     int32_t *_info_adf, *_info_adr, *_info_ac;
-    int _mean_mq,_num_mq,_num_variants;
+    int _mean_weighted_mq,_sum_mq_weights,_num_variants;
     size_t _num_ps_written;
     bool _has_strand_ad,_has_pl;
     Normaliser *_normaliser;
