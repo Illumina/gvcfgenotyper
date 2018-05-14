@@ -253,41 +253,90 @@ bcf1_t *GVCFMerger::next()
     }
 }
 
-void GVCFMerger::setMedianInfoValues()
+std::vector<int> GVCFMerger::FindAltGenotypes(const int allele) 
+{
+    std::vector<int> indices_of_alt_genotypes;
+    for(size_t i=0;i<_num_gvcfs;++i)
+    {
+        bool is_alt(false);
+        if(_format->ploidy==1)
+            is_alt = !bcf_gt_is_missing(_format->gt[i]) && bcf_gt_allele(_format->gt[i])==allele;
+        else
+            is_alt = !bcf_gt_is_missing(_format->gt[2*i+1]) && !bcf_gt_is_missing(_format->gt[2*i]) && (bcf_gt_allele(_format->gt[2*i])==allele||bcf_gt_allele(_format->gt[2*i+1])==allele);
+        if(is_alt) {
+            indices_of_alt_genotypes.push_back(i);
+        }
+    }
+    return indices_of_alt_genotypes;
+}
+
+void GVCFMerger::SetMedianInfoValues()
 {
     std::vector<float> median_gq(_output_record->n_allele);
     std::vector<float> median_gqx(_output_record->n_allele);
+    std::vector<float> median_dp(_output_record->n_allele);
     for(int allele=0;allele<_output_record->n_allele;allele++)
     {
-        std::vector<int> index_of_alt_genotypes;
-        for(size_t i=0;i<_num_gvcfs;i++)
-        {
-            bool is_alt;
-            if(_format->ploidy==1)
-                is_alt = !bcf_gt_is_missing(_format->gt[i]) && bcf_gt_allele(_format->gt[i])==allele;
-            else
-                is_alt = !bcf_gt_is_missing(_format->gt[2*i+1]) && !bcf_gt_is_missing(_format->gt[2*i]) && (bcf_gt_allele(_format->gt[2*i])==allele||bcf_gt_allele(_format->gt[2*i+1])==allele);
-            if(is_alt)
-                index_of_alt_genotypes.push_back(i);
-        }
+        std::vector<int> indices_of_alt_genotypes = FindAltGenotypes(allele);
+        // INFO/GQX_MEDIAN
         std::vector<int> values_at_alt_genotypes;
-        for(auto it=index_of_alt_genotypes.begin();it!=index_of_alt_genotypes.end();it++) 
-            if(_format->gq[*it]!=bcf_int32_missing)
-                values_at_alt_genotypes.push_back(_format->gq[*it]);
+        for(const auto alt_gt : indices_of_alt_genotypes) {
+            if(_format->gq[alt_gt]!=bcf_int32_missing)
+                values_at_alt_genotypes.push_back(_format->gq[alt_gt]);
+        }
         bcf_float_set_missing(median_gq[allele]);
         if(!values_at_alt_genotypes.empty())
             median_gq[allele] =  ggutils::inplace_median(values_at_alt_genotypes);
-        values_at_alt_genotypes.clear();
-        for(auto it=index_of_alt_genotypes.begin();it!=index_of_alt_genotypes.end();it++) 
-            if(_format->gqx[*it]!=bcf_int32_missing)
-                values_at_alt_genotypes.push_back(_format->gqx[*it]);
 
+        // INFO/GQ_MEDIAN
+        values_at_alt_genotypes.clear();
+        for(const auto alt_gt : indices_of_alt_genotypes) {
+            if(_format->gqx[alt_gt]!=bcf_int32_missing)
+                values_at_alt_genotypes.push_back(_format->gqx[alt_gt]);
+        }
         bcf_float_set_missing(median_gqx[allele]);
         if(!values_at_alt_genotypes.empty())
             median_gqx[allele] =  ggutils::inplace_median(values_at_alt_genotypes);
+
+        // INFO/DP_MEDIAN
+        values_at_alt_genotypes.clear();
+        for(const auto alt_gt : indices_of_alt_genotypes) {
+            if(_format->dp[alt_gt]!=bcf_int32_missing)
+                values_at_alt_genotypes.push_back(_format->dp[alt_gt]);
+        }
+        bcf_float_set_missing(median_dp[allele]);
+        if(!values_at_alt_genotypes.empty())
+            median_dp[allele] =  ggutils::inplace_median(values_at_alt_genotypes);
     }
     assert(bcf_update_info_float(_output_header,_output_record,"GQX_MEDIAN",median_gqx.data()+1,_output_record->n_allele-1)==0);
     assert(bcf_update_info_float(_output_header,_output_record,"GQ_MEDIAN",median_gq.data()+1,_output_record->n_allele-1)==0);
+    assert(bcf_update_info_float(_output_header,_output_record,"DP_MEDIAN",median_dp.data()+1,_output_record->n_allele-1)==0);
+}
+
+void GVCFMerger::SetHistogramInfoValues() 
+{
+    //histogram bins
+    const int maxval = 100;
+    const unsigned nbins = 20;
+    const unsigned bin_width = 5;
+    const unsigned n_allele(_output_record->n_allele);
+    vector<vector<unsigned>> allele_hist(n_allele,vector<unsigned>(nbins));
+
+    // INFO/DP_HIST_ALT
+    // count depth only at ALT sites and sum over all alleles
+    std::string hist_dp_alt;
+    for(int allele=0;allele<_output_record->n_allele;++allele)
+    {
+        for(const auto alt_gt_idx : FindAltGenotypes(allele)) {
+            if(_format->dp[alt_gt_idx]!=bcf_int32_missing) {
+                size_t bin_idx = _format->dp[alt_gt_idx] > maxval ? (nbins-1) : ((size_t)(_format->dp[alt_gt_idx] / bin_width));
+                ++allele_hist[allele][bin_idx];
+            }
+        }
+    }
+    hist_dp_alt = ggutils::uint_vec2str(allele_hist);
+
+    assert(bcf_update_info_string(_output_header,_output_record,"DP_HIST_ALT",hist_dp_alt.c_str())==0);
 }
 
 void GVCFMerger::UpdateFormatAndInfo()
@@ -346,7 +395,43 @@ void GVCFMerger::UpdateFormatAndInfo()
         ggutils::fisher_sb_test(_info_adr,_info_adf,_output_record->n_allele,_sb_pvalue);
         bcf_update_info_float(_output_header,_output_record,"FS",_sb_pvalue.data(),_output_record->n_allele-1);
     }
-    setMedianInfoValues();
+
+    // Calculate INFO/HOM (probably better called INFO/HOM_ALT?)
+    if (_format->ploidy>1) 
+    {
+        size_t n_hom_alt=0;
+        for(size_t i=0;i<_num_gvcfs;++i)
+        {
+            if (!bcf_gt_is_missing(_format->gt[2*i]) && !bcf_gt_is_missing(_format->gt[2*i+1])) {
+                if (bcf_gt_allele(_format->gt[2*i])==bcf_gt_allele(_format->gt[2*i+1])) {
+                    ++n_hom_alt;
+                }
+            }
+        }
+        bcf_update_info_int32(_output_header,_output_record,"HOM",&n_hom_alt,1);
+    }
+
+    // Calculate INFO/GC
+    if (_format->ploidy>1) 
+    {
+        size_t GC[]={0,0,0};
+        for(size_t i=0;i<_num_gvcfs;++i)
+        {
+            if (!bcf_gt_is_missing(_format->gt[2*i]) && !bcf_gt_is_missing(_format->gt[2*i+1])) {
+                if (bcf_gt_allele(_format->gt[2*i])==0 && bcf_gt_allele(_format->gt[2*i+1])==0) {
+                    ++GC[0];
+                } else if (bcf_gt_allele(_format->gt[2*i])!=bcf_gt_allele(_format->gt[2*i+1])) {
+                    ++GC[1];
+                } else if (bcf_gt_allele(_format->gt[2*i])==1 && bcf_gt_allele(_format->gt[2*i+1])==1) {
+                    ++GC[2];
+                }
+            }
+        }
+        bcf_update_info_int32(_output_header,_output_record,"GC",&GC,3);
+    }
+
+    SetMedianInfoValues();
+    SetHistogramInfoValues();
 }
 
 void GVCFMerger::write_vcf()
@@ -404,7 +489,8 @@ void GVCFMerger::BuildHeader()
     }
     
     bcf_hdr_append(_output_header, "##INFO=<ID=FS,Number=A,Type=Float,Description=\"Fisher exact test for per allele strand bias.\">");
-    bcf_hdr_append(_output_header, "##INFO=<ID=GN,Number=G,Type=Integer,Description=\"count of each genotype.\">");
+    bcf_hdr_append(_output_header, "##INFO=<ID=HOM,Number=1,Type=Integer,Description=\"Number of hom alt alleles at this site.\">");
+    bcf_hdr_append(_output_header, "##INFO=<ID=GC,Number=G,Type=Integer,Description=\"Count of individuals for each genotype.\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=AD,Number=R,Type=Integer,Description=\"sum of allele depths for ALL individuals\">");
     bcf_hdr_append(_output_header,
@@ -413,7 +499,7 @@ void GVCFMerger::BuildHeader()
                    "##INFO=<ID=ADR,Number=R,Type=Integer,Description=\"Sum of allelic depth on reverse strand for ALL individuals\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"sum of depth  across all samples\">");
-    bcf_hdr_append(_output_header,"##INFO=<ID=MQ,Number=1,Type=Integer,Description=\"RMS of mapping quality\">");
+    bcf_hdr_append(_output_header,"##INFO=<ID=MQ,Number=1,Type=Integer,Description=\"RMS of mapping quality, weighted by depth\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=DPF,Number=1,Type=Integer,Description=\"sum of basecalls filtered from input prior to site genotyping\">");
     bcf_hdr_append(_output_header, "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes\">");
@@ -423,6 +509,8 @@ void GVCFMerger::BuildHeader()
                    "##INFO=<ID=GQX_MEDIAN,Number=A,Type=Float,Description=\"The median GQX value for samples carrying this alternate allele\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=GQ_MEDIAN,Number=A,Type=Float,Description=\"The median GQ value for samples carrying this alternate allele\">");
+    bcf_hdr_append(_output_header,"##INFO=<ID=DP_MEDIAN,Number=1,Type=Integer,Description=\"The median DP value for samples carrying this alternate allele\">");
+    bcf_hdr_append(_output_header,"##INFO=<ID=DP_HIST_ALT,Number=A,Type=String,Description=\"Histogram for DP for each allele; Midpoints of histogram bins: 2.5|7.5|12.5|17.5|22.5|27.5|32.5|37.5|42.5|47.5|52.5|57.5|62.5|67.5|72.5|77.5|82.5|87.5|92.5|97.5\"");
                    
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
     bcf_hdr_append(_output_header,

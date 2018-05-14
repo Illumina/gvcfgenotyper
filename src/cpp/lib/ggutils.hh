@@ -70,6 +70,8 @@ namespace ggutils
 
     int strsplit(const string &input, const char split, vector<string> &out);
 
+    string uint_vec2str(const vector<vector<unsigned>> &input);
+
     string join(const vector<string> &input, const string &delim);
 
     vector<int> match(const vector<string> &x, const vector<string> &y);
