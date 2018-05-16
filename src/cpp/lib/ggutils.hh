@@ -92,9 +92,6 @@ namespace ggutils
 
     bool is_insertion(bcf1_t *record);
 
-    bool is_snp(bcf1_t *record);
-
-
     bool is_complex(bcf1_t *record);
 
     int get_variant_rank(bcf1_t *record);
