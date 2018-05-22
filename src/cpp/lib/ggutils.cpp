@@ -1,6 +1,10 @@
 #include <htslib/vcf.h>
 #include "ggutils.hh"
 
+#include<algorithm>
+#include<sstream>
+#include<iterator>
+
 namespace ggutils
 {
     void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen)
@@ -62,6 +66,30 @@ namespace ggutils
             count++;
         }
         return (count);
+    }
+
+    string uint_vec2str(const vector<vector<unsigned>> &input)
+    {
+        // to concatenate the strings
+        std::ostringstream oss;
+        // separator for individual elements in a histogram
+        std::string delim("|");
+        // separator between histograms
+        std::string hist_delim(",");
+        for (const auto& vec: input) {
+            if (!oss.str().empty()) {
+                oss << hist_delim;
+            }
+            if (!vec.empty()) {
+                std::copy(vec.begin(), 
+                          vec.end()-1,
+                          std::ostream_iterator<unsigned>(oss, delim.c_str())
+                          );
+            }
+            // add last element without delimiters
+            oss << vec.back();
+        }
+        return oss.str();
     }
 
     string join(const vector<string> &input, const string &delim)
@@ -140,12 +168,12 @@ namespace ggutils
     {
         int *gt = nullptr, ngt = 0;
         bool is_hom_ref = false;
-        if(bcf_get_genotypes(header, record, &gt, &ngt)<=0)
+        int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
+        if(ploidy<=0)
         {
             // A vcf record without GT cannot be hom ref
             return is_hom_ref;
         }
-        int ploidy = bcf_get_genotypes(header, record, &gt, &ngt);
         // check for 0/0
         is_hom_ref = (bcf_gt_allele(gt[0]) == 0);
         is_hom_ref &= ploidy==1 || (bcf_gt_allele(gt[1]) == 0);

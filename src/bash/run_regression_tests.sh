@@ -5,6 +5,7 @@ set -e
 tmpdir=`mktemp -d`
 
 echo running regression tests
+echo tmpdir $tmpdir
 
 for i in test/regression/*.vcf.gz;
 do
