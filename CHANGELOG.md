@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-05-03
+- Computing INFO/DP_MEDIAN, INFO/DP_HIST_ALL and INFO/HOM which are similar to their counterparts in the gnomAD vcf
+- Small updates to documentation and FAQ
+
 # 2018-04-03
 - updated to htslib-1.7
 - more rigorous error checking of input GVCFs
