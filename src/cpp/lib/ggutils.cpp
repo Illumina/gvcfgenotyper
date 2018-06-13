@@ -365,7 +365,7 @@ namespace ggutils
 
     int phred(float l)
     {
-        return ((int) (-10 * log10(l)));
+        return ((int) round(-10 * log10(l)));
     }
 
     float unphred(int pl)
