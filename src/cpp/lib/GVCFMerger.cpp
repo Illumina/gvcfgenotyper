@@ -78,7 +78,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _info_adf = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_adr = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_ac = (int32_t *) malloc(n_allele * sizeof(int32_t));
-    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
+    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,n_allele);
     _info_gc = (int32_t *) malloc(num_gt_per_sample * sizeof(int32_t));
 
     BuildHeader();
