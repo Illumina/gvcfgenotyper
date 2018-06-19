@@ -33,7 +33,7 @@ TEST(Genotype,resolveAlleleConflict)
     auto newrec =  CollapseRecords(hdr,sample_variants);
     int32_t*ptr=nullptr,n=0;
     ggutils::print_variant(hdr,newrec);
-    ASSERT_EQ(ggutils::get_number_of_likelihoods(2,newrec->n_allele),bcf_get_format_int32(hdr,newrec,"PL",&ptr,&n));
+    ASSERT_EQ(ggutils::get_number_of_gt_combinations(2,newrec->n_allele),bcf_get_format_int32(hdr,newrec,"PL",&ptr,&n));
     Genotype g(hdr,newrec,m);
     for(int i=0;i< g.num_allele();i++)
     {

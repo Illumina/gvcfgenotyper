@@ -357,7 +357,7 @@ namespace ggutils
     }
 
 
-    size_t get_number_of_likelihoods(int ploidy, int num_allele)
+    size_t get_number_of_gt_combinations(int ploidy, int num_allele)
     {
         assert(ploidy == 1 || ploidy == 2);
         return (ploidy == 1 ? num_allele : (num_allele) * (1 + num_allele) / 2);
@@ -395,19 +395,19 @@ namespace ggutils
 
     void print_variant(bcf_hdr_t const *header, bcf1_t *record)
     {
-	std::cerr<<record2string(header,record) <<std::endl;
+	    std::cerr << record2string(header,record) <<std::endl;
     }
 	
     string record2string(bcf_hdr_t const *header, bcf1_t *record)
     {
         bcf_unpack(record, BCF_UN_ALL);
-	std::stringstream ss;
+	    std::stringstream ss;
         ss << bcf_hdr_id2name(header, record->rid) << ":" << record->pos + 1 << ":" << record->d.allele[0];
         for (int i = 1; i < record->n_allele; i++)
         {
             ss << ":" << record->d.allele[i];
         }
-	return ss.str();
+	    return ss.str();
         // int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
         // int num_gt=0,num_ad=0,num_pl=0;
         // int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
@@ -588,7 +588,7 @@ namespace ggutils
         int status = bcf_get_format_int32(header,record,"PL",&format_pl,&num_pl);
         if(status>0)
         {
-            if(status!=(int)ggutils::get_number_of_likelihoods(ploidy,record->n_allele))
+            if(status!=(int)ggutils::get_number_of_gt_combinations(ploidy,record->n_allele))
 	    {
 		ggutils::print_variant(header,record);
 		ggutils::die("problem with sample "+(string)header->samples[0]);
@@ -624,7 +624,7 @@ namespace ggutils
         this->num_allele=num_allele;
         this->num_sample=num_sample;
 
-	ft=(char **)malloc(num_sample*sizeof(char *));
+	    ft=(char **)malloc(num_sample*sizeof(char *));
         std::fill(ft,ft+num_sample,nullptr);
         gq=(int32_t*)malloc(num_sample*sizeof(int32_t));
         gqx=(int32_t*)malloc(num_sample*sizeof(int32_t));
@@ -637,7 +637,7 @@ namespace ggutils
         adf = (int32_t *)malloc(num_ad*sizeof(int32_t));
         adr = (int32_t *)malloc(num_ad*sizeof(int32_t));
 
-        num_pl = get_number_of_likelihoods(ploidy,num_allele)*num_sample;
+        num_pl = get_number_of_gt_combinations(ploidy,num_allele)*num_sample;
         pl = (int32_t *)malloc(num_pl*sizeof(int32_t));
         gt = (int32_t *)malloc(num_sample*ploidy*sizeof(int32_t));
     }
@@ -647,7 +647,7 @@ namespace ggutils
         if(num_alleles!=this->num_allele)
         {
             this->num_allele=num_alleles;
-            num_pl = ggutils::get_number_of_likelihoods(ploidy,num_allele)* num_sample;
+            num_pl = ggutils::get_number_of_gt_combinations(ploidy,num_allele)* num_sample;
             pl = (int32_t *) realloc(pl, num_pl * sizeof(int32_t));
             num_ad=num_allele*num_sample;
             ad = (int32_t *)realloc(ad,num_ad*sizeof(int32_t));
@@ -787,7 +787,7 @@ namespace ggutils
         assert(num_sets>0);
         size_t num_gls = pls[0].size();
         for(auto it=pls.begin();it!=pls.end();it++) assert(it->size()==num_gls);
-        output.assign(ggutils::get_number_of_likelihoods(ploidy,num_alleles),bcf_int32_missing);
+        output.assign(ggutils::get_number_of_gt_combinations(ploidy,num_alleles),bcf_int32_missing);
         if(ploidy==1)
         {
             collapse_haploid_gls(pls,output);

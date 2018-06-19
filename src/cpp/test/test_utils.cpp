@@ -285,7 +285,7 @@ TEST(UtilTest,collapseLikelihoods1)
 {
     int p[][3] = { {189,0,197},{0,108,561},{0,96,545} };
     int num_allele = 4;
-    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    int num_gl = ggutils::get_number_of_gt_combinations(2,num_allele);
     std::vector< std::vector<int> > gl;
     for(int i=1;i<4;i++)
     {
@@ -315,7 +315,7 @@ TEST(UtilTest,collapseLikelihoods2)
                    {0,bcf_int32_missing,bcf_int32_missing,108,bcf_int32_missing,561,96,bcf_int32_missing,bcf_int32_missing,545 } };
 
     int num_allele = 4;
-    int num_gl = ggutils::get_number_of_likelihoods(2,num_allele);
+    int num_gl = ggutils::get_number_of_gt_combinations(2,num_allele);
     std::vector< std::vector<int> > gl;
     gl.emplace_back(p[0],p[0]+num_gl);
     gl.emplace_back(p[1],p[1]+num_gl);

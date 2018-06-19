@@ -37,6 +37,8 @@ public:
     int GetNextVariant();
     void SetMaxAlleles(size_t max_alleles) {_max_alleles=max_alleles;};
 
+    //void dumpGT();
+
 private:
     void GenotypeHomrefVariant(int sample_index, DepthBlock &depth);
     void GenotypeAltVariant(int sample_index,bcf1_t *sample_variants);
@@ -56,7 +58,7 @@ private:
     htsFile *_output_file;
     bcf_hdr_t *_output_header;
     ggutils::vcf_data_t *_format;//stores all our format fields.
-    int32_t *_info_adf, *_info_adr, *_info_ac;
+    int32_t *_info_adf, *_info_adr, *_info_ac, *_info_gc;
     int _mean_weighted_mq,_sum_mq_weights,_num_variants;
     size_t _num_ps_written;
     bool _has_strand_ad,_has_pl;

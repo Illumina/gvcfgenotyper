@@ -11,6 +11,15 @@ extern "C" {
 
 //#define DEBUG
 
+/*void GVCFMerger::dumpGT() {
+
+    for(size_t i=0;i<_num_gvcfs;++i)
+    {
+        cout << "DUMP: " << bcf_gt_allele(_format->gt[2*i+1]) << "/" << bcf_gt_allele(_format->gt[2*i]) << "\n";
+    }
+
+}*/
+
 GVCFMerger::~GVCFMerger()
 {
     delete _normaliser;
@@ -20,6 +29,7 @@ GVCFMerger::~GVCFMerger()
     free(_info_adf);
     free(_info_adr);
     free(_info_ac);
+    free(_info_gc);
     bcf_destroy(_output_record);
 }
 
@@ -62,11 +72,14 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     }
 
     size_t n_allele = 2;
-    _format = new ggutils::vcf_data_t(2,2,_num_gvcfs);
+    size_t n_ploidy = 2;
+    _format = new ggutils::vcf_data_t(n_ploidy,n_allele,_num_gvcfs);
 
     _info_adf = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_adr = (int32_t *) malloc(n_allele * sizeof(int32_t));
     _info_ac = (int32_t *) malloc(n_allele * sizeof(int32_t));
+    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
+    _info_gc = (int32_t *) malloc(num_gt_per_sample * sizeof(int32_t));
 
     BuildHeader();
     _record_collapser.Init(_output_header);
@@ -76,6 +89,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     _mean_weighted_mq = 0;
     _sum_mq_weights = 0;
     _max_alleles = INT32_MAX;
+
 }
 
 int GVCFMerger::GetNextVariant()
@@ -135,16 +149,20 @@ void GVCFMerger::SetOutputBuffersToMissing(int num_alleles)
     _info_adr = (int32_t *) realloc(_info_adr, num_alleles * sizeof(int32_t));
     _info_ac = (int32_t *) realloc(_info_ac, num_alleles * sizeof(int32_t));
 
+    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
+    _info_gc = (int32_t *) realloc(_info_gc, num_gt_per_sample * sizeof(int32_t));
+
     std::fill(_info_adf, _info_adf + num_alleles, 0);
     std::fill(_info_adr, _info_adr + num_alleles, 0);
     std::fill(_info_ac, _info_ac + num_alleles, 0);
+    std::fill(_info_gc, _info_gc + num_gt_per_sample, 0);
 
 }
 
 void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_block)
 {
-    int num_pl_per_sample = ggutils::get_number_of_likelihoods(2,_output_record->n_allele);
-    int num_pl_in_this_sample = ggutils::get_number_of_likelihoods(homref_block.ploidy(),_output_record->n_allele);
+    int num_pl_per_sample = ggutils::get_number_of_gt_combinations(2,_output_record->n_allele);
+    int num_pl_in_this_sample = ggutils::get_number_of_gt_combinations(homref_block.ploidy(),_output_record->n_allele);
 
     int *pl_ptr = _format->pl + sample_index*num_pl_per_sample;
     _format->dp[sample_index] = homref_block.dp();
@@ -414,20 +432,35 @@ void GVCFMerger::UpdateFormatAndInfo()
     // Calculate INFO/GC
     if (_format->ploidy>1) 
     {
-        size_t GC[]={0,0,0};
+        int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
+        //int32_t* gc = (int32_t *) malloc(num_gt_per_sample * sizeof(int32_t));
+        //std::fill(gc, gc + num_gt_per_sample, 0);
         for(size_t i=0;i<_num_gvcfs;++i)
         {
             if (!bcf_gt_is_missing(_format->gt[2*i]) && !bcf_gt_is_missing(_format->gt[2*i+1])) {
-                if (bcf_gt_allele(_format->gt[2*i])==0 && bcf_gt_allele(_format->gt[2*i+1])==0) {
-                    ++GC[0];
-                } else if (bcf_gt_allele(_format->gt[2*i])!=bcf_gt_allele(_format->gt[2*i+1])) {
-                    ++GC[1];
-                } else if (bcf_gt_allele(_format->gt[2*i])==1 && bcf_gt_allele(_format->gt[2*i+1])==1) {
-                    ++GC[2];
+                if ( (_format->gt[2*i] == bcf_int32_vector_end) ||
+                     (_format->gt[2*i+1] == bcf_int32_vector_end) ) {
+                       // this indicates a sample with ploidy==1 which we skip
+                       //cerr << "skip sample " << i << "\n";
+                       continue;
                 }
+                int gt0 = bcf_gt_allele(_format->gt[2*i]);
+                int gt1 = bcf_gt_allele(_format->gt[2*i+1]);
+                size_t idx = bcf_alleles2gt(gt0,gt1);
+                //cerr << "gt0 / gt1 " << gt0 << "/" << gt1 << "\n";
+                //cerr << "idx= " << idx << "\n";
+                //cerr << "num_gt_per_sample " << num_gt_per_sample << "\n";
+                //cout << "GC=" << gc[idx] << "\n";
+                _info_gc[idx] += 1;
+                //cout << "GC=" << gc[idx] << "\n";
             }
         }
-        bcf_update_info_int32(_output_header,_output_record,"GC",&GC,3);
+        //for (int i=0;i<num_gt_per_sample;++i) {
+        //    cout << _info_gc[i] << ",";
+        //}
+        //cout << "\n";
+        assert(bcf_update_info_int32(_output_header,_output_record,"GC",_info_gc,num_gt_per_sample)==0);
+        //free(gc);
     }
 
     SetMedianInfoValues();

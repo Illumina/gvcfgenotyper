@@ -270,7 +270,7 @@ Genotype::Genotype(bcf_hdr_t const *header, bcf1_t *record)
         float *tmp_gq = nullptr;
         if(bcf_get_format_float(header, record, "GQ", &tmp_gq, &_num_gq) != 1)
         {
-	    _lg->warn("WARNING: missing FORMAT/GQ at {}:{}",bcf_hdr_int2id(header,BCF_DT_CTG,record->rid),record->pos+1);
+	        _lg->warn("WARNING: missing FORMAT/GQ at {}:{}",bcf_hdr_int2id(header,BCF_DT_CTG,record->rid),record->pos+1);
         }
         else
         {
@@ -463,8 +463,8 @@ int Genotype::PropagateFormatFields(size_t sample_index, size_t ploidy, ggutils:
     else  format->gt[sample_index*ploidy+1] = gt(1);
 
     //update PL
-    size_t num_pl_per_sample = ggutils::get_number_of_likelihoods(ploidy,_num_allele);
-    size_t num_pl_in_this_sample = ggutils::get_number_of_likelihoods(_ploidy,_num_allele);
+    size_t num_pl_per_sample = ggutils::get_number_of_gt_combinations(ploidy,_num_allele);
+    size_t num_pl_in_this_sample = ggutils::get_number_of_gt_combinations(_ploidy,_num_allele);
     int *dst = format->pl+num_pl_per_sample*sample_index;
     std::fill(dst,dst+num_pl_per_sample,bcf_int32_vector_end);
     memcpy(dst,_pl,num_pl_in_this_sample*sizeof(int));
@@ -498,7 +498,7 @@ Genotype::Genotype(bcf_hdr_t *sample_header,bcf1_t* sample_variants,multiAllele 
     Genotype src(sample_header,sample_variants);
     allocate(src.ploidy(),alleles_to_map.GetNumAlleles()+1);
     SetDepthToZero();
-    std::fill(_pl,_pl+ggutils::get_number_of_likelihoods(_ploidy,_num_allele),MAXPL);
+    std::fill(_pl,_pl+ggutils::get_number_of_gt_combinations(_ploidy,_num_allele),MAXPL);
     _qual = src.qual();
     _mq = src.mq();
     *_gq = src.gq();
