@@ -123,7 +123,7 @@ namespace ggutils
 
     bool bcf1_not_equal(bcf1_t *a, bcf1_t *b);
 
-    size_t get_number_of_likelihoods(int ploidy, int num_allele);
+    size_t get_number_of_gt_combinations(int ploidy, int num_allele);
 
     int phred(float l);
 
