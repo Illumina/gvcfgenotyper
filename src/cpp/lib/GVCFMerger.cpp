@@ -433,34 +433,21 @@ void GVCFMerger::UpdateFormatAndInfo()
     if (_format->ploidy>1) 
     {
         int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
-        //int32_t* gc = (int32_t *) malloc(num_gt_per_sample * sizeof(int32_t));
-        //std::fill(gc, gc + num_gt_per_sample, 0);
         for(size_t i=0;i<_num_gvcfs;++i)
         {
             if (!bcf_gt_is_missing(_format->gt[2*i]) && !bcf_gt_is_missing(_format->gt[2*i+1])) {
                 if ( (_format->gt[2*i] == bcf_int32_vector_end) ||
                      (_format->gt[2*i+1] == bcf_int32_vector_end) ) {
                        // this indicates a sample with ploidy==1 which we skip
-                       //cerr << "skip sample " << i << "\n";
                        continue;
                 }
                 int gt0 = bcf_gt_allele(_format->gt[2*i]);
                 int gt1 = bcf_gt_allele(_format->gt[2*i+1]);
                 size_t idx = bcf_alleles2gt(gt0,gt1);
-                //cerr << "gt0 / gt1 " << gt0 << "/" << gt1 << "\n";
-                //cerr << "idx= " << idx << "\n";
-                //cerr << "num_gt_per_sample " << num_gt_per_sample << "\n";
-                //cout << "GC=" << gc[idx] << "\n";
                 _info_gc[idx] += 1;
-                //cout << "GC=" << gc[idx] << "\n";
             }
         }
-        //for (int i=0;i<num_gt_per_sample;++i) {
-        //    cout << _info_gc[i] << ",";
-        //}
-        //cout << "\n";
         assert(bcf_update_info_int32(_output_header,_output_record,"GC",_info_gc,num_gt_per_sample)==0);
-        //free(gc);
     }
 
     SetMedianInfoValues();
