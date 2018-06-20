@@ -149,7 +149,7 @@ void GVCFMerger::SetOutputBuffersToMissing(int num_alleles)
     _info_adr = (int32_t *) realloc(_info_adr, num_alleles * sizeof(int32_t));
     _info_ac = (int32_t *) realloc(_info_ac, num_alleles * sizeof(int32_t));
 
-    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,_output_record->n_allele);
+    int num_gt_per_sample = ggutils::get_number_of_gt_combinations(_format->ploidy,num_alleles);
     _info_gc = (int32_t *) realloc(_info_gc, num_gt_per_sample * sizeof(int32_t));
 
     std::fill(_info_adf, _info_adf + num_alleles, 0);
