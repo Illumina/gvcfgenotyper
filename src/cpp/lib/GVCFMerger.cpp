@@ -347,7 +347,8 @@ void GVCFMerger::SetHistogramInfoValues()
     {
         for(const auto alt_gt_idx : FindAltGenotypes(allele)) {
             if(_format->dp[alt_gt_idx]!=bcf_int32_missing) {
-                size_t bin_idx = _format->dp[alt_gt_idx] > maxval ? (nbins-1) : ((size_t)(_format->dp[alt_gt_idx] / bin_width));
+                size_t bin_idx = _format->dp[alt_gt_idx] >= maxval ? (nbins-1) : ((size_t)(_format->dp[alt_gt_idx] / bin_width));
+                //assert(bin_idx < nbins);
                 ++allele_hist[allele][bin_idx];
             }
         }
