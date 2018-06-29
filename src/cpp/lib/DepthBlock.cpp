@@ -103,4 +103,3 @@ DepthBlock DepthBlock::Intersect(int rid, int start, int end)
     return {_rid, max(_start, start), min(end, _end), _dp, _dpf, _gq, _ploidy};
 }
 
-int DepthBlock::ploidy() {return _ploidy;}

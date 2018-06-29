@@ -40,7 +40,7 @@ public:
     //void dumpGT();
 
 private:
-    void GenotypeHomrefVariant(int sample_index, DepthBlock &depth);
+    void GenotypeHomrefVariant(int sample_index, const DepthBlock &depth);
     void GenotypeAltVariant(int sample_index,bcf1_t *sample_variants);
     void GenotypeSample(int sample_index);
     void UpdateFormatAndInfo();

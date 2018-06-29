@@ -159,8 +159,9 @@ void GVCFMerger::SetOutputBuffersToMissing(int num_alleles)
 
 }
 
-void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_block)
+void GVCFMerger::GenotypeHomrefVariant(int sample_index, const DepthBlock &homref_block)
 {
+
     int num_pl_per_sample = ggutils::get_number_of_gt_combinations(2,_output_record->n_allele);
     int num_pl_in_this_sample = ggutils::get_number_of_gt_combinations(homref_block.ploidy(),_output_record->n_allele);
 
@@ -168,14 +169,28 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, DepthBlock &homref_bloc
     _format->dp[sample_index] = homref_block.dp();
     _format->dpf[sample_index] = homref_block.dpf();
     _format->gq[sample_index] = homref_block.gq();
+    // AD of ref is just DP of the DeptBlock
     _format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
-    if(_format->ft[sample_index]) _format->ft[sample_index]=(char *)realloc(_format->ft[sample_index],2);
-    else _format->ft[sample_index]=(char *)malloc(2);
+
+    if(_format->ft[sample_index]) 
+        _format->ft[sample_index]=(char *)realloc(_format->ft[sample_index],2);
+    else 
+        _format->ft[sample_index]=(char *)malloc(2);
+
     _format->ft[sample_index][0] = '.';
     _format->ft[sample_index][1] = '\0';
     
-    for(int i=1;i<_output_record->n_allele;i++)
+    // AD of non-ref alleles is zero
+    for(int i=1;i<_output_record->n_allele;i++) {
         _format->ad[sample_index * _output_record->n_allele+i] = 0;
+    }
+
+    // A DepthBlock does not store ADF + ADR, so we just set all to zero
+    for(int i=0;i<_output_record->n_allele;i++) {
+        _format->adr[sample_index * _output_record->n_allele+i] = 0;
+        _format->adf[sample_index * _output_record->n_allele+i] = 0;
+    }
+
     if (homref_block.dp() > 0)
     {
         if(homref_block.ploidy()==2)
@@ -347,7 +362,8 @@ void GVCFMerger::SetHistogramInfoValues()
     {
         for(const auto alt_gt_idx : FindAltGenotypes(allele)) {
             if(_format->dp[alt_gt_idx]!=bcf_int32_missing) {
-                size_t bin_idx = _format->dp[alt_gt_idx] > maxval ? (nbins-1) : ((size_t)(_format->dp[alt_gt_idx] / bin_width));
+                size_t bin_idx = _format->dp[alt_gt_idx] >= maxval ? (nbins-1) : ((size_t)(_format->dp[alt_gt_idx] / bin_width));
+                //assert(bin_idx < nbins);
                 ++allele_hist[allele][bin_idx];
             }
         }
