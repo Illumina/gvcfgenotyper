@@ -169,7 +169,7 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, const DepthBlock &homre
     _format->dp[sample_index] = homref_block.dp();
     _format->dpf[sample_index] = homref_block.dpf();
     _format->gq[sample_index] = homref_block.gq();
-    // AD of ref is jest DP of the DeptBlock
+    // AD of ref is just DP of the DeptBlock
     _format->ad[sample_index * _output_record->n_allele] = homref_block.dp();
 
     if(_format->ft[sample_index]) 
