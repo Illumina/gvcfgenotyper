@@ -45,7 +45,7 @@ public:
     int dp() const { return _dp; }
     int gq() const { return _gq; }
     int dpf() const { return _dpf; }
-    int ploidy();
+    int ploidy() const { return _ploidy; }
     int size() const;
 
 private:
