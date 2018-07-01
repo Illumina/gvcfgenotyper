@@ -1,6 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-07-01
+- Bugfix release: fixed a null pointer, past-end-of-array writing, INFO/GC for multi-allelic sites, rounding of Phred scores
+
 # 2018-05-03
 - Computing INFO/DP_MEDIAN, INFO/DP_HIST_ALL and INFO/HOM which are similar to their counterparts in the gnomAD vcf
 - Small updates to documentation and FAQ
