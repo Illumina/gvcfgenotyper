@@ -1,6 +1,6 @@
 # gvcfgenotyper 
 
-A utility for merging and genotyping Illumina-style GVCFs.
+A utility for merging and genotyping [strelka2](https://github.com/Illumina/strelka) GVCFs.
 
 This source code is provided under the [Apache License 2.0](https://choosealicense.com/licenses/apache-2.0/#). Copyright (c) 2018, Illumina, Inc. All rights reserved.
 
