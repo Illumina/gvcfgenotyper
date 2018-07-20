@@ -545,7 +545,7 @@ void GVCFMerger::BuildHeader()
                    "##INFO=<ID=GQX_MEDIAN,Number=A,Type=Float,Description=\"The median GQX value for samples carrying this alternate allele\">");
     bcf_hdr_append(_output_header,
                    "##INFO=<ID=GQ_MEDIAN,Number=A,Type=Float,Description=\"The median GQ value for samples carrying this alternate allele\">");
-    bcf_hdr_append(_output_header,"##INFO=<ID=DP_MEDIAN,Number=A,Type=Integer,Description=\"The median DP value for samples carrying this alternate allele\">");
+    bcf_hdr_append(_output_header,"##INFO=<ID=DP_MEDIAN,Number=A,Type=Float,Description=\"The median DP value for samples carrying this alternate allele\">");
     bcf_hdr_append(_output_header,"##INFO=<ID=DP_HIST_ALT,Number=A,Type=String,Description=\"Histogram for DP for each allele; Midpoints of histogram bins: 2.5|7.5|12.5|17.5|22.5|27.5|32.5|37.5|42.5|47.5|52.5|57.5|62.5|67.5|72.5|77.5|82.5|87.5|92.5|97.5\"");
                    
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
