@@ -571,7 +571,7 @@ namespace ggutils
 
         //GT
         int ploidy=bcf_get_genotypes(header,record,&gt,&num_gt);
-	if(ploidy==2 && gt[1]==bcf_int32_vector_end) ploidy=1;
+	    if(ploidy==2 && gt[1]==bcf_int32_vector_end) ploidy=1;
 	    
         assert(ploidy==1 || ploidy==2);
         bool phased = ploidy==1 ? bcf_gt_is_phased(gt[0]) : bcf_gt_is_phased(gt[0])&&bcf_gt_is_phased(gt[1]);

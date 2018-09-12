@@ -165,7 +165,6 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, const DepthBlock &homre
     int num_pl_per_sample = ggutils::get_number_of_gt_combinations(2,_output_record->n_allele);
     int num_pl_in_this_sample = ggutils::get_number_of_gt_combinations(homref_block.ploidy(),_output_record->n_allele);
 
-    int *pl_ptr = _format->pl + sample_index*num_pl_per_sample;
     _format->dp[sample_index] = homref_block.dp();
     _format->dpf[sample_index] = homref_block.dpf();
     _format->gq[sample_index] = homref_block.gq();
@@ -204,9 +203,12 @@ void GVCFMerger::GenotypeHomrefVariant(int sample_index, const DepthBlock &homre
         }
     }
     //FIXME: dummy PL value for homref sites
-    std::fill(pl_ptr,pl_ptr+num_pl_per_sample,bcf_int32_vector_end);
-    std::fill(pl_ptr,pl_ptr+num_pl_in_this_sample,255);
-    pl_ptr[0] = 0;
+    if (_has_pl) {
+        int *pl_ptr = _format->pl + sample_index*num_pl_per_sample;
+        std::fill(pl_ptr,pl_ptr+num_pl_per_sample,bcf_int32_vector_end);
+        std::fill(pl_ptr,pl_ptr+num_pl_in_this_sample,255);
+        pl_ptr[0] = 0;
+    }
 }
 
 void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
@@ -387,7 +389,23 @@ void GVCFMerger::UpdateFormatAndInfo()
         assert(bcf_update_format_int32(_output_header, _output_record, "ADF",_format->adf, _num_gvcfs * _output_record->n_allele)==0);
         assert(bcf_update_format_int32(_output_header, _output_record, "ADR",_format->adr, _num_gvcfs * _output_record->n_allele)==0);
     }
-    if(_has_pl) assert(bcf_update_format_int32(_output_header, _output_record, "PL",_format->pl, _format->num_pl)==0);
+
+    if (_has_pl) {
+        // FORMAT/PL in strelka2 vcf files can be all empty in rare occasions, 
+        // this is not allowed according to the VCF 4.3 spec and can lead to problems
+        // with downstream tools (hail) so we insert dummy values here
+        bool all_pl_missing = true;
+        for (size_t i=0;i<_format->num_pl;++i) {
+            if (_format->pl[i] != bcf_int32_missing) {
+                all_pl_missing = false;
+            }
+        }
+        if (all_pl_missing) {
+            std::fill(_format->pl,_format->pl+_format->num_pl,255);
+        }
+
+        assert(bcf_update_format_int32(_output_header, _output_record, "PL",_format->pl, _format->num_pl)==0);
+    }
 
     // Write INFO/MQ
     if (_sum_mq_weights>0)
@@ -414,14 +432,29 @@ void GVCFMerger::UpdateFormatAndInfo()
     {
         for (size_t i=0;i<(_num_gvcfs*_output_record->n_allele);i+=_output_record->n_allele)
         {
+            bool all_info_adf_missing(true);
+            bool all_info_adr_missing(true);
             for (size_t j=0;j<_output_record->n_allele;++j)
             {
                 assert( (_format->adr[i+j]==bcf_int32_missing) == (_format->adf[i+j]==bcf_int32_missing) );
                 if(_format->adf[i+j]!=bcf_int32_missing)
                 {
                     _info_adf[j] += _format->adf[i+j];
-                    _info_adr[j] += _format->adr[i+j];
+                    all_info_adf_missing = false;
                 }
+                if(_format->adr[i+j]!=bcf_int32_missing)
+                {
+                    _info_adr[j] += _format->adr[i+j];
+                    all_info_adr_missing = false;
+                }
+            }
+            // Set INFO/ADF array entries to dummy value if they are all missing
+            if (all_info_adf_missing) {
+                std::fill(_info_adf,_info_adf+_output_record->n_allele,0);
+            }
+            // Set INFO/ADR array entries to dummy value if they are all missing
+            if (all_info_adr_missing) {
+                std::fill(_info_adr,_info_adr+_output_record->n_allele,0);
             }
         }
         bcf_update_info_int32(_output_header,_output_record,"ADF",_info_adf,_output_record->n_allele);
@@ -429,6 +462,8 @@ void GVCFMerger::UpdateFormatAndInfo()
         ggutils::fisher_sb_test(_info_adr,_info_adf,_output_record->n_allele,_sb_pvalue);
         bcf_update_info_float(_output_header,_output_record,"FS",_sb_pvalue.data(),_output_record->n_allele-1);
     }
+    
+
 
     // Calculate INFO/HOM (probably better called INFO/HOM_ALT?)
     if (_format->ploidy>1) 
@@ -560,9 +595,11 @@ void GVCFMerger::BuildHeader()
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=FT,Number=1,Type=String,Description=\"Sample filter, 'PASS' indicates that all single sample filters passed for this sample\">");
 
-    bcf_hdr_append(_output_header,
-                   "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in "
-                           "the VCF specification.\">");
+    if (_has_pl) {
+        bcf_hdr_append(_output_header,
+                       "##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in "
+                               "the VCF specification.\">");
+    }
     bcf_hdr_append(_output_header, "##FORMAT=<ID=PS,Number=1,Type=Integer,Description=\"Phase set identifier\">");
     bcf_hdr_append(_output_header, "##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for "
             "variant sites, otherwise minimum of {Genotype quality assuming variant position,Genotype quality assuming non-variant position}\">");
