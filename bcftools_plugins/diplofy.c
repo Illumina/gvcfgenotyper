@@ -39,7 +39,7 @@ int32_t *pl=NULL,*pl_out,npl=0;
 
 const char *about(void)
 {
-    return "converts haploid calls into diploid calls\n";
+    return "converts haploid calls into diploid calls by padding with reference genotypes\n";
 }
 
 int init(int argc, char **argv, bcf_hdr_t *in, bcf_hdr_t *out)
