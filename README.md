@@ -40,6 +40,8 @@ do
 done | xargs -l -P 23 ./gvcfgenotyper
 ```
 
+If you are looking for a sequencing cohort to try this out, have a look at [Polaris](https://github.com/Illumina/Polaris).
+
 ### Known issues
 
 Homozygous reference confidence (`GQ` and `DP`) works well for SNPs but is less reliable for indels. Our homozygous reference likelihoods are currently just dummy values eg. `PL=0,255,255` and should not be used for any sophisticated analysis such as denovo mutation calling (Strelka has good joint-calling-from BAM functionality for small pedigrees).
@@ -47,6 +49,10 @@ Homozygous reference confidence (`GQ` and `DP`) works well for SNPs but is less 
 Complex variants can occasionally contain primitive alleles called in other samples. We are investigating decomposition approaches for this problem.
 
 We are working on multi-threading to improve performance.
+
+### Feedback
+
+Please open an [issue](https://github.com/Illumina/gvcfgenotyper/issues) on github to provide feedback or ask questions.
 
 ### Acknowledgements
 
