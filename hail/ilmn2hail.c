@@ -1,10 +1,12 @@
-/*  diplofier.c: converts haploid calls to diploid calls by padding with reference
+/*  ilmn2hail.c: converts haploid calls to diploid calls by padding with reference
                  genotypes. If FORMAT/PL is present, dummy 0,255,255 or 255,0,255 
         		 values will be inserted accordingly (for example).
+                 Sets arrays INFO/ADF and INFO/ADR to missing iff one of their entries
+                 is missing.
 
     Copyright (C) 2017 Illumina
 
-    Author: Jared O'Connell <joconnell@illumina.com>
+    Authors: Ole Schulz-Trieglaff <oschulz-trie@illumina.com>, Jared O'Connell <jared.oconnell@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -91,11 +93,28 @@ int get_gl_index(int g0, int g1)
 bcf1_t *process(bcf1_t *rec)
 {
     int i,j;
-    int pl_ret =  bcf_get_format_int32(in_hdr,rec,"PL",&pl,&npl);
-    int adf_ret =  bcf_get_format_int32(in_hdr,rec,"ADF",&adf,&nadf);
-    int adr_ret =  bcf_get_format_int32(in_hdr,rec,"ADR",&adr,&nadr);
+    int n_pl  =  bcf_get_format_int32(in_hdr,rec,"PL",&pl,&npl);
+    if (n_pl < 0) {
+        fprintf(stderr,"Read %d genotype likelihoods (FORMAT/PL) but expected at least one. Aborting\n",n_pl);
+        assert(0);
+    }
+    int n_adf =  bcf_get_format_int32(in_hdr,rec,"ADF",&adf,&nadf);
+    if (n_adf < 0) {
+        fprintf(stderr,"Error reading allelic depth (FORMAT/ADF). Aborting\n");
+        assert(0);
+    }
+    int n_adr =  bcf_get_format_int32(in_hdr,rec,"ADR",&adr,&nadr);
+    if (n_adr < 0) {
+        fprintf(stderr,"Error reading allelic depth (FORMAT/ADR). Aborting\n");
+        assert(0);
+    }
+
+
     int gt_ret = bcf_get_genotypes(in_hdr,rec,&gt,&ngt);
-    assert(gt_ret==2*nsample || gt_ret==nsample);
+    if (gt_ret!=2*nsample && gt_ret!=nsample) {
+        fprintf(stderr,"Read %d genotypes but expected %d or %d. Aborting\n",gt_ret,(2*nsample),nsample);
+        assert(0);
+    }
     int ploidy=2;
     int nal=rec->n_allele;
     int num_pl_per_sample = get_number_of_likelihoods(ploidy,nal);
@@ -145,17 +164,20 @@ bcf1_t *process(bcf1_t *rec)
             }
         }
     
+        // If one of the entries of FORMAT/ADR or FORMAT/ADR is missing,
+        // set the whole array to missing
+        //http://discuss.hail.is/t/matrix-table-error/485/2
         if (adf[2*i]==bcf_int32_missing || adf[2*i+1]==bcf_int32_missing) {
-            adf_out[2*i]   = 0;
-            adf_out[2*i+1] = 0;
+            adf_out[2*i]   = bcf_int32_missing;
+            adf_out[2*i+1] = bcf_int32_vector_end;
         } else {
             adf_out[2*i]   = adf[2*i];
             adf_out[2*i+1] = adf[2*i+1];
 
         }
         if (adr[2*i]==bcf_int32_missing || adr[2*i+1]==bcf_int32_missing) {
-            adr_out[2*i]   = 0;
-            adr_out[2*i+1] = 0;
+            adr_out[2*i]   = bcf_int32_missing;
+            adr_out[2*i+1] = bcf_int32_vector_end;
         } else {
             adr_out[2*i]   = adr[2*i];
             adr_out[2*i+1] = adr[2*i+1];
