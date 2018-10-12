@@ -1,8 +1,11 @@
-/*  ilmn2hail.c: converts haploid calls to diploid calls by padding with reference
-                 genotypes. If FORMAT/PL is present, dummy 0,255,255 or 255,0,255 
-        		 values will be inserted accordingly (for example).
-                 Sets arrays INFO/ADF and INFO/ADR to missing iff one of their entries
-                 is missing.
+/*  ilmn2hail.c: converts Illumina-style VCF files into Hail-compatible VCF files
+ 
+    Converts haploid calls to diploid calls by padding with reference
+    genotypes. If FORMAT/PL is present, dummy 0,255,255 or 255,0,255 
+    values will be inserted accordingly (for example).
+    
+    Sets arrays INFO/ADF and INFO/ADR to missing iff one of their entries
+    is missing.
 
     Copyright (C) 2017 Illumina
 
@@ -41,7 +44,7 @@ int32_t *pl=NULL,*pl_out,npl=0;
 
 const char *about(void)
 {
-    return "converts haploid calls into diploid calls by padding with reference genotypes\n";
+    return "converts Illumina-style VCF files into Hail-compatible VCF files\n";
 }
 
 int init(int argc, char **argv, bcf_hdr_t *in, bcf_hdr_t *out)
