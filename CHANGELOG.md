@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2018-10-15
+- Hail integration (https://github.com/hail-is/hail): we provide ilmn2hail, a bcftools plugin to convert gvcfgenotyper output into Hail-compatible VCF.
+- Jupyter notebook illustrating a basic exploratory analysis of gvcfgenotyper output in Hail
+- Warn if the user tries to merge more gvcf files than open file handles available
+- Various updates to FAQ and documentation
+
 # 2018-07-01
 - Bugfix release: fixed a null pointer, past-end-of-array writing, INFO/GC for multi-allelic sites, rounding of Phred scores
 
