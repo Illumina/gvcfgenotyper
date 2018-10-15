@@ -1,7 +1,11 @@
 #include "GVCFMerger.hh"
 #include <getopt.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #include "spdlog.h"
+#include "string.h"
 
 static void usage()
 {
@@ -22,6 +26,12 @@ static void usage()
     std::cerr << "    -M, --max-alleles   INT             maximum number of alleles [50]" << std::endl;
 //    std::cerr << "    -@, --thread      INT             number of threads [0]" << std::endl; //TODO: implement multi-threading!
     std::cerr << std::endl;
+}
+
+unsigned CountFileHandles() {
+    struct rlimit rl;
+    getrlimit(RLIMIT_NOFILE, &rl);
+    return rl.rlim_cur;
 }
 
 int main(int argc, char **argv)
@@ -126,9 +136,20 @@ int main(int argc, char **argv)
     lg->info("Command line: "+commandline);
     lg->info("Starting GVCF merging");
 
+    // buffer size is the length of the genomic range of variants that
+    // is buffered by GVCFReader
     int buffer_size = 5000;
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
+    unsigned fh_limit = CountFileHandles();
+    lg->info("Max number of file handles " + std::to_string(fh_limit));
+    if (fh_limit<=input_files.size()) {
+        std::string msg("You are trying to merge more GVCF files than file handles your OS can open at the same time ("+std::to_string(fh_limit)+" vs "+std::to_string(input_files.size())+")");
+        lg->error(msg);
+        cerr << msg << std::endl;
+        ggutils::die("Check the output of ulimits -n");
+    }
+    
     int is_file = 0;
     GVCFMerger g(input_files, output_file, output_type, reference_genome, buffer_size, region, is_file, ignore_non_matching_ref, force_samples);
     g.SetMaxAlleles(max_alleles);
