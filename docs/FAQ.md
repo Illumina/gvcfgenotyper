@@ -1,7 +1,7 @@
 
 * I am trying to merge a large number of GVCF files and, after opening several files, GVCFgenotyper dies with the error "problem opening ..."
 
-If the file exists and is readable, checkout the max number of file handles that you can open at the same time (ulimit -a).
+If the file exists and is readable, check the max number of file handles that you can open at the same time (ulimit -a).
 
 * How do I create site-only vcf file from the aggregated multi-sample gvcf?
 
@@ -24,5 +24,13 @@ Only "." is translated into PASS, all other tags are copied as is.
 
 * How can I get gvcfgenotyper output into Hail?
 
-Check out the instruction in the subdiretory "hail".
+Have a look at the instructions in the subdiretory "hail".
+
+* How can I parallelize gvcfgenotyper?
+
+See the script "merge.parallel.sh" in this directory
+
+* Where can I get some data to try this out?
+
+We recommend the Polaris cohort: https://github.com/Illumina/Polaris
 
