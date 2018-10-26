@@ -5,7 +5,7 @@ If the file exists and is readable, check the max number of file handles that yo
 
 * How do I create site-only vcf file from the aggregated multi-sample gvcf?
 
-Using bcftools: bcftools view -Ou -G | bcftools norm -m -any -Ou | bcftools view -Oz -o sites.vcf.gz --threads 4
+Using bcftools: bcftools view -Ou -G <merged.multi.sample.vcf> | bcftools norm -m -any -Ou | bcftools view -Oz -o sites.vcf.gz --threads 4
 
 * Eror message: "VCF record did not match the reference at sample..."
 
