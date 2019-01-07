@@ -36,7 +36,7 @@ or with some trivial parallelism:
 ```
 for i in {1..22} X;
 do 
-    echo -f genome.fa -l gvcfs.txt -Ob -o output.chr${i}.bcf;
+    echo -r $i -f genome.fa -l gvcfs.txt -Ob -o output.chr${i}.bcf;
 done | xargs -l -P 23 ./gvcfgenotyper
 ```
 
