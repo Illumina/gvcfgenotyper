@@ -7,8 +7,12 @@
 inline bcf1_t *copy_alleles(bcf_hdr_t *hdr, bcf1_t *src,int index)
 {
     assert(src->n_allele>1);
-    if(!(index>0 && index<src->n_allele)) ggutils::die("bad index = "+std::to_string(index));
-
+    if(!(index>0 && index<src->n_allele)) {
+        ggutils::print_variant(hdr,src);
+        cerr << "bad index = " << index << "\n";
+        //ggutils::die("bad index = "+std::to_string(index) + " nal=" + std::to_string(src->n_allele));
+        assert(0);
+    }
     bcf_unpack(src,BCF_UN_ALL);
     size_t rlen,alen;
     ggutils::right_trim(src->d.allele[0],src->d.allele[index], rlen,alen);

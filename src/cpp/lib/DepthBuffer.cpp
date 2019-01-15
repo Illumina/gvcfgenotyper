@@ -15,7 +15,12 @@ int DepthBuffer::Interpolate(const int rid, const int start, const int stop, Dep
     {
         return (-1);
     }
-
+    if (dp_ptr->IntersectSize(rid,start,stop) <= 0) {
+        //std::cerr << "DEPTH BUFFER INTERPOLATE ERROR" << std::endl;
+        //dump();
+        //assert(0);
+        return(-1);
+    }
     db = dp_ptr->Intersect(rid, start, stop);
     dp_ptr++;
     while (dp_ptr != _buffer.end() && dp_ptr->IntersectSize(rid, start, stop) > 0)
@@ -26,25 +31,31 @@ int DepthBuffer::Interpolate(const int rid, const int start, const int stop, Dep
     return (0);
 }
 
+void DepthBuffer::dump() 
+{
+	for (auto db: _buffer) {
+		std::cerr << db.rid() << " " << db.start() << " " << db.end() << " " << db.dp() << "\n";
+	}
+}
+
 void DepthBuffer::push_back(const DepthBlock& db)
 {
     //sanity check on value being pushed
     if (!(_buffer.empty() || db.rid() != _buffer.back().rid() || db.start() == (1 + _buffer.back().end()) ||
           db.start() == _buffer.back().end()))
     {
-        if (!_buffer.empty())
-        {
-            std::cerr << _buffer.back().rid() << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << "   ->   ";
-            std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << std::endl;
-            
-        }
-        ggutils::die("non-contiguous homozygous reference blocks. Is this an Illumina GVCF?");
+        //if (!_buffer.empty())
+        //{
+        //    std::cerr << _buffer.back().rid() << ":" << _buffer.back().start() + 1 << "-" << _buffer.back().end() + 1 << "   ->   ";
+        //    std::cerr << db.rid() << ":" << db.start() + 1 << "-" << db.end() + 1 << std::endl;         
+        //}
+        //ggutils::warn("non-contiguous homozygous reference blocks. Is this an Illumina GVCF?");
     }
 
     if (_buffer.empty() || db.rid() > _buffer.back().rid() || db.start() > _buffer.back().end())
     {
         _buffer.push_back(std::move(db));
-    }
+    } 
 }
 
 int DepthBuffer::FlushBuffer(const int rid, const int pos)
@@ -79,7 +90,11 @@ DepthBlock *DepthBuffer::Back()
     return (&_buffer.back());
 }
 
-size_t DepthBuffer::size()
+size_t DepthBuffer::Size()
 {
     return (_buffer.size());
+}
+
+bool DepthBuffer::Empty() {
+    return _buffer.empty();
 }

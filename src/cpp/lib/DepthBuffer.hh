@@ -26,14 +26,18 @@ public:
 
     DepthBlock *Pop();
     DepthBlock *Back();
-    DepthBlock *Front();
+    //DepthBlock *Front();
     DepthBlock Intersect(const DepthBlock &db);
     int FlushBuffer();
     int FlushBuffer(const int rid, const int pos);
     int Interpolate(const int rid, const int start, const int end, DepthBlock &db);//interpolates depth for an interval a<=x<
 
     //accessors/mutators
-    size_t size();
+    size_t Size();
+
+    bool Empty();
+
+    void dump();
 
 private:
     deque<DepthBlock> _buffer;

@@ -5,6 +5,8 @@
 #include<sstream>
 #include<iterator>
 
+//#define DEBUG
+
 namespace ggutils
 {
     void right_trim(const char *ref,const char *alt,size_t &reflen,size_t &altlen)
@@ -181,18 +183,20 @@ namespace ggutils
         return is_hom_ref;
     }
 
-    int get_end_of_gvcf_block(bcf_hdr_t *header, bcf1_t *record)
+    int get_end_of_gvcf_block_or_variant(bcf_hdr_t *header, bcf1_t *record)
     {
         int ret;
         int *ptr = NULL, nval = 0;
         if (bcf_get_info_int32(header, record, "END", &ptr, &nval) == 1)
         {
+            // has INFO/END, is HOM_REF block
             ret = *ptr - 1;
             free(ptr);
         }
         else
         {
-            ret = record->pos + strlen(record->d.allele[0]) - 1;
+            // is variant
+            ret = get_end_of_variant(record);
         }
 
         return (ret);
@@ -356,7 +360,6 @@ namespace ggutils
         return (!(bcf1_equal(a, b)));
     }
 
-
     size_t get_number_of_gt_combinations(int ploidy, int num_allele)
     {
         assert(ploidy == 1 || ploidy == 2);
@@ -407,30 +410,33 @@ namespace ggutils
         {
             ss << ":" << record->d.allele[i];
         }
-	    return ss.str();
-        // int32_t *gt= nullptr,*ad= nullptr,*pl= nullptr;
-        // int num_gt=0,num_ad=0,num_pl=0;
-        // int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
-        // if(ret>0)
-        // {
-        //     ss << "\tGT=";
-        //     for (int i = 0; i < ret; i++)
-        //     {
-        //         if (i > 0) ss << "/";
-        //         ss << bcf_gt_allele(gt[i]);
-        //     }
-        // }
+         int32_t *gt= nullptr;//*pl= nullptr;
+         int num_gt=0;//num_pl=0;
+         int ret = bcf_get_genotypes(header,record,&gt,&num_gt);
+         if(ret>0)
+         {
+             ss << "\tGT=";
+             for (int i = 0; i < ret; i++)
+             {
+                 if (i > 0) ss << "/";
+                 ss << bcf_gt_allele(gt[i]);
+             }
+        }
+        free(gt);
 
-        // ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
-        // if(ret>0)
-        // {
-        //     ss << "\tAD=";
-        //     for (int i = 0; i < ret; i++)
-        //     {
-        //         if (i > 0) ss << ",";
-        //         ss << ad[i];
-        //     }
-        // }
+		int32_t* ad=nullptr;
+		int num_ad=0;
+        ret=bcf_get_format_int32(header,record,"AD",&ad,&num_ad);
+        if(ret>0)
+        {
+        	ss << "\tAD=";
+        	for (int i = 0; i < ret; i++)
+        	{
+        		if (i > 0) ss << ",";
+        		ss << ad[i];
+        	}
+        }
+        free(ad);
 
         // ret=bcf_get_format_int32(header,record,"PL",&pl,&num_pl);
         // if(ret>0)
@@ -442,10 +448,9 @@ namespace ggutils
         //         ss << pl[i];
         //     }
         // }
-        // free(gt);
         // free(pl);
-        // free(ad);
         // ss << std::endl;
+        return ss.str();
     }
 
     void print_variant(bcf1_t *record)
@@ -553,7 +558,15 @@ namespace ggutils
         bcf_update_alleles(header, record, (const char **) new_alleles, record->n_allele);
 
         //AD
+		int ret = bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad);
+		if (ret != record->n_allele) {
+			cout << ret << " " << record->n_allele << "\n";
+			print_variant(header,record);
+			assert(0);
+		}
+		
         assert(bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad)==record->n_allele);
+        //assert(bcf_get_format_int32(header,record,"AD",&format_ad,&num_ad)==record->n_allele);
         std::swap(format_ad[a],format_ad[b]);
         bcf_update_format_int32(header,record,"AD",format_ad,record->n_allele);
 
@@ -899,28 +912,159 @@ namespace ggutils
     
     bool is_valid_strelka_record(bcf_hdr_t const *header, bcf1_t *record)
     {
-	int32_t *int_ptr=nullptr;
-	int num_int=0;
-	int status = bcf_get_format_int32(header, record, "AD", &int_ptr, &num_int);
-	if(status>0) free(int_ptr);
-	return(status == record->n_allele);
+	    int32_t *int_ptr=nullptr;
+	    int num_int=0;
+	    int status = bcf_get_format_int32(header, record, "AD", &int_ptr, &num_int);
+	    if(status>0) free(int_ptr);
+	    return(status == record->n_allele);
+    }
+
+    bool has_non_ref_symb_allele(bcf1_t *record) 
+    {
+		string non_ref("<NON_REF>");
+		int nal = record->n_allele;
+		return (strcmp(record->d.allele[nal-1],non_ref.c_str())==0);
+    }
+
+    void convert_dragen_gvcf_record(bcf_hdr_t *header, bcf1_t *record) 
+    {
+#ifdef DEBUG
+           print_variant(header,record);
+#endif
+        int32_t *ad = nullptr,*ad_out=nullptr, nad = 0;
+        int32_t *pl=nullptr,*pl_out=nullptr,npl=0;
+        int32_t *gt=nullptr,*gt_out=nullptr,ngt=0;
+        int32_t *spl=nullptr,*spl_out=nullptr,nspl=0;
+        int32_t *gq=nullptr, ngq=0;   
+
+        int gq_ret = bcf_get_format_int32(header,record,"GQ",&gq,&ngq);
+        if (gq_ret <0) {
+            //fprintf(stderr,"GVCF entry without GQ at %d:%d\n",record->rid,record->pos);
+			int32_t gq_default = bcf_int32_missing;
+			int32_t ngq_default = 1;
+        	assert(bcf_update_format_int32(header,record,"GQ",&gq_default,ngq_default)==0);
+            //assert(0);
+        }
+        //assert(bcf_hdr_append(header,"##FORMAT=<ID=GQX,Number=1,Type=Integer,Description=\"Empirically calibrated genotype quality score for variant sites\">")==0);
+        //assert(bcf_update_format_int32(header,record,"GQX",gq,ngq)==0);
+
+        // TBD : estimate ploidy from record
+        int ploidy=ggutils::get_ploidy(header,record);
+
+        int nal=record->n_allele;
+        int has_non_ref=0;
+        string non_ref("<NON_REF>");
+        if (nal > 1) {
+            if (strcmp(record->d.allele[nal-1],non_ref.c_str())==0) {
+                has_non_ref=1;
+                bcf_update_alleles(header, record, (const char**) record->d.allele, nal-1);
+            }
+        }
+
+        if (!has_non_ref) {
+            // return entry as is if it does not have the symbolic NON_REF allele
+            return;
+        }
+
+        // I am just chopping off the last few PLs and SPLs, not sure if this is the right thing to do?
+        int pl_ret  =  bcf_get_format_int32(header,record,"PL",&pl,&npl);
+        if (pl_ret >= 0) {
+            int new_npl = ggutils::get_number_of_gt_combinations(ploidy,nal-1);
+            pl_out = (int32_t *)realloc(pl_out,(new_npl)*sizeof(int32_t));
+            for (int i=0;i<new_npl;++i) {
+                    pl_out[i]=pl[i];
+            }
+            bcf_update_format_int32(header,record,"PL",pl_out,new_npl);
+        }
+
+        int spl_ret  =  bcf_get_format_int32(header,record,"SPL",&spl,&nspl);
+        if (spl_ret >= 0) {
+            int new_nspl = get_number_of_gt_combinations(ploidy,nal-1);
+            spl_out = (int32_t *)realloc(spl_out,(new_nspl)*sizeof(int32_t));
+            for (int i=0;i<new_nspl;++i) {
+                    spl_out[i]=spl[i];
+            }
+            bcf_update_format_int32(header,record,"SPL",spl_out,new_nspl);
+        }
+
+        int ad_ret =  bcf_get_format_int32(header,record,"AD",&ad,&nad);
+        if (ad_ret < 0) {
+            fprintf(stderr,"Error reading allelic depth (FORMAT/AD). Error code: %d. Aborting\n",ad_ret);
+            assert(0);
+        }
+        ad_out = (int32_t*)realloc(ad_out,(nad-1)*sizeof(int32_t));
+        for (int i=0;i<nad-1;++i) {
+            ad_out[i]=ad[i];
+        }
+        bcf_update_format_int32(header,record,"AD",ad_out,nad-1);
+
+        int gt_ret = bcf_get_genotypes(header,record,&gt,&ngt);
+        if (gt_ret < 0) {
+            fprintf(stderr,"Error reading GT. Error code %d",gt_ret);
+            assert(0);
+        }
+        gt_out = (int32_t *)realloc(gt_out,ploidy*sizeof(int32_t));
+        bool updated(false);
+        //std::cerr << bcf_gt_allele(gt[0]) << "/" << bcf_gt_allele(gt[1]) << " ploidy=" << ploidy << " nal=" << nal << "\n";
+        if (ploidy==1) {
+            if (bcf_gt_allele(gt[0])>=nal-1 && nal>1) {
+                //cerr << "UPDATE PLOIDY 1" << "\n";
+                updated = true;
+                gt_out[0]=bcf_gt_missing;
+                gt_out[1]=bcf_int32_vector_end;
+            } 
+        } 
+        else if (ploidy==2)
+        {
+            #ifdef DEBUG
+            cout << "CHECK " << (bcf_gt_allele(gt[0])>=nal-1) << " " << (bcf_gt_allele(gt[1])>=nal-1) << " " << (nal-1) << "\n";
+            #endif 
+            if ( ((bcf_gt_allele(gt[0])>=nal-1) || (bcf_gt_allele(gt[1])>=nal-1)) && nal>1) {
+                updated = true;
+                //cerr << "UPDATE PLOIDY 2" << "\n";
+                gt_out[0] = bcf_gt_missing;
+                gt_out[1] = bcf_gt_missing;
+            }
+        } else assert(0);
+        
+        if (!updated) {
+            gt_out[0] = gt[0];
+            gt_out[1] = gt[1];
+        }
+        assert(bcf_update_genotypes(header,record,gt_out,ngt)==0);
+        #ifdef DEBUG
+        if (updated) {
+            cerr << "After GT update ngt=" << ngt << "\n";
+            cerr << bcf_gt_allele(gt_out[0]) << "/" << bcf_gt_allele(gt_out[1]) << " ploidy=" << ploidy << "\n";
+            print_variant(header,record);
+        }
+        #endif
+        free(ad);
+        free(ad_out);
+        free(pl);
+        free(pl_out);
+        free(gt);
+        free(gt_out);
+        free(spl);
+        free(spl_out);
+        free(gq);
     }
     
     void filter2string(bcf_hdr_t const *header, bcf1_t *record,kstring_t & str)
     {
-	if(bcf_has_filter(header, record, (char *)"."))
-	{
-	    kputc('.',&str);
-	}
-	else
-	{
-	    for(int i=0;i<record->d.n_flt;i++)
+	    if(bcf_has_filter(header, record, (char *)"."))
 	    {
-		if(i>0)  kputc(';',&str);
-		const char *tmp=bcf_hdr_int2id(header,BCF_DT_ID, record->d.flt[i]);
-		kputs(tmp,&str);
+	        kputc('.',&str);
 	    }
-	}
+	    else
+	    {
+	        for(int i=0;i<record->d.n_flt;i++)
+	        {
+		        if(i>0)  kputc(';',&str);
+		        const char *tmp=bcf_hdr_int2id(header,BCF_DT_ID, record->d.flt[i]);
+		        kputs(tmp,&str);
+	        }
+	    }
     }
    
 }

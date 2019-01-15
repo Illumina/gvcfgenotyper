@@ -336,7 +336,8 @@ int Genotype::UpdateBcfRecord(bcf_hdr_t *header, bcf1_t *record)
         assert(bcf_update_format_int32(header, record, "GQ", _gq, _num_gq)==0);
     }
 
-    assert(bcf_update_format_int32(header, record, "GQX", _gqx, _num_gqx)==0);
+    //assert(bcf_update_format_int32(header, record, "GQX", _gqx, _num_gqx)==0);
+    bcf_update_format_int32(header, record, "GQX", _gqx, _num_gqx);
 
     if(_num_dp>0)
     {

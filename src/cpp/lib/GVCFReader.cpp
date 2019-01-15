@@ -129,7 +129,7 @@ int GVCFReader::ReadUntil(int rid, int pos)
     int num_read = 0;
 //    bcf1_t *rec=_variant_buffer.back();
     DepthBlock *db = _depth_buffer.Back();
-    while (db == nullptr)
+    while (db == nullptr && !_depth_buffer.Empty())
     {
         ReadLines(1);
         db = _depth_buffer.Back();
@@ -163,39 +163,45 @@ int GVCFReader::ReadLines(const unsigned num_lines)
     while (num_read < num_lines && bcf_sr_next_line(_bcf_reader))
     {
         _bcf_record = bcf_sr_get_line(_bcf_reader, 0);
-#ifdef DEBUG
+
+        if (ggutils::has_non_ref_symb_allele(_bcf_record)) {
+            //cout << "convert" << "\n";
+            ggutils::convert_dragen_gvcf_record(_bcf_header,_bcf_record);
+        }
+        #ifdef DEBUG
         ggutils::print_variant(_bcf_header,_bcf_record);
-#endif
+        #endif
 
         if(_bcf_record->n_allele>1)
         {
-	    if(ggutils::is_valid_strelka_record(_bcf_header,_bcf_record))
-	    {
-		kstring_t filter = { 0, 0, NULL };
-		if(bcf_has_filter(_bcf_header, _bcf_record, (char *) "."))
-		{
-		    kputs("PASS",&filter);
-		    assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
-		}
-		else
-		{
-		    ggutils::filter2string(_bcf_header,_bcf_record,filter);
-		    assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
-		}
-		free(filter.s);
+            // check of presence of FORMAT/AD
+	        if(ggutils::is_valid_strelka_record(_bcf_header,_bcf_record))
+	        {
+		        kstring_t filter = { 0, 0, NULL };
+		        if(bcf_has_filter(_bcf_header, _bcf_record, (char *) "."))
+		        {
+		            kputs("PASS",&filter);
+		            assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
+		        }
+		        else
+		        {
+		            ggutils::filter2string(_bcf_header,_bcf_record,filter);
+		            assert(bcf_update_format_string(_bcf_header, _bcf_record, "FT", (const char **)&filter.s,1)==0);
+		        }
+		        free(filter.s);
 		
-		vector<bcf1_t *> atomised_variants;
-		_normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
-		for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
-		{
-		    _variant_buffer.PushBack(_bcf_header, *v);
-		}
-		num_read++;
-	    }
-	    else
-	    {
-		_lg->warn("WARNING: {} from {} is not a valid GVCFGenotyper variant, this record will be ignored.",ggutils::record2string(_bcf_header,_bcf_record),_input_gvcf);
-	    }
+		        vector<bcf1_t *> atomised_variants;
+		        _normaliser->Unarise(_bcf_record, atomised_variants,_bcf_header);
+		        for (auto v = atomised_variants.begin();v!=atomised_variants.end();v++)
+		        {
+		            _variant_buffer.PushBack(_bcf_header, *v);
+		        }
+		        num_read++;
+	        }
+	        else
+	        {
+		        _lg->warn("WARNING: {} from {} is not a valid GVCFGenotyper variant, this record will be ignored.",ggutils::record2string(_bcf_header,_bcf_record),_input_gvcf);
+	        }
         }
         int32_t dp;
         //buffer a depth block. FIXME: this should really all be in the DepthBlock constructor.
@@ -204,7 +210,7 @@ int GVCFReader::ReadLines(const unsigned num_lines)
             int ploidy = ggutils::get_ploidy(_bcf_header,_bcf_record);
             int start = _bcf_record->pos;
             int32_t dpf, gq, end;
-            end = ggutils::get_end_of_gvcf_block(_bcf_header, _bcf_record);
+            end = ggutils::get_end_of_gvcf_block_or_variant(_bcf_header, _bcf_record);
             //If the record has FORMAT/GQ, use that, otherwise take FORMAT/GQX (illumina gvcf quirk).
             int status = ggutils::bcf1_get_one_format_int(_bcf_header,_bcf_record,"GQ",gq);
             if(status!=1)
@@ -267,7 +273,12 @@ void GVCFReader::GetDepth(int rid, int start, int stop, DepthBlock &db)
     ReadUntil(rid, stop);
     if (_depth_buffer.Interpolate(rid, start, stop, db) < 0)
     {
-        ggutils::die("GVCFReader::get_depth problem with depth buffer");
+        //ggutils::die("GVCFReader::get_depth problem with depth buffer");
+        //cout << "GVCFReader::get_depth problem with depth buffer" << '\n';
+        // placeholder for DP,DPF and GQ
+        int def_val = 255;
+        int ploidy = 2;
+        db = DepthBlock(rid, start-5, stop+5, def_val, def_val, def_val, ploidy);
     }
 }
 
@@ -278,7 +289,7 @@ size_t GVCFReader::GetNumVariants()
 
 size_t GVCFReader::GetNumDepthBlocks()
 {
-    return (_depth_buffer.size());
+    return (_depth_buffer.Size());
 }
 
 //gets all variants in interval start<=x<=stop

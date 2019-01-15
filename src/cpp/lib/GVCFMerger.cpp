@@ -56,6 +56,7 @@ GVCFMerger::GVCFMerger(const vector<string> &input_files,
     assert(_lg!=nullptr);
     _lg->info("Input GVCFs:");
     for (size_t i = 0; i < _num_gvcfs; i++)
+
     {
         _lg->info("Opened {} {}/{}",input_files[i],(i+1),_num_gvcfs);
         _readers.emplace_back(input_files[i], _normaliser, buffer_size, region, is_file);
@@ -227,10 +228,8 @@ void GVCFMerger::GenotypeAltVariant(int sample_index,bcf1_t *sample_variants)
 
 void GVCFMerger::GenotypeSample(int sample_index)
 {
-    DepthBlock homref_block;//working structure to store homref info.
     auto hdr = _readers[sample_index].GetHeader();
     auto records = _readers[sample_index].GetAllVariantsUpTo(_record_collapser.GetMax());
-
     bcf1_t *sample_record = CollapseRecords(hdr,records);
     //this sample has variants at this position, we need to populate its FORMAT field
     if (sample_record!=nullptr)
@@ -240,6 +239,7 @@ void GVCFMerger::GenotypeSample(int sample_index)
     }
     else    //this sample does not have the variant, reconstruct the format fields from homref blocks
     {
+        DepthBlock homref_block;//working structure to store homref info.
         _readers[sample_index].GetDepth(_output_record->rid, _output_record->pos,
                                         ggutils::get_end_of_variant(_output_record), homref_block);
         GenotypeHomrefVariant(sample_index, homref_block);
