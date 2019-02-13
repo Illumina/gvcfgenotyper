@@ -246,9 +246,9 @@ void GVCFMerger::GenotypeSample(int sample_index)
     }
 }
 
-bcf1_t *GVCFMerger::next()
+bool GVCFMerger::next()
 {
-    if (AreAllReadersEmpty()) return (nullptr);
+    if (AreAllReadersEmpty()) return false;
 
     bcf_clear(_output_record);
     GetNextVariant(); //stores all the alleles at the next position.
@@ -276,7 +276,7 @@ bcf1_t *GVCFMerger::next()
         }
         _num_variants++;
         UpdateFormatAndInfo();
-        return(_output_record);
+        return true;
     }
     else
     {
@@ -510,7 +510,7 @@ void GVCFMerger::write_vcf()
     int last_rid = -1;
     int last_pos = 0;
     int num_written = 0;
-    while (next() != nullptr)
+    while (next())
     {
         if (!(_output_record->pos >= last_pos || _output_record->rid > last_rid))
         {

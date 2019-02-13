@@ -33,7 +33,7 @@ public:
                bool force_samples=false);
     ~GVCFMerger();
     void write_vcf();
-    bcf1_t *next();
+    bool next();
     int GetNextVariant();
     void SetMaxAlleles(size_t max_alleles) {_max_alleles=max_alleles;};
 
