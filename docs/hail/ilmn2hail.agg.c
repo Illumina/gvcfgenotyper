@@ -42,6 +42,8 @@ int *adf = NULL,*adf_out=NULL, nadf = 0;
 int *adr = NULL,*adr_out=NULL, nadr = 0;
 int32_t *pl=NULL,*pl_out,npl=0;
 
+int verbose=0;
+
 const char *about(void)
 {
     return "converts Illumina-style VCF files into Hail-compatible VCF files\n";
@@ -55,6 +57,10 @@ int init(int argc, char **argv, bcf_hdr_t *in, bcf_hdr_t *out)
     gt_out = (int *)malloc(sizeof(int32_t)*2*nsample);
     adf_out = (int *)malloc(sizeof(int32_t)*2*nsample);
     adr_out = (int *)malloc(sizeof(int32_t)*2*nsample);
+
+	bcf_hdr_append(out,"##FORMAT=<ID=PL,Number=G,Type=Integer,Description=\"Normalized, Phred-scaled likelihoods for genotypes as defined in "
+				       "the VCF specification.\">");
+
     return 0;
 }
 
@@ -103,7 +109,9 @@ bcf1_t *process(bcf1_t *rec)
     int num_pl_per_sample = get_number_of_likelihoods(ploidy,nal);
 	int num_ad_per_sample = 2;
     if (n_pl < 0) {
-        fprintf(stderr,"Return code %d for FORMAT/PL. Expected %d per sample at chrom=%d pos=%d.\n",n_pl,num_pl_per_sample,(rec->rid+1),rec->pos);
+		if (verbose) { 
+        	fprintf(stderr,"Return code %d for FORMAT/PL. Expected %d per sample at chrom=%d pos=%d.\n",n_pl,num_pl_per_sample,(rec->rid+1),rec->pos);
+		}
 		pl = (int32_t *)realloc(pl,nsample*num_pl_per_sample*sizeof(int32_t*));
 		for (i=0;i<nsample*num_pl_per_sample;++i) {
 			pl[i]=255;
@@ -111,7 +119,9 @@ bcf1_t *process(bcf1_t *rec)
     }
     int n_adf =  bcf_get_format_int32(in_hdr,rec,"ADF",&adf,&nadf);
     if (n_adf < 0) {
-        fprintf(stderr,"Return code %d for FORMAT/ADF at chrom=%d pos=%d.\n",n_adf,(rec->rid+1),rec->pos);
+		if (verbose) { 
+        	fprintf(stderr,"Return code %d for FORMAT/ADF at chrom=%d pos=%d.\n",n_adf,(rec->rid+1),rec->pos);
+		}
 		adf = (int32_t *)realloc(adf,nsample*num_ad_per_sample*sizeof(int32_t*));
 		for (i=0;i<nsample*num_ad_per_sample;++i) {
 			adf[i]=255;
@@ -119,7 +129,9 @@ bcf1_t *process(bcf1_t *rec)
     }
     int n_adr =  bcf_get_format_int32(in_hdr,rec,"ADR",&adr,&nadr);
     if (n_adr < 0) {
-        fprintf(stderr,"Return code %d for FORMAT/ADR at chrom=%d pos=%d.\n",n_adf,(rec->rid+1),rec->pos);
+		if (verbose) { 
+        	fprintf(stderr,"Return code %d for FORMAT/ADR at chrom=%d pos=%d.\n",n_adf,(rec->rid+1),rec->pos);
+		}
 		adr = (int32_t *)realloc(adr,nsample*num_ad_per_sample*sizeof(int32_t*));
 		for (i=0;i<nsample*num_ad_per_sample;++i) {
 			adr[i]=255;
