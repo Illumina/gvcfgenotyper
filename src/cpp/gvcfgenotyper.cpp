@@ -141,6 +141,12 @@ int main(int argc, char **argv)
     int buffer_size = 5000;
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
+    if (input_files.empty()) {
+        std::string msg("Empty list of input files: " + gvcf_list);
+        lg->error(msg);
+        ggutils::die(msg);
+    }
+
     unsigned fh_limit = CountFileHandles();
     lg->info("Max number of file handles " + std::to_string(fh_limit));
     if (fh_limit<=input_files.size()) {
@@ -157,5 +163,5 @@ int main(int argc, char **argv)
 
     lg->info("Done");
     spdlog::drop_all();
-    return (0);
+    return (EXIT_SUCCESS);
 }
