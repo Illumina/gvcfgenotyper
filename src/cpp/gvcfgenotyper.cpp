@@ -52,6 +52,8 @@ int main(int argc, char **argv)
     bool ignore_non_matching_ref=false;
     // Another hidden flag to force processing of gvcf files with duplicate sample names
     bool force_samples=false;
+    // buffer size is the length of the genomic range of variants that is buffered by GVCFReader
+    int buffer_size = 5000;
 
     static struct option loptions[] = {
             {"list",        1, 0, 'l'},
@@ -60,6 +62,7 @@ int main(int argc, char **argv)
             {"output-type", 1, 0, 'O'},
             {"log-file",    1, 0, 'L'},
             {"region",      1, 0, 'r'},
+            {"buffer-size", 1, 0, 'b'},
             {"thread",      1, 0, '@'},
             {"max-alleles", 1, 0, 'M'},
 	        {"ignore-non-matching-ref",0,0,1},
@@ -67,7 +70,7 @@ int main(int argc, char **argv)
             {0,             0, 0, 0}
     };
 
-    while ((c = getopt_long(argc, argv, "L:l:f:o:O:r:@:", loptions, NULL)) >= 0)
+    while ((c = getopt_long(argc, argv, "L:l:f:o:O:r:@:b:", loptions, NULL)) >= 0)
     {
         switch (c)
         {
@@ -94,6 +97,9 @@ int main(int argc, char **argv)
                 break;
             case '@':
                 n_threads = stoi(optarg);
+                break;
+            case 'b':
+                buffer_size = stoi(optarg);
                 break;
             case 1:
 	            ignore_non_matching_ref=true;break;
@@ -136,9 +142,6 @@ int main(int argc, char **argv)
     lg->info("Command line: "+commandline);
     lg->info("Starting GVCF merging");
 
-    // buffer size is the length of the genomic range of variants that
-    // is buffered by GVCFReader
-    int buffer_size = 5000;
     std::vector<std::string> input_files;
     ggutils::read_text_file(gvcf_list, input_files);
     if (input_files.empty()) {
@@ -150,10 +153,10 @@ int main(int argc, char **argv)
     unsigned fh_limit = CountFileHandles();
     lg->info("Max number of file handles " + std::to_string(fh_limit));
     if (fh_limit<=input_files.size()) {
-        std::string msg("You are trying to merge more GVCF files than file handles your OS can open at the same time ("+std::to_string(fh_limit)+" vs "+std::to_string(input_files.size())+")");
+        std::string msg("You are trying to merge more GVCF files than file handles your OS can open at once ("+std::to_string(fh_limit)+" vs "+std::to_string(input_files.size())+")");
         lg->error(msg);
         cerr << msg << std::endl;
-        ggutils::die("Check the output of ulimits -n");
+        ggutils::die("Check the output of ulimit -n");
     }
     
     int is_file = 0;
