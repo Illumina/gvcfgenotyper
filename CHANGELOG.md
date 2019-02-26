@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+# 2019-02-26
+- Let user set buffer size
+- Updates to ilmn2hail plugin
+- Update to htslib 1.9
+- Support Dragen-style gVCF format
+- Various small bug fixes
+
 # 2018-10-15
 - Hail integration (https://github.com/hail-is/hail): we provide ilmn2hail, a bcftools plugin to convert gvcfgenotyper output into Hail-compatible VCF.
 - Jupyter notebook illustrating a basic exploratory analysis of gvcfgenotyper output in Hail
