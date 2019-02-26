@@ -19,14 +19,14 @@ CFLAGS = -O2 $(VERSION)
 
 
 IFLAGS = -Isrc/cpp/lib/ -Isrc/c/
-LFLAGS = -lz -lm -lpthread
+LFLAGS = -lz -lm -lpthread -llzma -lbz2
 
 #testing stuff
 TESTFLAGS = -I./external/googletest-release-1.8.0//googletest/include/
 include external/googletest-release-1.8.0//googletest/make/Makefile
 
 #htslib stuff
-HTSDIR=external/htslib-1.7
+HTSDIR=external/htslib-1.9
 include $(HTSDIR)/htslib.mk
 HTSLIB = $(HTSDIR)/libhts.a
 IFLAGS += -I$(HTSDIR)
